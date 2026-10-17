@@ -178,7 +178,7 @@ function Wishlists() {
                 className="flex w-full items-center justify-between border-t border-border-soft bg-surface-2 px-4 py-2.5 text-left md:px-6"
                 aria-expanded={showReceived}
               >
-                <span className="text-[10.5px] font-semibold tracking-[0.09em] text-text-faint uppercase">
+                <span className="text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">
                   Received · {received.length}
                 </span>
                 <span className="text-[12.5px] font-medium text-accent">{showReceived ? "Hide" : "Show"}</span>

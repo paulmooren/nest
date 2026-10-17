@@ -128,7 +128,7 @@ function ShoppingLists() {
               type="button"
               aria-pressed={active}
               onClick={() => setChoice(list.id)}
-              className={`inline-flex h-9 items-center gap-2 rounded-full border px-4 text-[13.5px] font-medium transition-colors ${
+              className={`inline-flex h-11 items-center gap-2 rounded-full border px-4 text-[14px] font-medium transition-colors md:h-9 md:text-[13.5px] ${
                 active
                   ? "border-text bg-text text-bg"
                   : "border-transparent bg-surface-2 text-text-muted hover:bg-border-soft hover:text-text"
@@ -141,7 +141,7 @@ function ShoppingLists() {
                 </span>
               )}
               {list.ownerId !== null && (
-                <span className={`text-[11px] ${active ? "text-bg/70" : "text-text-faint"}`}>Private</span>
+                <span className={`text-[12px] ${active ? "text-bg/70" : "text-text-faint"}`}>Private</span>
               )}
             </Button>
           );
@@ -149,7 +149,7 @@ function ShoppingLists() {
         <Button
           type="button"
           onClick={() => setCreating((c) => !c)}
-          className="inline-flex h-9 items-center rounded-full border border-dashed border-border px-4 text-[13.5px] font-medium text-text-muted hover:border-text-faint hover:text-text"
+          className="inline-flex h-11 items-center rounded-full border border-dashed border-border px-4 text-[14px] md:h-9 md:text-[13.5px] font-medium text-text-muted hover:border-text-faint hover:text-text"
         >
           {creating ? "Cancel" : "+ New list"}
         </Button>
@@ -173,7 +173,7 @@ function ShoppingLists() {
               role="tab"
               aria-selected={mobileView === view}
               onClick={() => setMobileView(view)}
-              className={`flex-1 rounded-lg px-4 py-2 transition-colors ${
+              className={`min-h-[var(--tap)] flex-1 rounded-lg px-4 py-2 transition-colors ${
                 mobileView === view ? "bg-text text-bg" : "text-text-muted hover:text-text"
               }`}
             >
@@ -204,14 +204,14 @@ function ShoppingLists() {
               <Button
                 type="button"
                 onClick={() => setSheetOpen(true)}
-                className="rounded-full border border-border px-3 py-1 text-text hover:border-text lg:hidden"
+                className="min-h-[var(--tap)] rounded-full border border-border px-4 py-1 text-text hover:border-text lg:hidden"
               >
                 ★ Favorites
               </Button>
               <Button
                 type="button"
                 onClick={() => setConfirmDeleteList(true)}
-                className="text-text-muted hover:text-critical"
+                className="min-h-[var(--tap)] px-2 text-text-muted hover:text-critical md:min-h-0 md:px-0"
               >
                 Delete
               </Button>

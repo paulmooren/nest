@@ -96,7 +96,7 @@ export default function HouseholdSettingsPage() {
             >
               <Avatar name={m.user.name || m.user.email} image={m.user.image} size={32} />
               <span className="flex-1">{m.user.name || m.user.email}</span>
-              {m.user.id === me?.id && <span className="text-[11px] text-text-faint">You</span>}
+              {m.user.id === me?.id && <span className="text-[12px] text-text-faint">You</span>}
             </div>
           ))}
         </div>

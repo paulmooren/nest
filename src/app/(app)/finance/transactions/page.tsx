@@ -294,7 +294,7 @@ function TransactionsPageInner() {
 
         <div className="-mx-4 mt-5 overflow-x-auto border-t border-border-soft md:-mx-6">
           <div className="min-w-[640px]">
-            <div className="flex items-center gap-3.5 px-6 pt-5 pb-2.5 text-[10.5px] font-semibold tracking-[0.08em] text-text-faint uppercase">
+            <div className="flex items-center gap-3.5 px-6 pt-5 pb-2.5 text-[12px] font-semibold tracking-[0.08em] text-text-faint uppercase">
               <span className="block w-[3px] shrink-0" />
               <div className="min-w-0 flex-1" />
               <div className={COL_DATE}>Date</div>
@@ -336,7 +336,7 @@ function TransactionsPageInner() {
                   <div className="min-w-0 flex-1">
                     <div className={`truncate ${CELL_TEXT} font-medium`}>{label}</div>
                     {multiMember && (
-                      <div className="flex items-center gap-1.5 truncate text-[11px] text-text-faint">
+                      <div className="flex items-center gap-1.5 truncate text-[12px] text-text-faint">
                         {multiMember && (
                           <span className="truncate">
                             {t.account.name} · {groupLabel(t.account.ownerId, members, currentUserId)}

@@ -196,7 +196,7 @@ function LeftEachMonth({
   return (
     <section className="rounded-[20px] border border-border-soft bg-surface p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[10.5px] font-semibold tracking-[0.09em] text-text-faint uppercase">Left each month</p>
+        <p className="text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">Left each month</p>
         {showScopes && (
           <div role="tablist" aria-label="Whose budget" className="flex gap-1 rounded-xl bg-surface-2 p-1">
             {scopes.map((s) => (
@@ -295,7 +295,7 @@ function AccountCards({
                 )}
                 <div className="min-w-0">
                   <p className="truncate text-[13.5px] font-semibold">{a.name}</p>
-                  <p className="truncate text-[11px] tracking-[0.04em] text-text-faint">
+                  <p className="truncate text-[12px] tracking-[0.04em] text-text-faint">
                     {[a.institution, multiMember ? groupLabel(a.ownerId, members, currentUserId) : null]
                       .filter(Boolean)
                       .join(" · ")}
@@ -304,11 +304,11 @@ function AccountCards({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="mb-1 text-[10.5px] text-text-faint">Income / month</p>
+                  <p className="mb-1 text-[12px] text-text-faint">Income / month</p>
                   <p className="text-[16px] font-semibold text-good tabular-nums">{formatEUR(income)}</p>
                 </div>
                 <div>
-                  <p className="mb-1 text-[10.5px] text-text-faint">Expenses / month</p>
+                  <p className="mb-1 text-[12px] text-text-faint">Expenses / month</p>
                   <p className="text-[16px] font-semibold tabular-nums">{formatEUR(expenses)}</p>
                 </div>
               </div>
@@ -368,7 +368,7 @@ function SuggestionsPanel({ suggestions, onDismiss }: { suggestions: Suggestion[
           <div className="min-w-0 flex-1">
             <div className="text-[13.5px] font-medium">
               {c.name}{" "}
-              <span className="text-[11px] font-normal text-text-faint">
+              <span className="text-[12px] font-normal text-text-faint">
                 ({c.type === "INCOME" ? "income" : c.type === "TRANSFER" ? "transfer" : "expense"})
               </span>
             </div>
@@ -636,11 +636,11 @@ function RecurringColumn({
         ? groups.map(({ ownerId, groupItems }) => (
             <div key={ownerId ?? "shared"}>
               <div className="flex items-baseline justify-between px-6 pt-3 pb-1">
-                <p className="text-[10.5px] font-semibold tracking-[0.09em] text-text-faint uppercase">
+                <p className="text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">
                   {groupLabel(ownerId, members, currentUserId)}
                 </p>
                 {groupItems.length > 0 && (
-                  <p className="text-[11px] text-text-muted tabular-nums">
+                  <p className="text-[12px] text-text-muted tabular-nums">
                     {formatEUR(groupItems.reduce((sum, e) => sum + monthlyOf(e.item), 0))} / mo
                   </p>
                 )}
@@ -837,7 +837,7 @@ function RecurringRow({
       {item.amountVaries && (
         <span
           title="The amount changes from payment to payment; this is the average of the last three"
-          className="rounded-md bg-surface-2 px-1.5 py-0.5 text-[10.5px] font-medium text-text-muted"
+          className="rounded-md bg-surface-2 px-1.5 py-0.5 text-[12px] font-medium text-text-muted"
         >
           varies
         </span>

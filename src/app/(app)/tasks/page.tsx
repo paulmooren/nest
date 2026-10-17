@@ -104,7 +104,7 @@ function RemindersPanel({ members, currentUserId }: { members: Member[]; current
         if (inBucket.length === 0) return null;
         return (
           <div key={key}>
-            <div className={`px-6 pt-3 pb-1 text-[10.5px] font-semibold tracking-[0.09em] uppercase ${titleClass ?? "text-text-faint"}`}>
+            <div className={`px-6 pt-3 pb-1 text-[12px] font-semibold tracking-[0.09em] uppercase ${titleClass ?? "text-text-faint"}`}>
               {title}
             </div>
             {inBucket.map((r) => (
@@ -326,7 +326,7 @@ function TaskChecklist({
             aria-expanded={showCompleted}
             className="flex w-full items-center justify-between px-6 pt-4 pb-1 text-left"
           >
-            <span className="text-[10.5px] font-semibold tracking-[0.09em] text-text-faint uppercase">
+            <span className="text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">
               Completed · {completed.length}
             </span>
             <span className="text-[12.5px] font-medium text-accent">{showCompleted ? "Hide" : "Show"}</span>

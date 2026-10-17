@@ -11,7 +11,7 @@ export function AuthHeader({ eyebrow, title }: { eyebrow: string; title: string 
       <div className="mb-6 flex h-[38px] w-[38px] items-center justify-center rounded-[11px] bg-accent-fill md:hidden">
         <span className="pl-[2px] font-display text-[21px] font-bold text-accent-ink">N</span>
       </div>
-      <p className="mb-2 text-[11px] font-semibold tracking-[0.11em] text-accent uppercase">{eyebrow}</p>
+      <p className="mb-2 text-[12px] font-semibold tracking-[0.11em] text-accent uppercase">{eyebrow}</p>
       <h1 className="mb-6 font-display font-bold tracking-tight text-[26px]">{title}</h1>
     </>
   );

@@ -41,7 +41,7 @@ export function HouseholdSetupForm() {
         <span className="pl-[2px] font-display text-[21px] font-bold text-accent-ink">N</span>
       </div>
 
-      <p className="mb-2 text-[11px] font-semibold tracking-[0.11em] text-accent uppercase">
+      <p className="mb-2 text-[12px] font-semibold tracking-[0.11em] text-accent uppercase">
         Household setup
       </p>
       <h1 className="mb-2 font-display font-bold tracking-tight text-[26px]">Set up your household</h1>

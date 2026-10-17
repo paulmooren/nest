@@ -235,7 +235,7 @@ function DatePanel({
           onApply({ from, to, dateLabel: undefined });
         }}
       >
-        <p className="mb-2 text-[11px] font-semibold tracking-[0.08em] text-text-faint uppercase">Custom range</p>
+        <p className="mb-2 text-[12px] font-semibold tracking-[0.08em] text-text-faint uppercase">Custom range</p>
         <div className="flex items-center gap-2">
           <Input
             type="date"
@@ -287,7 +287,7 @@ function AmountPanel({
         onApply({ minAmount: read(form, "min"), maxAmount: read(form, "max") });
       }}
     >
-      <p className="mb-2 text-[11px] font-semibold tracking-[0.08em] text-text-faint uppercase">Amount</p>
+      <p className="mb-2 text-[12px] font-semibold tracking-[0.08em] text-text-faint uppercase">Amount</p>
       <div className="flex items-center gap-2">
         <Input
           name="min"
@@ -307,7 +307,7 @@ function AmountPanel({
           className="min-w-0 flex-1 rounded-lg border border-border-soft bg-surface px-2.5 py-2 text-[13px] tabular-nums outline-none placeholder:text-text-faint focus:border-accent"
         />
       </div>
-      <p className="mt-2 text-[11.5px] text-text-muted">Income and expenses alike, ignoring the minus sign.</p>
+      <p className="mt-2 text-[12px] text-text-muted">Income and expenses alike, ignoring the minus sign.</p>
       <Button
         type="submit"
         className="mt-3 w-full rounded-lg bg-accent-fill px-4 py-2 text-[13px] font-semibold text-accent-ink hover:opacity-90"
@@ -363,7 +363,7 @@ function FilterChipWithPanel({
               type="button"
               onClick={onClear}
               aria-label={`Clear ${label.toLowerCase()} filter`}
-              className="mr-1 flex h-6 w-6 items-center justify-center rounded-full text-[11px] text-bg/80 hover:bg-white/15"
+              className="mr-1 flex h-6 w-6 items-center justify-center rounded-full text-[12px] text-bg/80 hover:bg-white/15"
             >
               ✕
             </Button>

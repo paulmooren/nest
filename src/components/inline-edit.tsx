@@ -47,6 +47,7 @@ export function InlineEdit({
       <span className="grid w-fit max-w-full min-w-0">
         <span
           aria-hidden
+          data-inline-edit-mirror
           className={`invisible col-start-1 row-start-1 overflow-hidden whitespace-pre ${className}`}
         >
           {draft || placeholder || " "}

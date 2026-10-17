@@ -9,6 +9,8 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { InlineEdit } from "@/components/inline-edit";
 import { PopoverPanel } from "@/components/popover-menu";
 import { SelectInput } from "@/components/settings/form";
+import { Avatar } from "@/components/avatar";
+import { ReminderSheet } from "@/components/reminders/reminder-sheet";
 import { AssigneeAvatar } from "@/components/tasks/assignee-avatar";
 import type { Member } from "@/components/tasks/types";
 import {
@@ -75,18 +77,21 @@ export function ReminderRow({
 }) {
   const [showHistory, setShowHistory] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  // On a phone the title opens a sheet with everything editable; the schedule link, avatar and bin are desktop controls.
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const owner = members.find((m) => m.user.id === reminder.ownerId);
   const due = new Date(reminder.nextDueDate);
   const bucket = dueBucket(due, today);
   const last = reminder.completions[0];
 
   return (
-    <div className="group border-b border-border-soft px-6 py-3 transition-colors last:border-b-0 hover:bg-surface-hover">
+    <div className="group border-b border-border-soft px-4 py-3 transition-colors md:px-6 last:border-b-0 hover:bg-surface-hover">
       <div className="flex items-start gap-3">
         <Button
           type="button"
           onClick={onTick}
           aria-label={`Mark ${reminder.title} as done`}
-          className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-border text-transparent transition-colors hover:border-good hover:text-good"
+          className="tap-target mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-border text-transparent transition-colors hover:border-good hover:text-good"
         >
           <span className="block h-3.5 w-3.5">
             <CheckIcon />
@@ -99,9 +104,24 @@ export function ReminderRow({
             ariaLabel="Reminder"
             onCommit={(title) => onUpdate({ title })}
             className="text-[14px] font-medium"
-            buttonClassName="block w-full cursor-pointer truncate text-left"
+            buttonClassName="hidden w-full cursor-pointer truncate text-left md:block"
           />
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[12px] text-text-muted">
+          <Button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            aria-label={`Edit ${reminder.title}`}
+            className="line-clamp-2 min-h-[var(--tap)] w-full py-1 text-left text-[16px] font-medium md:hidden"
+          >
+            {reminder.title}
+          </Button>
+          <div className="mt-0.5 text-[13px] text-text-muted md:hidden">
+            {describeSchedule(reminder.intervalCount, reminder.intervalUnit)}
+            {" · "}
+            {last
+              ? `last done ${agoLabel(new Date(last.completedAt), today)}${last.completedBy ? ` by ${nameOf(last.completedBy, currentUserId, last.completedBy.id)}` : ""}`
+              : "not done yet"}
+          </div>
+          <div className="mt-0.5 hidden flex-wrap items-center gap-x-1.5 text-[12px] text-text-muted md:flex">
             <SchedulePopover reminder={reminder} onUpdate={onUpdate} />
             <span className="text-text-faint">·</span>
             {last ? (
@@ -128,13 +148,20 @@ export function ReminderRow({
         </span>
 
         {members.length > 1 && (
-          <AssigneeAvatar
-            ownerId={reminder.ownerId}
-            members={members}
-            currentUserId={currentUserId}
-            onChange={(ownerId) => onUpdate({ ownerId })}
-            size={26}
-          />
+          <span className="hidden md:block">
+            <AssigneeAvatar
+              ownerId={reminder.ownerId}
+              members={members}
+              currentUserId={currentUserId}
+              onChange={(ownerId) => onUpdate({ ownerId })}
+              size={26}
+            />
+          </span>
+        )}
+        {members.length > 1 && owner && (
+          <span className="md:hidden" aria-hidden>
+            <Avatar name={owner.user.name || owner.user.email} image={owner.user.image} size={28} />
+          </span>
         )}
 
         {!compact && (
@@ -142,12 +169,30 @@ export function ReminderRow({
             type="button"
             onClick={() => setConfirming(true)}
             aria-label={`Delete ${reminder.title}`}
-            className="mt-1 h-4 w-4 shrink-0 text-text-faint hover:text-critical"
+            className="mt-1 hidden h-4 w-4 shrink-0 text-text-faint hover:text-critical md:block"
           >
             <TrashIcon />
           </Button>
         )}
       </div>
+
+      {sheetOpen && (
+        <ReminderSheet
+          reminder={reminder}
+          members={members}
+          currentUserId={currentUserId}
+          onUpdate={onUpdate}
+          onDelete={
+            compact
+              ? undefined
+              : () => {
+                  setSheetOpen(false);
+                  setConfirming(true);
+                }
+          }
+          onClose={() => setSheetOpen(false)}
+        />
+      )}
 
       {showHistory && reminder.completions.length > 0 && (
         <ul className="mt-2 ml-9 flex flex-col gap-0.5 text-[12px] text-text-muted">
@@ -208,9 +253,11 @@ function SchedulePopover({ reminder, onUpdate }: { reminder: ReminderData; onUpd
 export function ScheduleForm({
   initial,
   onSave,
+  className = "flex w-[260px] flex-col gap-3 p-3 text-text-muted",
 }: {
   initial: { intervalCount: number; intervalUnit: ScheduleUnit; mode: ScheduleMode };
   onSave: (patch: { intervalCount: number; intervalUnit: ScheduleUnit; mode: ScheduleMode }) => void;
+  className?: string;
 }) {
   const [count, setCount] = useState(String(initial.intervalCount));
   const [unit, setUnit] = useState<ScheduleUnit>(initial.intervalUnit);
@@ -221,7 +268,7 @@ export function ScheduleForm({
     // A div, not a <form>: this opens from inside the "new reminder" form, and forms can't nest.
     <div
       // Muted text, as the panel used to inherit from the row it opened from; it now sits in a portal and inherits nothing.
-      className="flex w-[260px] flex-col gap-3 p-3 text-text-muted"
+      className={className}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault();
@@ -249,7 +296,7 @@ export function ScheduleForm({
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
-        <span className="text-[11.5px] text-text-muted">Count from</span>
+        <span className="text-[12px] text-text-muted">Count from</span>
         <SelectInput value={mode} onChange={(e) => setMode(e.target.value as ScheduleMode)} className="py-2 text-[13.5px]">
           <option value="FROM_DONE">When it was done</option>
           <option value="FIXED">A fixed rhythm</option>

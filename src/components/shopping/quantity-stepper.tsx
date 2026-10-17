@@ -48,7 +48,7 @@ export function QuantityPill({
   const shown = comma ? String(num).replace(".", ",") : String(num);
 
   const stepButton =
-    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[18px] leading-none text-text hover:bg-border-soft";
+    "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[20px] leading-none text-text hover:bg-border-soft md:h-8 md:w-8 md:text-[18px]";
 
   return (
     <div className="flex shrink-0 items-center rounded-full bg-surface-2 p-0.5">
@@ -91,7 +91,7 @@ export function QuantityPill({
           type="button"
           onClick={() => setEditing(true)}
           aria-label={`Amount ${value ?? "1"}, click to change`}
-          className="min-w-7 px-1 text-center text-[15px] font-semibold tabular-nums"
+          className="min-h-11 min-w-8 px-1 text-center text-[16px] font-semibold tabular-nums md:min-h-0 md:min-w-7 md:text-[15px]"
         >
           {shown}
         </Button>

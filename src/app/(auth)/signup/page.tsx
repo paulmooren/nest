@@ -31,7 +31,7 @@ export default async function SignUpPage({
           </span>
         </div>
 
-        <p className="mb-2 text-[11px] font-semibold tracking-[0.11em] text-accent uppercase">
+        <p className="mb-2 text-[12px] font-semibold tracking-[0.11em] text-accent uppercase">
           Create account
         </p>
         <h1 className="mb-6 font-display font-bold tracking-tight text-[26px]">Join Nest</h1>

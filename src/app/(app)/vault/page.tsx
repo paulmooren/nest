@@ -139,12 +139,12 @@ function Vault() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-[16px] font-semibold">{entry.title}</h2>
-                      <span className="rounded-full border border-border-soft bg-surface-2 px-2.5 py-0.5 text-[11px] font-medium text-text-muted">
+                      <span className="rounded-full border border-border-soft bg-surface-2 px-2.5 py-0.5 text-[12px] font-medium text-text-muted">
                         {entry.category}
                       </span>
                       {expiry && (
                         <span
-                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                          className={`rounded-full px-2.5 py-0.5 text-[12px] font-medium ${
                             expiry.critical ? "bg-critical/10 text-critical" : "bg-surface-2 text-text-muted"
                           }`}
                           title={formatDate(entry.expiresOn!)}

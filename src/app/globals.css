@@ -132,7 +132,8 @@ button:disabled,
   /* iOS Safari zooms the page when a focused text field is under 16px, and doesn't zoom back. */
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="file"]),
   textarea,
-  select {
+  select,
+  [data-inline-edit-mirror] {
     font-size: 16px;
   }
 

@@ -39,7 +39,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
   });
   return (
     <div className="mx-auto max-w-[440px] rounded-[20px] border border-border-soft bg-surface p-7">
-      <p className="mb-1 text-[11px] font-semibold tracking-[0.11em] text-accent uppercase">
+      <p className="mb-1 text-[12px] font-semibold tracking-[0.11em] text-accent uppercase">
         Step {Math.min(step, 2)} of 2
       </p>
 

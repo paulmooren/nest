@@ -107,7 +107,7 @@ export function ExpenseSections<T extends GroupedItem>({
               )}
             </div>
             {section.entries.length > 0 && (
-              <p className="shrink-0 text-[11px] text-text-muted tabular-nums">
+              <p className="shrink-0 text-[12px] text-text-muted tabular-nums">
                 {formatEUR(section.entries.reduce((sum, e) => sum + monthlyOf(e.item), 0))} / mo
               </p>
             )}

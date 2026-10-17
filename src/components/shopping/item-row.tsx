@@ -54,7 +54,7 @@ export function ShoppingItemRow({
 
   return (
     <div
-      className={`flex items-center gap-3 border-b border-border-soft px-4 py-2.5 transition-colors last:border-b-0 hover:bg-surface-hover ${
+      className={`flex min-h-[56px] items-center gap-3 border-b border-border-soft px-4 py-2.5 transition-colors last:border-b-0 hover:bg-surface-hover ${
         leaving && checked ? "shopping-leave" : ""
       }`}
       style={leaving && checked ? { animationDuration: `${TICK_GRACE_MS}ms` } : undefined}
@@ -64,7 +64,7 @@ export function ShoppingItemRow({
         onClick={() => onToggle(!checked)}
         aria-label={checked ? `Put ${item.name} back on the list` : `Tick off ${item.name}`}
         aria-pressed={checked}
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition-colors ${
+        className={`tap-target flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition-colors ${
           checked
             ? "border-good bg-good text-white"
             : "border-border text-transparent hover:border-good hover:text-good"
@@ -103,7 +103,7 @@ export function ShoppingItemRow({
           onClick={onToggleFavorite}
           aria-label={isFavorite ? `Remove ${item.name} from favorites` : `Add ${item.name} to favorites`}
           aria-pressed={isFavorite}
-          className={`shrink-0 text-[18px] leading-none transition-colors ${
+          className={`-mr-2 flex h-[var(--tap)] w-[var(--tap)] shrink-0 items-center justify-center text-[22px] leading-none transition-colors md:mr-0 md:h-auto md:w-auto md:text-[18px] ${
             isFavorite ? "text-[#e0b04d]" : "text-text-faint hover:text-[#e0b04d]"
           }`}
         >

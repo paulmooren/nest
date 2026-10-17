@@ -20,7 +20,7 @@ export function VisibilityToggle({
       type="button"
       onClick={() => onChange(!visible)}
       disabled={pending}
-      className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors disabled:opacity-60 ${
+      className={`rounded-full border px-2.5 py-1 text-[12px] font-medium transition-colors disabled:opacity-60 ${
         visible
           ? "border-border-soft bg-surface-2 text-text-muted hover:text-text"
           : "border-border-soft bg-surface-2 text-text-faint hover:text-text"
@@ -35,7 +35,7 @@ export function VisibilityToggle({
 /** Read-only indicator for a row someone else owns, shown only when visible (invisible rows never appear in another member's view at all). */
 export function VisibilityBadge() {
   return (
-    <span className="rounded-full border border-border-soft bg-surface-2 px-2.5 py-1 text-[11px] font-medium text-text-faint">
+    <span className="rounded-full border border-border-soft bg-surface-2 px-2.5 py-1 text-[12px] font-medium text-text-faint">
       Visible to you
     </span>
   );

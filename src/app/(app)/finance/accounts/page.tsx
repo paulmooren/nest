@@ -113,7 +113,7 @@ export default function AccountsPage() {
 
       {assets && assets.length > 0 && (
         <>
-          <p className="mt-4 mb-2 text-[10.5px] font-semibold tracking-[0.09em] text-text-faint uppercase">
+          <p className="mt-4 mb-2 text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">
             Assets
           </p>
           {groupOrder(members, currentUserId)
@@ -121,7 +121,7 @@ export default function AccountsPage() {
             .map((ownerId) => (
               <div key={ownerId ?? "shared"}>
                 {members.length > 1 && (
-                  <p className="mt-3 mb-1 text-[10.5px] font-medium text-text-faint">
+                  <p className="mt-3 mb-1 text-[12px] font-medium text-text-faint">
                     {groupLabel(ownerId, members, currentUserId)}
                   </p>
                 )}
@@ -151,7 +151,7 @@ export default function AccountsPage() {
 
       {liabilities && liabilities.length > 0 && (
         <>
-          <p className="mt-4 mb-2 text-[10.5px] font-semibold tracking-[0.09em] text-text-faint uppercase">
+          <p className="mt-4 mb-2 text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">
             Liabilities
           </p>
           {groupOrder(members, currentUserId)
@@ -159,7 +159,7 @@ export default function AccountsPage() {
             .map((ownerId) => (
               <div key={ownerId ?? "shared"}>
                 {members.length > 1 && (
-                  <p className="mt-3 mb-1 text-[10.5px] font-medium text-text-faint">
+                  <p className="mt-3 mb-1 text-[12px] font-medium text-text-faint">
                     {groupLabel(ownerId, members, currentUserId)}
                   </p>
                 )}
