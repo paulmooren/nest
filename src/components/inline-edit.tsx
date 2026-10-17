@@ -47,6 +47,7 @@ export function InlineEdit({
       <span className="grid w-fit max-w-full min-w-0">
         <span
           aria-hidden
+          data-inline-edit-mirror
           className={`invisible col-start-1 row-start-1 overflow-hidden whitespace-pre ${className}`}
         >
           {draft || placeholder || " "}
@@ -91,7 +92,7 @@ export function InlineEdit({
       type="button"
       onClick={() => setDraft(editValue ?? value)}
       aria-label={`${ariaLabel}: ${value || "empty"}, click to change`}
-      className={`${buttonClassName} ${className}`}
+      className={`${buttonClassName} ${className} -my-3 py-3 md:my-0 md:py-0`}
     >
       {value ? (display ?? value) : <span className="text-text-faint">{placeholder}</span>}
     </Button>

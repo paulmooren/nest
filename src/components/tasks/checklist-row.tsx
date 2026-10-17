@@ -7,7 +7,9 @@ import { CheckIcon, TrashIcon } from "@/components/action-icons";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { InlineEdit } from "@/components/inline-edit";
 import { AssigneeAvatar } from "@/components/tasks/assignee-avatar";
-import { PriorityPill } from "@/components/tasks/priority-pill";
+import { Avatar } from "@/components/avatar";
+import { PRIORITIES, PriorityPill } from "@/components/tasks/priority-pill";
+import { TaskSheet } from "@/components/tasks/task-sheet";
 import type { Member, Task, TaskPriority } from "@/components/tasks/types";
 
 /**
@@ -35,16 +37,20 @@ export function ChecklistRow({
 }) {
   const done = !!task.completedAt;
   const [confirming, setConfirming] = useState(false);
+  // On a phone the title opens a sheet with everything editable; the pill, avatar and bin are desktop controls.
+  const [sheetOpen, setSheetOpen] = useState(false);
   const multiMember = members.length > 1;
+  const owner = members.find((m) => m.user.id === task.ownerId);
+  const priority = PRIORITIES.find((p) => p.value === task.priority)!;
 
   return (
-    <div className="group flex items-center gap-3 border-b border-border-soft px-6 py-2.5 transition-colors last:border-b-0 hover:bg-surface-hover">
+    <div className="group flex min-h-[56px] items-center gap-3 border-b border-border-soft px-4 py-2.5 transition-colors last:border-b-0 hover:bg-surface-hover md:min-h-0 md:px-6">
       <Button
         type="button"
         onClick={onToggle}
         aria-label={done ? "Mark as not done" : "Mark as done"}
         aria-pressed={done}
-        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border transition-colors ${
+        className={`tap-target flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border transition-colors ${
           done ? "border-good bg-good text-white" : "border-border text-transparent hover:border-good hover:text-good"
         }`}
       >
@@ -60,30 +66,64 @@ export function ChecklistRow({
           onCommit={(title) => onUpdate({ title })}
           display={<span className={done ? "line-through" : ""}>{task.title}</span>}
           className={`text-[14px] font-medium ${done ? "text-text-faint" : ""}`}
-          buttonClassName="block w-full cursor-pointer truncate text-left"
+          buttonClassName="hidden w-full cursor-pointer truncate text-left md:block"
         />
-      </div>
-
-      <PriorityPill value={task.priority} onChange={(priority) => onUpdate({ priority })} muted={done} />
-
-      {multiMember && (
-        <AssigneeAvatar
-          ownerId={task.ownerId}
-          members={members}
-          currentUserId={currentUserId}
-          onChange={(ownerId) => onUpdate({ ownerId })}
-        />
-      )}
-
-      {!compact && (
         <Button
           type="button"
-          onClick={() => setConfirming(true)}
-          aria-label={`Delete ${task.title}`}
-          className="h-4 w-4 shrink-0 text-text-faint hover:text-critical"
+          onClick={() => setSheetOpen(true)}
+          aria-label={`Edit ${task.title}`}
+          className={`line-clamp-2 min-h-[var(--tap)] w-full py-1 text-left text-[16px] font-medium md:hidden ${done ? "text-text-faint line-through" : ""}`}
         >
-          <TrashIcon />
+          {task.title}
         </Button>
+      </div>
+
+      <span className="hidden items-center gap-3 md:flex">
+        <PriorityPill value={task.priority} onChange={(priority) => onUpdate({ priority })} muted={done} />
+
+        {multiMember && (
+          <AssigneeAvatar
+            ownerId={task.ownerId}
+            members={members}
+            currentUserId={currentUserId}
+            onChange={(ownerId) => onUpdate({ ownerId })}
+          />
+        )}
+
+        {!compact && (
+          <Button
+            type="button"
+            onClick={() => setConfirming(true)}
+            aria-label={`Delete ${task.title}`}
+            className="h-4 w-4 shrink-0 text-text-faint hover:text-critical"
+          >
+            <TrashIcon />
+          </Button>
+        )}
+      </span>
+
+      {/* Phone: read-only hints; change them in the sheet. */}
+      <span className="flex items-center gap-2 md:hidden" aria-hidden>
+        <span className={`block h-2.5 w-2.5 rounded-full ${done ? "opacity-40" : ""}`} style={{ background: priority.dot }} />
+        {multiMember && owner && <Avatar name={owner.user.name || owner.user.email} image={owner.user.image} size={28} />}
+      </span>
+
+      {sheetOpen && (
+        <TaskSheet
+          task={task}
+          members={members}
+          currentUserId={currentUserId}
+          onUpdate={onUpdate}
+          onDelete={
+            compact
+              ? undefined
+              : () => {
+                  setSheetOpen(false);
+                  setConfirming(true);
+                }
+          }
+          onClose={() => setSheetOpen(false)}
+        />
       )}
 
       {confirming && (

@@ -8,12 +8,12 @@ import { Avatar } from "@/components/avatar";
 import { useModules } from "@/components/use-modules";
 import { PAGE_ACTIONS_ID } from "@/components/page-actions";
 import { DemoBadge } from "@/components/demo-badge";
+import { NavDrawer } from "@/components/nav-drawer";
 import type { ModuleKey } from "@/lib/modules";
 
 import {
   DashboardIcon,
   ListIcon,
-  SettingsIcon,
   TasksIcon,
   TransactionsIcon,
   VaultIcon,
@@ -36,10 +36,10 @@ function greeting() {
 }
 
 /**
- * The frame of the app: a light-grey shell (sidebar, bottom bar) around one
+ * The frame of the app: a light-grey shell (sidebar) around one
  * white content panel, so the eye lands on the content, not the navigation.
  * On desktop the panel floats inside the shell with rounded corners; on a
- * phone it runs edge to edge and only the bottom bar stays grey.
+ * phone it runs edge to edge and the menu drawer is the only grey.
  */
 export function AppShell({
   userName,
@@ -60,7 +60,7 @@ export function AppShell({
   const title = section?.href === "/dashboard" || !section ? `${greeting()}, ${userName}` : section.label;
 
   return (
-    <div className="flex min-h-screen bg-bg">
+    <div className="flex min-h-dvh bg-bg">
       {/* Desktop sidebar — same grey as the shell, no panel of its own */}
       <nav className="fixed inset-y-0 left-0 z-20 hidden w-[240px] flex-col px-5 pt-7 pb-5 md:flex">
         <div className="mb-9 flex items-center gap-2.5 px-2">
@@ -104,39 +104,21 @@ export function AppShell({
         </Link>
       </nav>
 
-      {/* Mobile bottom bar — the one grey strip left on a phone */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-around border-t border-border-soft bg-bg px-1.5 py-2 md:hidden [padding-bottom:calc(0.5rem+env(safe-area-inset-bottom))]">
-        {[...NAV_ITEMS, { href: "/settings", label: "More", Icon: SettingsIcon }].map(
-          ({ href, label, Icon }) => {
-            const active = pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex flex-col items-center gap-1 px-1.5 py-1.5 sm:px-2.5 ${
-                  active ? "text-text" : "text-text-faint"
-                }`}
-              >
-                <span className="block h-5 w-5">
-                  <Icon active={active} />
-                </span>
-                <span className="text-[10.5px]">{label}</span>
-              </Link>
-            );
-          },
-        )}
-      </nav>
-
       <main className="w-full min-w-0 md:ml-[240px] md:py-3 md:pr-3">
-        <div className="min-h-screen bg-surface px-4 pt-7 pb-28 md:min-h-[calc(100vh-1.5rem)] md:rounded-[24px] md:px-10 md:pt-9 md:pb-14">
+        <div className="min-h-dvh bg-surface px-4 pt-0 pb-28 md:min-h-[calc(100dvh-1.5rem)] md:rounded-[24px] md:px-10 md:pt-9 md:pb-14">
           <div className="mx-auto max-w-[1180px]">
-            <div className="mb-7 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <h1 className="font-display text-[26px] font-bold tracking-tight md:text-[32px]">{title}</h1>
+            {/* On a phone the title bar (with the menu button) sticks to the top and the page's actions float at the bottom (see PageActions). No backdrop-filter on the bar: it would become the containing block of the fixed actions. */}
+            <div className="sticky top-0 z-10 -mx-4 mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-border-soft bg-surface px-4 py-2 md:static md:mx-0 md:mb-7 md:border-0 md:bg-transparent md:p-0">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 md:gap-x-4 md:gap-y-2">
+                <NavDrawer items={NAV_ITEMS} userName={userName} image={me?.image} />
+                <h1 className="font-display text-[20px] font-bold tracking-tight md:text-[32px]">{title}</h1>
                 <DemoBadge />
               </div>
               {/* Pages put their main actions here with <PageActions>. */}
-              <div id={PAGE_ACTIONS_ID} className="flex flex-wrap items-center gap-2" />
+              <div
+                id={PAGE_ACTIONS_ID}
+                className="fixed right-3 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-10 flex w-fit max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-end gap-2 rounded-2xl border border-border-soft bg-surface/95 p-2 shadow-lg backdrop-blur empty:hidden md:static md:z-auto md:flex-wrap md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none [&_button]:min-h-[var(--tap)] [&_button]:whitespace-nowrap md:[&_button]:min-h-0"
+              />
             </div>
             {children}
           </div>

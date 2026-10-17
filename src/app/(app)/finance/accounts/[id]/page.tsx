@@ -93,7 +93,7 @@ export default function AccountDetailPage() {
       <section className="md:-mx-6">
         <div className="overflow-x-auto">
           <div className="min-w-[640px]">
-            <div className="flex items-center gap-3.5 px-6 pt-5 pb-2.5 text-[10.5px] font-semibold tracking-[0.08em] text-text-faint uppercase">
+            <div className="flex items-center gap-3.5 px-6 pt-5 pb-2.5 text-[12px] font-semibold tracking-[0.08em] text-text-faint uppercase">
               <span className="block w-[3px] shrink-0" />
               <div className="min-w-0 flex-1" />
               <div className={COL_DATE}>Date</div>

@@ -46,7 +46,7 @@ export function Tip({
             anchor={anchorToChild ? () => triggerRef.current?.firstElementChild ?? null : undefined}
           >
             <Tooltip.Popup
-              className={`pointer-events-none rounded-lg bg-text px-2.5 py-1.5 text-[11.5px] font-medium whitespace-nowrap text-bg shadow-lg ${className}`}
+              className={`pointer-events-none rounded-lg bg-text px-2.5 py-1.5 text-[12px] font-medium whitespace-nowrap text-bg shadow-lg ${className}`}
             >
               {label}
             </Tooltip.Popup>

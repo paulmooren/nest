@@ -31,7 +31,7 @@ export default async function SignUpPage({
           </span>
         </div>
 
-        <p className="mb-2 text-[11px] font-semibold tracking-[0.11em] text-accent uppercase">
+        <p className="mb-2 text-[12px] font-semibold tracking-[0.11em] text-accent uppercase">
           Create account
         </p>
         <h1 className="mb-6 font-display font-bold tracking-tight text-[26px]">Join Nest</h1>
@@ -46,12 +46,18 @@ export default async function SignUpPage({
           <Input
             type="text"
             name="name"
+            autoComplete="name"
+            enterKeyHint="next"
             placeholder="Your name (optional)"
             className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] text-text placeholder:text-text-faint outline-none focus:border-accent"
           />
           <Input
             type="email"
             name="email"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            enterKeyHint="next"
             required
             placeholder="you@example.com"
             className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] text-text placeholder:text-text-faint outline-none focus:border-accent"
@@ -59,6 +65,8 @@ export default async function SignUpPage({
           <Input
             type="password"
             name="password"
+            autoComplete="new-password"
+            enterKeyHint="go"
             required
             minLength={8}
             placeholder="Password (min. 8 characters)"

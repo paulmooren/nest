@@ -39,7 +39,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
   });
   return (
     <div className="mx-auto max-w-[440px] rounded-[20px] border border-border-soft bg-surface p-7">
-      <p className="mb-1 text-[11px] font-semibold tracking-[0.11em] text-accent uppercase">
+      <p className="mb-1 text-[12px] font-semibold tracking-[0.11em] text-accent uppercase">
         Step {Math.min(step, 2)} of 2
       </p>
 
@@ -67,31 +67,32 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
               name="name"
               required
               placeholder="Account name, e.g. Checking"
-              className="rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
+              className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
             />
             <Input
               name="institution"
               placeholder="Bank (optional)"
-              className="rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
+              className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
             />
             <SelectField
               name="type"
               defaultValue="CHECKING"
               options={ACCOUNT_TYPES.map((t) => ({ value: t, label: ACCOUNT_TYPE_LABELS[t] }))}
-              className="rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
+              className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
             />
             <Input
               name="startingBalance"
               type="number"
               step="0.01"
+              inputMode="decimal"
               required
               placeholder="Starting balance (€)"
-              className="rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
+              className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
             />
             <Button
               type="submit"
               disabled={createAccount.isPending || !me}
-              className="mt-1 rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink hover:opacity-90 disabled:opacity-60"
+              className="mt-1 min-h-[var(--tap-primary)] rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink hover:opacity-90 disabled:opacity-60"
             >
               Continue
             </Button>
@@ -124,7 +125,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
               name="merchant"
               required
               placeholder="Description, e.g. Supermarket"
-              className="rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
+              className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
             />
             <div className="flex gap-3">
               <SelectField
@@ -135,15 +136,16 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
                   { value: "INCOME", label: "Income" },
                 ]}
                 wrapperClassName="flex-1"
-                className="rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
+                className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
               />
               <Input
                 name="amount"
                 type="number"
                 step="0.01"
+              inputMode="decimal"
                 required
                 placeholder="Amount (€)"
-                className="flex-1 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
+                className="flex-1 min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
               />
             </div>
             <SelectField
@@ -153,26 +155,26 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
                 { value: "", label: "Category (optional)" },
                 ...(categories ?? []).map((c) => ({ value: c.id, label: c.name })),
               ]}
-              className="rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
+              className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
             />
             <Input
               name="date"
               type="date"
               defaultValue={new Date().toISOString().slice(0, 10)}
-              className="rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
+              className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
             />
             <div className="mt-1 flex gap-3">
               <Button
                 type="button"
                 onClick={() => setStep(4)}
-                className="flex-1 rounded-xl border border-border-soft py-2.5 text-[14px] font-medium text-text-muted hover:text-text"
+                className="flex-1 min-h-[var(--tap-primary)] rounded-xl border border-border-soft py-2.5 text-[14px] font-medium text-text-muted hover:text-text"
               >
                 Skip
               </Button>
               <Button
                 type="submit"
                 disabled={createTransaction.isPending}
-                className="flex-1 rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink hover:opacity-90 disabled:opacity-60"
+                className="flex-1 min-h-[var(--tap-primary)] rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink hover:opacity-90 disabled:opacity-60"
               >
                 Continue
               </Button>
@@ -189,7 +191,7 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
           </p>
           <Button
             onClick={onComplete}
-            className="w-full rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink hover:opacity-90"
+            className="w-full min-h-[var(--tap-primary)] rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink hover:opacity-90"
           >
             Go to dashboard
           </Button>

@@ -29,7 +29,7 @@ export default async function SignInPage({
           </span>
         </div>
 
-        <p className="mb-2 text-[11px] font-semibold tracking-[0.11em] text-accent uppercase">
+        <p className="mb-2 text-[12px] font-semibold tracking-[0.11em] text-accent uppercase">
           Sign in
         </p>
         <h1 className="mb-6 font-display font-bold tracking-tight text-[26px]">Welcome to Nest</h1>
@@ -92,7 +92,7 @@ function SignInOptions() {
 
         <div className="my-5 flex items-center gap-3">
           <div className="h-px flex-1 bg-border-soft" />
-          <span className="text-[11px] font-medium uppercase tracking-wide text-text-faint">or</span>
+          <span className="text-[12px] font-medium uppercase tracking-wide text-text-faint">or</span>
           <div className="h-px flex-1 bg-border-soft" />
         </div>
 
@@ -100,6 +100,10 @@ function SignInOptions() {
           <Input
             type="email"
             name="email"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            enterKeyHint="next"
             required
             placeholder="you@example.com"
             className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] text-text placeholder:text-text-faint outline-none focus:border-accent"
@@ -107,6 +111,8 @@ function SignInOptions() {
           <Input
             type="password"
             name="password"
+            autoComplete="current-password"
+            enterKeyHint="go"
             required
             placeholder="Password"
             className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] text-text placeholder:text-text-faint outline-none focus:border-accent"

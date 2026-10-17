@@ -5,8 +5,10 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@base-ui/react/button";
 import { Input } from "@base-ui/react/input";
+import type { inferRouterOutputs } from "@trpc/server";
 
 import { trpc } from "@/trpc/react";
+import type { AppRouter } from "@/server/api/root";
 import { useRefresh } from "@/trpc/optimistic";
 import { formatEUR, formatDate } from "@/lib/format";
 import { TRANSFER_COLOR } from "@/lib/constants";
@@ -41,10 +43,16 @@ import { useCategoryAssign } from "@/components/finance/use-category-assign";
 import { AFTER_BULK_TRANSACTION_CHANGE, useTransactionActions } from "@/components/finance/use-transactions";
 import { groupLabel, type Member } from "@/components/finance/ownership-groups";
 import { useConfirm } from "@/components/confirm-dialog";
+import { useIsPhone } from "@/components/use-media-query";
+import { PopoverMenu, MenuItem } from "@/components/popover-menu";
+import { TransactionFilterSheet } from "@/components/finance/transaction-filter-sheet";
+import { TransactionSheet } from "@/components/finance/transaction-sheet";
 
 type TxType = "EXPENSE" | "INCOME" | "TRANSFER";
 
 const PAGE_SIZE = 200;
+/** Phones load fewer rows at a time: a long list is slow to scroll and hard to find anything in. */
+const PHONE_PAGE_SIZE = 50;
 
 const COL_DATE = "w-[100px] shrink-0";
 const COL_CATEGORY = "w-[160px] shrink-0";
@@ -74,7 +82,11 @@ function TransactionsPageInner() {
   const [accountFilter, setAccountFilter] = useState(searchParams.get("account") ?? "");
   const [filters, setFilters] = useState<TransactionFilters>(NO_FILTERS);
   const filtering = hasFilters(filters);
-  const [limit, setLimit] = useState(PAGE_SIZE);
+  const isPhone = useIsPhone();
+  const [pages, setPages] = useState(1);
+  const pageSize = isPhone ? PHONE_PAGE_SIZE : PAGE_SIZE;
+  const limit = pageSize * pages;
+  const [openTransactionId, setOpenTransactionId] = useState<string | null>(null);
   const [imported, setImported] = useState<ImportResult | null>(null);
   const { data: recurring } = trpc.recurring.list.useQuery();
   const [recurringFor, setRecurringFor] = useState<RecurringSource | null>(null);
@@ -132,7 +144,7 @@ function TransactionsPageInner() {
     <div className="flex flex-col gap-5">
       {categoryToast}
       <PageActions>
-        {removableCount > 0 && !filtering && (
+        {!isPhone && removableCount > 0 && !filtering && (
           <Button
             onClick={async () => {
               const scope = filteredAccount ? `on ${filteredAccount.name}` : "on your accounts";
@@ -151,12 +163,14 @@ function TransactionsPageInner() {
             Remove all
           </Button>
         )}
-        <Button
-          onClick={() => setMode("import")}
-          className="rounded-xl border border-border bg-surface px-4 py-2.5 text-[13.5px] font-medium hover:bg-surface-hover"
-        >
-          Import CSV
-        </Button>
+        {!isPhone && (
+          <Button
+            onClick={() => setMode("import")}
+            className="rounded-xl border border-border bg-surface px-4 py-2.5 text-[13.5px] font-medium hover:bg-surface-hover"
+          >
+            Import CSV
+          </Button>
+        )}
         <Button
           onClick={() => setMode("manual")}
           className="rounded-xl bg-accent-fill px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink hover:opacity-90"
@@ -166,7 +180,59 @@ function TransactionsPageInner() {
       </PageActions>
 
       <section>
-        {/* Accounts on the left, what to look for on the right. */}
+        {isPhone ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <TransactionFilterSheet
+              filters={filters}
+              onChange={(next) => {
+                setFilters(next);
+                setPages(1);
+              }}
+              categories={categories ?? []}
+              accounts={(accounts ?? []).map((a) => ({
+                id: a.id,
+                label: multiMember ? `${a.name} · ${groupLabel(a.ownerId, members, currentUserId)}` : a.name,
+              }))}
+              accountFilter={accountFilter}
+              onAccountChange={(id) => {
+                setAccountFilter(id);
+                setPages(1);
+              }}
+            />
+            <span className="ml-auto">
+              <PopoverMenu
+                trigger={
+                  <Button
+                    type="button"
+                    aria-label="More actions"
+                    className="flex h-[var(--tap)] w-[var(--tap)] items-center justify-center rounded-full bg-surface-2 text-[20px] leading-none text-text"
+                  >
+                    ⋯
+                  </Button>
+                }
+              >
+                <MenuItem onClick={() => setMode("import")}>Import CSV</MenuItem>
+                {removableCount > 0 && !filtering && (
+                  <MenuItem
+                    onClick={async () => {
+                      const scope = filteredAccount ? `on ${filteredAccount.name}` : "on your accounts";
+                      if (
+                        await confirm({
+                          title: `Delete all transactions ${scope}?`,
+                          description: "This cannot be undone and will reset the affected account balances.",
+                        })
+                      ) {
+                        removeAllTransactions.mutate(accountFilter ? { accountId: accountFilter } : undefined);
+                      }
+                    }}
+                  >
+                    <span className="text-critical">Remove all</span>
+                  </MenuItem>
+                )}
+              </PopoverMenu>
+            </span>
+          </div>
+        ) : (
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           {accounts && accounts.length > 1 && (
             <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by account">
@@ -203,11 +269,12 @@ function TransactionsPageInner() {
             filters={filters}
             onChange={(next) => {
               setFilters(next);
-              setLimit(PAGE_SIZE);
+              setPages(1);
             }}
             categories={categories ?? []}
           />
         </div>
+        )}
 
         {filtering && transactions && (
           <FilterSummary transactions={transactions} limit={limit} />
@@ -292,9 +359,32 @@ function TransactionsPageInner() {
           </Toast>
         )}
 
+        {isPhone && (
+          <PhoneTransactionList
+            transactions={transactions}
+            filtering={filtering}
+            accountFilter={accountFilter}
+            members={members}
+            multiMember={multiMember}
+            currentUserId={currentUserId}
+            categories={categories ?? []}
+            recurringById={recurringById}
+            limit={limit}
+            onLoadMore={() => setPages((p) => p + 1)}
+            openId={openTransactionId}
+            onOpen={setOpenTransactionId}
+            onAssignCategory={assignCategory}
+            onMarkRecurring={setRecurringFor}
+            onDelete={async (id) => {
+              if (await confirm({ title: "Delete this transaction?" })) transactionActions.remove(id);
+            }}
+          />
+        )}
+
+        {!isPhone && (
         <div className="-mx-4 mt-5 overflow-x-auto border-t border-border-soft md:-mx-6">
           <div className="min-w-[640px]">
-            <div className="flex items-center gap-3.5 px-6 pt-5 pb-2.5 text-[10.5px] font-semibold tracking-[0.08em] text-text-faint uppercase">
+            <div className="flex items-center gap-3.5 px-6 pt-5 pb-2.5 text-[12px] font-semibold tracking-[0.08em] text-text-faint uppercase">
               <span className="block w-[3px] shrink-0" />
               <div className="min-w-0 flex-1" />
               <div className={COL_DATE}>Date</div>
@@ -336,7 +426,7 @@ function TransactionsPageInner() {
                   <div className="min-w-0 flex-1">
                     <div className={`truncate ${CELL_TEXT} font-medium`}>{label}</div>
                     {multiMember && (
-                      <div className="flex items-center gap-1.5 truncate text-[11px] text-text-faint">
+                      <div className="flex items-center gap-1.5 truncate text-[12px] text-text-faint">
                         {multiMember && (
                           <span className="truncate">
                             {t.account.name} · {groupLabel(t.account.ownerId, members, currentUserId)}
@@ -443,7 +533,7 @@ function TransactionsPageInner() {
             {transactions && transactions.length >= limit && (
               <Button
                 type="button"
-                onClick={() => setLimit((l) => l + PAGE_SIZE)}
+                onClick={() => setPages((p) => p + 1)}
                 className="block w-full px-6 py-3.5 text-left text-[13px] font-medium text-accent hover:opacity-80"
               >
                 Showing the latest {transactions.length} — load more
@@ -451,6 +541,7 @@ function TransactionsPageInner() {
             )}
           </div>
         </div>
+        )}
       </section>
     </div>
   );
@@ -937,3 +1028,190 @@ function FileIcon() {
   );
 }
 
+
+type TransactionRows = inferRouterOutputs<AppRouter>["transaction"]["list"];
+type RecurringItems = inferRouterOutputs<AppRouter>["recurring"]["list"];
+
+const dayKey = (date: Date | string) => new Date(date).toISOString().slice(0, 10);
+
+/** "Today", "Yesterday", "Mon 12 Oct" (with the year when it isn't this one). Dates are calendar days held as UTC midnight. */
+function dayLabel(key: string) {
+  const now = new Date();
+  const local = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (key === local(now)) return "Today";
+  if (key === local(yesterday)) return "Yesterday";
+  const date = new Date(`${key}T00:00:00Z`);
+  return date.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    ...(date.getUTCFullYear() === now.getFullYear() ? {} : { year: "numeric" }),
+    timeZone: "UTC",
+  });
+}
+
+/**
+ * The phone's transaction list: grouped by day, each row a merchant with its category and account underneath and
+ * the amount always in view on the right. Tapping a row opens the sheet with everything you can do to it.
+ */
+function PhoneTransactionList({
+  transactions,
+  filtering,
+  accountFilter,
+  members,
+  multiMember,
+  currentUserId,
+  categories,
+  recurringById,
+  limit,
+  onLoadMore,
+  openId,
+  onOpen,
+  onAssignCategory,
+  onMarkRecurring,
+  onDelete,
+}: {
+  transactions: TransactionRows | undefined;
+  filtering: boolean;
+  accountFilter: string;
+  members: Member[];
+  multiMember: boolean;
+  currentUserId: string;
+  categories: { id: string; name: string; color: string }[];
+  recurringById: Map<string, RecurringItems[number]>;
+  limit: number;
+  onLoadMore: () => void;
+  openId: string | null;
+  onOpen: (id: string | null) => void;
+  onAssignCategory: (id: string, categoryId: string | null) => void;
+  onMarkRecurring: (source: RecurringSource) => void;
+  onDelete: (id: string) => void;
+}) {
+  const groups: { key: string; rows: TransactionRows }[] = [];
+  for (const t of transactions ?? []) {
+    const key = dayKey(t.date);
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.rows.push(t);
+    else groups.push({ key, rows: [t] });
+  }
+
+  const describe = (t: TransactionRows[number]) => {
+    const isTransfer = t.type === "TRANSFER";
+    const inflow = t.type === "INCOME" || (isTransfer && !!accountFilter && t.transferToAccountId === accountFilter);
+    const label =
+      isTransfer && accountFilter
+        ? t.transferToAccountId === accountFilter
+          ? `Transfer from ${t.account.name}`
+          : `Transfer to ${t.transferToAccount?.name ?? "another account"}`
+        : t.merchant;
+    const recurringItem = t.recurringItemId && !t.recurringExcluded ? recurringById.get(t.recurringItemId) : undefined;
+    const accountLine = multiMember ? `${t.account.name} · ${groupLabel(t.account.ownerId, members, currentUserId)}` : t.account.name;
+    return { isTransfer, inflow, label, recurringItem, accountLine };
+  };
+
+  const open = transactions?.find((t) => t.id === openId);
+  const openInfo = open && describe(open);
+
+  return (
+    <div className="mt-4 -mx-4 border-t border-border-soft">
+      {transactions?.length === 0 && (
+        <p className="px-4 py-6 text-[15px] text-text-muted">{filtering ? "No transactions match these filters." : "No transactions yet."}</p>
+      )}
+
+      {groups.map((group) => (
+        <section key={group.key} aria-label={dayLabel(group.key)}>
+          <h2 className="px-4 pt-4 pb-1 text-[13px] font-semibold text-text-muted">{dayLabel(group.key)}</h2>
+          {group.rows.map((t) => {
+            const { isTransfer, inflow, label, recurringItem } = describe(t);
+            return (
+              <Button
+                key={t.id}
+                type="button"
+                onClick={() => onOpen(t.id)}
+                aria-label={`${label}, ${inflow ? "+" : "−"} ${formatEUR(Number(t.amount))}. Open details`}
+                className="flex min-h-[60px] w-full items-center gap-3 border-b border-border-soft px-4 py-2 text-left last:border-b-0"
+              >
+                <span
+                  className="block h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ background: isTransfer ? TRANSFER_COLOR : (t.category?.color ?? "#c7c9cf") }}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1.5">
+                    <span className="truncate text-[16px] font-medium">{label}</span>
+                    {recurringItem && (
+                      <span className="block h-3.5 w-3.5 shrink-0 text-good" role="img" aria-label="Recurring">
+                        <RepeatIcon />
+                      </span>
+                    )}
+                  </span>
+                  <span className="block truncate text-[13px] text-text-muted">
+                    {isTransfer ? "Transfer" : (t.category?.name ?? "No category")}
+                    {multiMember && ` · ${t.account.name}`}
+                  </span>
+                </span>
+                <span
+                  className={`shrink-0 text-[16px] font-semibold tabular-nums ${inflow && !isTransfer ? "text-good" : isTransfer ? "text-text-muted" : ""}`}
+                >
+                  {inflow ? "+" : "−"} {formatEUR(Number(t.amount))}
+                </span>
+              </Button>
+            );
+          })}
+        </section>
+      ))}
+
+      {transactions && transactions.length >= limit && (
+        <Button
+          type="button"
+          onClick={onLoadMore}
+          className="block min-h-[var(--tap-primary)] w-full px-4 text-center text-[15px] font-medium text-accent"
+        >
+          Showing the latest {transactions.length} · load more
+        </Button>
+      )}
+
+      {open && openInfo && (
+        <TransactionSheet
+          label={openInfo.label}
+          amount={Number(open.amount)}
+          inflow={openInfo.inflow}
+          type={open.type as "EXPENSE" | "INCOME" | "TRANSFER"}
+          date={open.date}
+          accountLine={openInfo.accountLine}
+          categoryId={open.categoryId}
+          categoryName={open.category?.name ?? null}
+          categories={categories}
+          canEdit={open.account.ownerId === null || open.account.ownerId === currentUserId}
+          recurringText={
+            openInfo.recurringItem
+              ? `Recurring · ${describeSchedule(openInfo.recurringItem.intervalCount, openInfo.recurringItem.intervalUnit).replace(/^Every /, "every ")}`
+              : null
+          }
+          onCategory={(categoryId) => onAssignCategory(open.id, categoryId)}
+          onMarkRecurring={() => {
+            onOpen(null);
+            onMarkRecurring({
+              id: open.id,
+              merchant: open.merchant,
+              type: open.type as "EXPENSE" | "INCOME" | "TRANSFER",
+              amount: Number(open.amount),
+              date: open.date,
+              categoryId: open.categoryId,
+              accountId: open.accountId,
+              accountName: open.account.name,
+              toAccountId: open.transferToAccountId,
+              toAccountName: open.transferToAccount?.name,
+            });
+          }}
+          onDelete={() => {
+            onOpen(null);
+            onDelete(open.id);
+          }}
+          onClose={() => onOpen(null)}
+        />
+      )}
+    </div>
+  );
+}

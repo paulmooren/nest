@@ -79,7 +79,7 @@ export function ExpenseSections<T extends GroupedItem>({
     <SortableBoard sections={sections.map((s) => ({ id: s.id, ids: s.entries.map((e) => e.item.id) }))} onDrop={handleDrop}>
       {sections.map((section) => (
         <div key={section.id}>
-          <div className="group/heading flex items-baseline justify-between gap-3 px-6 pt-4 pb-1">
+          <div className="group/heading flex items-center justify-between gap-3 px-4 pt-3 pb-0 md:items-baseline md:px-6 md:pt-4 md:pb-1">
             <div className="flex min-w-0 items-center gap-1.5">
               {section.group ? (
                 <>
@@ -88,7 +88,8 @@ export function ExpenseSections<T extends GroupedItem>({
                     ariaLabel="Group name"
                     maxLength={60}
                     onCommit={(name) => name.trim() && name.trim() !== section.group!.name && onRename(section.group!.id, name.trim())}
-                    className="text-[12.5px] font-semibold"
+                    className="text-[14px] font-semibold md:text-[12.5px]"
+                    buttonClassName="flex min-h-[var(--tap)] max-w-full items-center truncate text-left md:block md:min-h-0"
                   />
                   <Button
                     type="button"
@@ -97,17 +98,19 @@ export function ExpenseSections<T extends GroupedItem>({
                     }}
                     aria-label={`Delete group ${section.group.name}`}
                     title="Delete group"
-                    className="h-3.5 w-3.5 shrink-0 text-text-faint hover:text-critical"
+                    className="-ml-1 flex h-11 w-11 shrink-0 items-center justify-center text-text-faint hover:text-critical md:ml-0 md:h-3.5 md:w-3.5"
                   >
-                    <TrashIcon />
+                    <span className="block h-3.5 w-3.5">
+                      <TrashIcon />
+                    </span>
                   </Button>
                 </>
               ) : (
-                <span className="text-[12.5px] font-semibold text-text-muted">Other</span>
+                <span className="text-[14px] font-semibold text-text-muted md:text-[12.5px]">Other</span>
               )}
             </div>
             {section.entries.length > 0 && (
-              <p className="shrink-0 text-[11px] text-text-muted tabular-nums">
+              <p className="shrink-0 text-[12px] text-text-muted tabular-nums">
                 {formatEUR(section.entries.reduce((sum, e) => sum + monthlyOf(e.item), 0))} / mo
               </p>
             )}
@@ -115,7 +118,7 @@ export function ExpenseSections<T extends GroupedItem>({
           <SortableSection
             id={section.id}
             ids={section.entries.map((e) => e.item.id)}
-            empty={<p className="px-6 py-3 text-[12.5px] text-text-faint">Drag an item here, or choose this group when you edit one.</p>}
+            empty={<p className="px-4 py-3 text-[13px] text-text-faint md:px-6 md:text-[12.5px]">Drag an item here, or choose this group when you edit one.</p>}
           >
             {section.entries.map(renderRow)}
           </SortableSection>
@@ -135,7 +138,7 @@ export function AddGroup({ onAdd, error }: { onAdd: (name: string) => void; erro
       <Button
         type="button"
         onClick={() => setOpen(true)}
-        className="px-6 py-3 text-left text-[12.5px] text-text-faint transition-colors hover:text-text"
+        className="min-h-[var(--tap)] px-4 py-3 text-left text-[14px] text-text-faint transition-colors hover:text-text md:px-6 md:text-[12.5px]"
       >
         + Add group
       </Button>
@@ -143,7 +146,7 @@ export function AddGroup({ onAdd, error }: { onAdd: (name: string) => void; erro
   }
   return (
     <form
-      className="flex items-center gap-2 px-6 py-2.5"
+      className="flex flex-wrap items-center gap-2 px-4 py-2.5 md:px-6"
       onSubmit={(e) => {
         e.preventDefault();
         if (!name.trim()) return;
@@ -161,10 +164,10 @@ export function AddGroup({ onAdd, error }: { onAdd: (name: string) => void; erro
         aria-label="New group name"
         className="min-w-0 flex-1 rounded-lg border border-border-soft bg-surface px-3 py-1.5 text-[13px] outline-none focus:border-text-faint"
       />
-      <Button type="submit" className="rounded-lg bg-accent-fill px-3 py-1.5 text-[12.5px] font-semibold text-accent-ink">
+      <Button type="submit" className="min-h-[var(--tap)] rounded-lg bg-accent-fill px-4 py-1.5 text-[14px] font-semibold text-accent-ink md:min-h-0 md:px-3 md:text-[12.5px]">
         Add
       </Button>
-      <Button type="button" onClick={() => setOpen(false)} className="text-[12.5px] text-text-muted hover:text-text">
+      <Button type="button" onClick={() => setOpen(false)} className="min-h-[var(--tap)] px-2 text-[14px] text-text-muted hover:text-text md:min-h-0 md:px-0 md:text-[12.5px]">
         Cancel
       </Button>
       {error && <span className="text-[12px] text-critical">{error}</span>}

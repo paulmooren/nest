@@ -124,7 +124,7 @@ export function WishRow({
           wish.claimedByMe ? (
             <>
               <span className="rounded-full bg-good/15 px-2.5 py-1 text-good">You&apos;re getting this</span>
-              <Button type="button" onClick={onUnclaim} className="text-text-muted hover:text-text">
+              <Button type="button" onClick={onUnclaim} className="min-h-[var(--tap)] px-1 text-text-muted hover:text-text md:min-h-0 md:px-0">
                 Unclaim
               </Button>
             </>
@@ -136,7 +136,7 @@ export function WishRow({
             <Button
               type="button"
               onClick={onClaim}
-              className="rounded-full border border-border px-3.5 py-1.5 text-text hover:border-text"
+              className="min-h-[var(--tap)] rounded-full border border-border px-4 py-1.5 text-text hover:border-text md:min-h-0 md:px-3.5"
             >
               I&apos;ll get this
             </Button>
@@ -151,7 +151,7 @@ export function WishRow({
             <Button
               type="button"
               onClick={() => onSetReceived(!received)}
-              className="text-accent hover:opacity-80"
+              className="min-h-[var(--tap)] px-1 text-accent hover:opacity-80 md:min-h-0 md:px-0"
             >
               {received ? "Undo" : "Mark received"}
             </Button>
@@ -160,18 +160,22 @@ export function WishRow({
                 type="button"
                 onClick={() => setEditing(true)}
                 aria-label={`Edit ${wish.title}`}
-                className="h-4 w-4 text-text-faint hover:text-text"
+                className="flex h-11 w-11 items-center justify-center text-text-faint hover:text-text md:h-4 md:w-4"
               >
-                <PencilIcon />
+                <span className="block h-4 w-4">
+                  <PencilIcon />
+                </span>
               </Button>
             )}
             <Button
               type="button"
               onClick={onDelete}
               aria-label={`Delete ${wish.title}`}
-              className="h-4 w-4 text-text-faint hover:text-critical"
+              className="-mr-2 flex h-11 w-11 items-center justify-center text-text-faint hover:text-critical md:mr-0 md:h-4 md:w-4"
             >
-              <TrashIcon />
+              <span className="block h-4 w-4">
+                <TrashIcon />
+              </span>
             </Button>
           </>
         )}

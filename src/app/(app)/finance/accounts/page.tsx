@@ -14,6 +14,7 @@ import { groupLabel, groupOrder, type Member } from "@/components/finance/owners
 import { AFTER_ACCOUNT_CREATED, ibanProblem, useAccountActions } from "@/components/finance/use-accounts";
 import { VisibilityToggle } from "@/components/finance/visibility-toggle";
 import { Modal, ModalFooter } from "@/components/modal";
+import { ChoiceChips, SheetField } from "@/components/choice-chips";
 import { Field, SelectInput, inputClass } from "@/components/settings/form";
 import { useConfirm } from "@/components/confirm-dialog";
 
@@ -70,7 +71,7 @@ export default function AccountsPage() {
             setEditingAccount(null);
             setShowAccountForm(true);
           }}
-          className="text-[12.5px] font-medium text-accent hover:opacity-80"
+          className="min-h-[var(--tap)] px-2 text-[15px] font-medium text-accent hover:opacity-80 md:min-h-0 md:px-0 md:text-[12.5px]"
         >
           + Add account
         </Button>
@@ -113,7 +114,7 @@ export default function AccountsPage() {
 
       {assets && assets.length > 0 && (
         <>
-          <p className="mt-4 mb-2 text-[10.5px] font-semibold tracking-[0.09em] text-text-faint uppercase">
+          <p className="mt-4 mb-2 text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">
             Assets
           </p>
           {groupOrder(members, currentUserId)
@@ -121,7 +122,7 @@ export default function AccountsPage() {
             .map((ownerId) => (
               <div key={ownerId ?? "shared"}>
                 {members.length > 1 && (
-                  <p className="mt-3 mb-1 text-[10.5px] font-medium text-text-faint">
+                  <p className="mt-3 mb-1 text-[12px] font-medium text-text-faint">
                     {groupLabel(ownerId, members, currentUserId)}
                   </p>
                 )}
@@ -151,7 +152,7 @@ export default function AccountsPage() {
 
       {liabilities && liabilities.length > 0 && (
         <>
-          <p className="mt-4 mb-2 text-[10.5px] font-semibold tracking-[0.09em] text-text-faint uppercase">
+          <p className="mt-4 mb-2 text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">
             Liabilities
           </p>
           {groupOrder(members, currentUserId)
@@ -159,7 +160,7 @@ export default function AccountsPage() {
             .map((ownerId) => (
               <div key={ownerId ?? "shared"}>
                 {members.length > 1 && (
-                  <p className="mt-3 mb-1 text-[10.5px] font-medium text-text-faint">
+                  <p className="mt-3 mb-1 text-[12px] font-medium text-text-faint">
                     {groupLabel(ownerId, members, currentUserId)}
                   </p>
                 )}
@@ -211,9 +212,11 @@ function AccountRow({
   const isLiability = !(ASSET_ACCOUNT_TYPES as readonly string[]).includes(account.type);
   const isOwnPersonal = account.ownerId === currentUserId;
   const canEdit = account.ownerId === null || account.ownerId === currentUserId;
+  // On a phone the visibility pill, Edit and Delete move behind a "⋯" button into a sheet.
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
-    <div className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-surface-hover">
+    <div className="flex min-h-[60px] items-center gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-surface-hover">
       <Link
         href={`/finance/accounts/${account.id}`}
         className="flex min-w-0 flex-1 items-center gap-3"
@@ -224,21 +227,78 @@ function AccountRow({
           </span>
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[13.5px] font-medium hover:underline">{account.name}</div>
-          <div className="truncate text-[12px] text-text-muted">
+          <div className="truncate text-[16px] font-medium hover:underline md:text-[13.5px]">{account.name}</div>
+          <div className="truncate text-[13px] text-text-muted md:text-[12px]">
             {account.institution || ACCOUNT_TYPE_LABELS[account.type as AccountType]}
           </div>
         </div>
       </Link>
       {isOwnPersonal && (
-        <VisibilityToggle visible={account.visibleToHousehold} onChange={onToggleVisibility} />
+        <span className="hidden md:block">
+          <VisibilityToggle visible={account.visibleToHousehold} onChange={onToggleVisibility} />
+        </span>
       )}
-      <div className="text-[14px] font-semibold tabular-nums whitespace-nowrap">
+      <div className="text-[16px] font-semibold tabular-nums whitespace-nowrap md:text-[14px]">
         {isLiability ? "−" : ""}
         {formatEUR(Math.abs(balance))}
       </div>
       {canEdit && (
-        <div className="flex gap-1">
+        <Button
+          type="button"
+          onClick={() => setSheetOpen(true)}
+          aria-label={`${account.name}: more actions`}
+          className="-mr-2 flex h-[var(--tap)] w-[var(--tap)] shrink-0 items-center justify-center rounded-full text-[20px] leading-none text-text-muted md:hidden"
+        >
+          ⋯
+        </Button>
+      )}
+      {sheetOpen && (
+        <Modal title={account.name} onClose={() => setSheetOpen(false)}>
+          <div className="flex flex-col gap-5">
+            <p className="font-display text-[32px] font-bold tracking-tight tabular-nums">
+              {isLiability ? "−" : ""}
+              {formatEUR(Math.abs(balance))}
+            </p>
+            {isOwnPersonal && (
+              <SheetField label="Visibility">
+                <ChoiceChips
+                  label="Visibility"
+                  value={account.visibleToHousehold ? "visible" : "private"}
+                  onChange={(v) => onToggleVisibility(v === "visible")}
+                  options={[
+                    { value: "private", label: "Private" },
+                    { value: "visible", label: "Visible to household" },
+                  ]}
+                />
+              </SheetField>
+            )}
+          </div>
+          <ModalFooter>
+            <Button
+              type="button"
+              onClick={() => {
+                setSheetOpen(false);
+                onEdit();
+              }}
+              className="min-h-[var(--tap-primary)] flex-1 rounded-xl bg-accent-fill px-5 text-[15px] font-semibold text-accent-ink"
+            >
+              Edit
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setSheetOpen(false);
+                onDelete();
+              }}
+              className="min-h-[var(--tap-primary)] rounded-xl border border-border-soft px-5 text-[15px] font-medium text-critical"
+            >
+              Delete
+            </Button>
+          </ModalFooter>
+        </Modal>
+      )}
+      {canEdit && (
+        <div className="hidden gap-1 md:flex">
           <Button
             onClick={onEdit}
             className="rounded-lg px-2 py-1 text-[12px] text-text-muted hover:bg-surface-2 hover:text-text"

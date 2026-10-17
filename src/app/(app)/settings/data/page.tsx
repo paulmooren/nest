@@ -40,13 +40,13 @@ export default function DataSettingsPage() {
       <div className="flex flex-wrap gap-3">
         <Button
           onClick={exportCsv}
-          className="rounded-xl border border-border-soft px-5 py-2.5 text-[13.5px] font-medium hover:bg-surface-2"
+          className="rounded-xl border border-border-soft min-h-[var(--tap)] px-5 py-2.5 text-[13.5px] font-medium hover:bg-surface-2"
         >
           Transactions (CSV)
         </Button>
         <Button
           onClick={exportJson}
-          className="rounded-xl border border-border-soft px-5 py-2.5 text-[13.5px] font-medium hover:bg-surface-2"
+          className="rounded-xl border border-border-soft min-h-[var(--tap)] px-5 py-2.5 text-[13.5px] font-medium hover:bg-surface-2"
         >
           All data (JSON)
         </Button>
@@ -76,7 +76,7 @@ function ResetDemo() {
         <Button
           onClick={() => reset.mutate()}
           disabled={reset.isPending}
-          className="rounded-xl bg-accent-fill px-5 py-2.5 text-[13.5px] font-semibold text-accent-ink hover:opacity-90 disabled:opacity-60"
+          className="rounded-xl bg-accent-fill min-h-[var(--tap)] px-5 py-2.5 text-[13.5px] font-semibold text-accent-ink hover:opacity-90 disabled:opacity-60"
         >
           {reset.isPending ? "Resetting…" : "Reset demo"}
         </Button>

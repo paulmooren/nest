@@ -76,7 +76,7 @@ function Wishlists() {
                 setChoice(m.user.id);
                 setAdding(false);
               }}
-              className={`inline-flex h-9 items-center gap-2 rounded-full border pr-4 pl-1.5 text-[13.5px] font-medium transition-colors ${
+              className={`inline-flex h-11 items-center gap-2 rounded-full border pr-4 pl-1.5 text-[14px] md:h-9 md:text-[13.5px] font-medium transition-colors ${
                 isActive
                   ? "border-text bg-text text-bg"
                   : "border-transparent bg-surface-2 text-text-muted hover:bg-border-soft hover:text-text"
@@ -94,7 +94,7 @@ function Wishlists() {
             setChoice(HOME);
             setAdding(false);
           }}
-          className={`inline-flex h-9 items-center rounded-full border px-4 text-[13.5px] font-medium transition-colors ${
+          className={`inline-flex h-11 items-center rounded-full border px-4 text-[14px] md:h-9 md:text-[13.5px] font-medium transition-colors ${
             isHome
               ? "border-text bg-text text-bg"
               : "border-transparent bg-surface-2 text-text-muted hover:bg-border-soft hover:text-text"
@@ -178,7 +178,7 @@ function Wishlists() {
                 className="flex w-full items-center justify-between border-t border-border-soft bg-surface-2 px-4 py-2.5 text-left md:px-6"
                 aria-expanded={showReceived}
               >
-                <span className="text-[10.5px] font-semibold tracking-[0.09em] text-text-faint uppercase">
+                <span className="text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">
                   Received · {received.length}
                 </span>
                 <span className="text-[12.5px] font-medium text-accent">{showReceived ? "Hide" : "Show"}</span>

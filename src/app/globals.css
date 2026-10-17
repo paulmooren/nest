@@ -27,6 +27,11 @@
   --cat-transport: #7fb8e8;
   --cat-shopping: #f19abf;
   --cat-transfer: #8d9099;
+
+  /* Mobile foundations (docs/mobile/strategy.md). */
+  --tap: 44px; /* minimum touch target; primary actions use --tap-primary */
+  --tap-primary: 48px;
+  --surface-pressed: #ececee;
 }
 
 @theme inline {
@@ -48,12 +53,28 @@
   --color-warn: var(--warn);
   --color-critical: var(--critical);
 
+  --color-surface-pressed: var(--surface-pressed);
+
+  /* Type scale: 12px is the floor for text; inputs are always 16px (see the touch rule below). */
+  --text-caption: 12px;
+  --text-meta: 13px;
+  --text-secondary: 14px;
+  --text-body: 16px;
+  --text-heading: 18px;
+  --text-title: 24px;
+
   --font-sans: var(--font-instrument-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-display: var(--font-plus-jakarta), var(--font-instrument-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 html {
   color-scheme: light;
+}
+
+html {
+  /* No 300ms double-tap-to-zoom delay, no grey flash on tap. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -80,6 +101,55 @@ button:disabled,
 @layer utilities {
   .tabular-nums {
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Grows the tappable area to the 44px minimum without changing how the element looks:
+     put it on a small icon button or checkbox. The element needs to be positioned (relative/absolute/fixed). */
+  .tap-target {
+    position: relative;
+  }
+  .tap-target::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, var(--tap));
+    height: max(100%, var(--tap));
+    transform: translate(-50%, -50%);
+  }
+
+  /* Padding that clears the home indicator / notch. */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Touch screens. Unlayered on purpose, so it wins over the text-[14px]-style utilities. */
+@media (pointer: coarse) {
+  /* iOS Safari zooms the page when a focused text field is under 16px, and doesn't zoom back. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="file"]),
+  textarea,
+  select,
+  [data-inline-edit-mirror] {
+    font-size: 16px;
+  }
+
+  /* Pressed feedback: touch has no hover, so without this a tap shows nothing until the result lands. */
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active,
+  a[href]:active {
+    opacity: 0.7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
   }
 }
 

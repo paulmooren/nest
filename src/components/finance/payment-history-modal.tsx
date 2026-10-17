@@ -81,7 +81,7 @@ export function PaymentHistoryModal({ itemId, onClose }: { itemId: string; onClo
                     label={
                       <>
                         {formatEUR(p.amount)}
-                        <span className="block text-[10.5px] font-normal text-bg/70">
+                        <span className="block text-[12px] font-normal text-bg/70">
                           {DAY.format(new Date(p.date))}
                           {p.excluded && " · set aside"}
                         </span>
@@ -102,7 +102,7 @@ export function PaymentHistoryModal({ itemId, onClose }: { itemId: string; onClo
                       />
                     </div>
                   </Tip>
-                  <span className="text-[10px] text-text-faint">{MONTH.format(new Date(p.date))}</span>
+                  <span className="text-[12px] text-text-faint">{MONTH.format(new Date(p.date))}</span>
                 </div>
               );
             })}
@@ -110,7 +110,7 @@ export function PaymentHistoryModal({ itemId, onClose }: { itemId: string; onClo
         </div>
 
         <div>
-          <p className="mb-2 text-[10.5px] font-semibold tracking-[0.09em] text-text-faint uppercase">
+          <p className="mb-2 text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">
             What to budget
           </p>
           <RadioGroup<BudgetBasis>
@@ -138,7 +138,7 @@ export function PaymentHistoryModal({ itemId, onClose }: { itemId: string; onClo
                   </Radio.Root>
                   <div className="min-w-0 flex-1">
                     <p className="text-[13.5px] font-medium">{BASIS_LABELS[b].title}</p>
-                    <p className="text-[11.5px] text-text-muted">{BASIS_LABELS[b].hint}</p>
+                    <p className="text-[12px] text-text-muted">{BASIS_LABELS[b].hint}</p>
                   </div>
                   {b === "FIXED" ? (
                     <Input
@@ -173,7 +173,7 @@ export function PaymentHistoryModal({ itemId, onClose }: { itemId: string; onClo
         </div>
 
         <div>
-          <p className="mb-1 text-[10.5px] font-semibold tracking-[0.09em] text-text-faint uppercase">Payments</p>
+          <p className="mb-1 text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">Payments</p>
           <p className="mb-2 text-[12px] text-text-muted">
             A one-off (a bonus, a refund)? Set it aside: it stays a transaction but no longer counts here.
           </p>

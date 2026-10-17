@@ -22,7 +22,7 @@ export function Checkbox({
       checked={checked}
       onCheckedChange={(next) => onChange(next)}
       disabled={disabled}
-      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border border-border bg-surface transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent data-disabled:opacity-60 ${className}`}
+      className={`tap-target flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border border-border bg-surface transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent data-disabled:opacity-60 ${className}`}
     >
       <BaseCheckbox.Indicator className="flex text-accent-ink">
         <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>

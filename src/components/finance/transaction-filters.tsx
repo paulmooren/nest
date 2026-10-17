@@ -29,7 +29,7 @@ export function hasFilters(f: TransactionFilters) {
 
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-const PRESETS: { label: string; range: () => { from: string; to: string } }[] = [
+export const PRESETS: { label: string; range: () => { from: string; to: string } }[] = [
   {
     label: "Last 7 days",
     range: () => {
@@ -80,7 +80,7 @@ const PRESETS: { label: string; range: () => { from: string; to: string } }[] = 
 
 const shortDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-function dateSummary(f: TransactionFilters) {
+export function dateSummary(f: TransactionFilters) {
   if (f.dateLabel) return f.dateLabel;
   if (f.from && f.to) return `${shortDate(f.from)} – ${shortDate(f.to)}`;
   if (f.from) return `From ${shortDate(f.from)}`;
@@ -88,7 +88,7 @@ function dateSummary(f: TransactionFilters) {
   return "";
 }
 
-function amountSummary(f: TransactionFilters) {
+export function amountSummary(f: TransactionFilters) {
   const { minAmount: min, maxAmount: max } = f;
   if (min !== undefined && max !== undefined) return `${formatEUR(min)} – ${formatEUR(max)}`;
   if (min !== undefined) return `At least ${formatEUR(min)}`;
@@ -235,7 +235,7 @@ function DatePanel({
           onApply({ from, to, dateLabel: undefined });
         }}
       >
-        <p className="mb-2 text-[11px] font-semibold tracking-[0.08em] text-text-faint uppercase">Custom range</p>
+        <p className="mb-2 text-[12px] font-semibold tracking-[0.08em] text-text-faint uppercase">Custom range</p>
         <div className="flex items-center gap-2">
           <Input
             type="date"
@@ -287,7 +287,7 @@ function AmountPanel({
         onApply({ minAmount: read(form, "min"), maxAmount: read(form, "max") });
       }}
     >
-      <p className="mb-2 text-[11px] font-semibold tracking-[0.08em] text-text-faint uppercase">Amount</p>
+      <p className="mb-2 text-[12px] font-semibold tracking-[0.08em] text-text-faint uppercase">Amount</p>
       <div className="flex items-center gap-2">
         <Input
           name="min"
@@ -307,7 +307,7 @@ function AmountPanel({
           className="min-w-0 flex-1 rounded-lg border border-border-soft bg-surface px-2.5 py-2 text-[13px] tabular-nums outline-none placeholder:text-text-faint focus:border-accent"
         />
       </div>
-      <p className="mt-2 text-[11.5px] text-text-muted">Income and expenses alike, ignoring the minus sign.</p>
+      <p className="mt-2 text-[12px] text-text-muted">Income and expenses alike, ignoring the minus sign.</p>
       <Button
         type="submit"
         className="mt-3 w-full rounded-lg bg-accent-fill px-4 py-2 text-[13px] font-semibold text-accent-ink hover:opacity-90"
@@ -363,7 +363,7 @@ function FilterChipWithPanel({
               type="button"
               onClick={onClear}
               aria-label={`Clear ${label.toLowerCase()} filter`}
-              className="mr-1 flex h-6 w-6 items-center justify-center rounded-full text-[11px] text-bg/80 hover:bg-white/15"
+              className="mr-1 flex h-6 w-6 items-center justify-center rounded-full text-[12px] text-bg/80 hover:bg-white/15"
             >
               ✕
             </Button>

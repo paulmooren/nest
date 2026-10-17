@@ -41,7 +41,7 @@ export function HouseholdSetupForm() {
         <span className="pl-[2px] font-display text-[21px] font-bold text-accent-ink">N</span>
       </div>
 
-      <p className="mb-2 text-[11px] font-semibold tracking-[0.11em] text-accent uppercase">
+      <p className="mb-2 text-[12px] font-semibold tracking-[0.11em] text-accent uppercase">
         Household setup
       </p>
       <h1 className="mb-2 font-display font-bold tracking-tight text-[26px]">Set up your household</h1>
@@ -54,7 +54,7 @@ export function HouseholdSetupForm() {
         <Button
           type="button"
           onClick={() => setMode("create")}
-          className={`flex-1 rounded-lg py-2 text-[13px] font-medium transition-colors ${
+          className={`min-h-[var(--tap)] flex-1 rounded-lg py-2 text-[13px] font-medium transition-colors ${
             mode === "create" ? "bg-surface text-text" : "text-text-muted hover:text-text"
           }`}
         >
@@ -63,7 +63,7 @@ export function HouseholdSetupForm() {
         <Button
           type="button"
           onClick={() => setMode("join")}
-          className={`flex-1 rounded-lg py-2 text-[13px] font-medium transition-colors ${
+          className={`min-h-[var(--tap)] flex-1 rounded-lg py-2 text-[13px] font-medium transition-colors ${
             mode === "join" ? "bg-surface text-text" : "text-text-muted hover:text-text"
           }`}
         >
@@ -84,12 +84,12 @@ export function HouseholdSetupForm() {
             name="name"
             required
             placeholder="e.g. The Mooren Household"
-            className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] text-text placeholder:text-text-faint outline-none focus:border-accent"
+            className="w-full min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] text-text placeholder:text-text-faint outline-none focus:border-accent"
           />
           <Button
             type="submit"
             disabled={pending}
-            className="w-full rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="w-full min-h-[var(--tap-primary)] rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
           >
             {create.isPending ? "Creating…" : "Create household"}
           </Button>
@@ -108,12 +108,12 @@ export function HouseholdSetupForm() {
             required
             defaultValue={prefillCode}
             placeholder="Invite code"
-            className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] tracking-[0.08em] text-text uppercase placeholder:text-text-faint placeholder:normal-case outline-none focus:border-accent"
+            className="w-full min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] tracking-[0.08em] text-text uppercase placeholder:text-text-faint placeholder:normal-case outline-none focus:border-accent"
           />
           <Button
             type="submit"
             disabled={pending}
-            className="w-full rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="w-full min-h-[var(--tap-primary)] rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
           >
             {join.isPending ? "Joining…" : "Join household"}
           </Button>

@@ -24,7 +24,7 @@ export default async function ForgotPasswordPage({ searchParams }: { searchParam
               Enter your email and we&apos;ll send you a link to choose a new one.
             </p>
             <form action={requestPasswordReset} className="flex flex-col gap-3">
-              <Input type="email" name="email" required placeholder="you@example.com" className={authInputClass} />
+              <Input type="email" name="email" autoComplete="username" autoCapitalize="none" spellCheck={false} enterKeyHint="go" required placeholder="you@example.com" className={authInputClass} />
               <Button type="submit" className={authPrimaryButtonClass}>
                 Send reset link
               </Button>
