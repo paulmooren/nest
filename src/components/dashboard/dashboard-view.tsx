@@ -8,7 +8,6 @@ import { useModules } from "@/components/use-modules";
 import { MissingStatementsCard } from "@/components/dashboard/missing-statements-card";
 import { ShoppingCard } from "@/components/dashboard/shopping-card";
 import { TasksSnapshot } from "@/components/dashboard/tasks-snapshot";
-import { NetWorthSnapshot } from "@/components/dashboard/net-worth-snapshot";
 import { OnboardingWizard } from "@/components/dashboard/onboarding-wizard";
 
 export function DashboardView() {
@@ -48,14 +47,17 @@ export function DashboardView() {
     );
   }
 
-  // The glance (net worth) leads; the two working lists sit side by side on a wide screen.
+  // The two working lists sit side by side on a wide screen; on a phone Tasks comes first.
   return (
     <div className="flex flex-col gap-5">
       {finance && <MissingStatementsCard />}
-      {finance && <NetWorthSnapshot />}
       <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
         {shopping && <ShoppingCard />}
-        {(tasks || vault) && <TasksSnapshot showTasks={tasks} showVault={vault} />}
+        {(tasks || vault) && (
+          <div className="max-lg:order-first">
+            <TasksSnapshot showTasks={tasks} showVault={vault} />
+          </div>
+        )}
       </div>
     </div>
   );

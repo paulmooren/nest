@@ -36,6 +36,7 @@ import { parseMoney } from "@/lib/money";
 import { VisibilityToggle, VisibilityBadge } from "@/components/finance/visibility-toggle";
 import { InlineSelect } from "@/components/ui/select";
 import { ChoiceChips, SheetField } from "@/components/choice-chips";
+import { useIsPhone } from "@/components/use-media-query";
 import { Modal, ModalFooter } from "@/components/modal";
 
 type TxType = "EXPENSE" | "INCOME" | "TRANSFER";
@@ -620,7 +621,7 @@ function RecurringColumn({
 
   return (
     <section className="overflow-hidden rounded-[20px] border border-border-soft bg-surface">
-      <div className="px-6 pt-6 pb-4">
+      <div className="px-4 pt-6 pb-4 md:px-6">
         <h2 className="mb-1 text-[15px] font-semibold">{title}</h2>
         <p className={`font-display font-bold tracking-tight text-[22px] tabular-nums ${totalClass}`}>
           {formatEUR(total)} <span className="text-[13px] font-sans text-text-muted">/ month</span>
@@ -637,7 +638,7 @@ function RecurringColumn({
       {multiMember
         ? groups.map(({ ownerId, groupItems }) => (
             <div key={ownerId ?? "shared"}>
-              <div className="flex items-baseline justify-between px-6 pt-3 pb-1">
+              <div className="flex items-baseline justify-between px-4 pt-3 pb-1 md:px-6">
                 <p className="text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">
                   {groupLabel(ownerId, members, currentUserId)}
                 </p>
@@ -722,6 +723,8 @@ function RecurringRow({
   const notSeen = item.nextDueDate !== null && new Date(item.nextDueDate).getTime() < todayInHousehold().getTime();
   const isOwn = item.ownerId === currentUserId;
   const canEdit = item.ownerId === null || isOwn;
+  // On a phone there is no handle: press and hold anywhere on the row, then drag.
+  const phone = useIsPhone();
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
     disabled: !canEdit || editing,
@@ -752,9 +755,10 @@ function RecurringRow({
     <>
     <div
       ref={setNodeRef}
+      {...(phone && canEdit ? listeners : {})}
       // Up and down only: the row follows the pointer vertically.
       style={{ transform: CSS.Transform.toString(transform ? { ...transform, x: 0 } : null), transition }}
-      className={`relative flex items-center gap-3 border-b border-border-soft px-4 py-3 transition-colors last:border-b-0 hover:bg-surface-hover md:px-6 ${
+      className={`relative flex items-center gap-3 border-b border-border-soft px-4 py-3.5 transition-colors last:border-b-0 hover:bg-surface-hover max-md:select-none max-md:[-webkit-touch-callout:none] md:px-6 ${
         isDragging ? "z-10 bg-surface shadow-lg" : ""
       }`}
     >
@@ -767,12 +771,12 @@ function RecurringRow({
           {...listeners}
           aria-label={`Reorder ${item.name}`}
           title="Drag to reorder"
-          className="-ml-4 -mr-1 flex h-11 w-11 shrink-0 cursor-grab touch-none items-center justify-center rounded text-text-faint hover:text-text active:cursor-grabbing md:-ml-3 md:mr-0 md:h-6 md:w-5"
+          className={`-ml-3 hidden h-6 w-5 shrink-0 cursor-grab touch-none items-center justify-center rounded text-text-faint hover:text-text active:cursor-grabbing md:flex`}
         >
           <GripIcon />
         </Button>
       ) : (
-        <span className="-ml-4 -mr-1 block w-11 shrink-0 md:-ml-3 md:mr-0 md:w-5" aria-hidden />
+        <span className="hidden shrink-0 md:-ml-3 md:block md:w-5" aria-hidden />
       )}
       <span
         className="block w-[3px] shrink-0 self-stretch rounded-full"
@@ -791,15 +795,19 @@ function RecurringRow({
             item.name
           )}
         </div>
-        <Button
-          type="button"
-          onClick={() => setSheetOpen(true)}
-          aria-label={`${item.name}: open details`}
-          className="block min-h-[var(--tap)] w-full py-1 text-left text-[16px] font-medium md:hidden"
-        >
-          {item.name}
-        </Button>
-        <div className="text-[13px] text-text-muted md:mt-1 md:text-[12px]">
+        {/* Phone: name and amount share the first line, the schedule sits under them at full width. */}
+        <div className="flex items-start justify-between gap-3 md:hidden">
+          <Button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            aria-label={`${item.name}: open details`}
+            className="flex min-h-[var(--tap)] min-w-0 flex-1 items-center text-left text-[16px] leading-snug font-medium"
+          >
+            {item.name}
+          </Button>
+          <span className="flex min-h-[var(--tap)] shrink-0 items-center text-[16px] font-semibold tabular-nums">{formatEUR(item.amount)}</span>
+        </div>
+        <div className="mt-0.5 text-[13px] leading-snug text-text-muted md:mt-1 md:text-[12px]">
           {isTransfer && (
             <>
               {side === "EXPENSE"
@@ -874,7 +882,6 @@ function RecurringRow({
       ) : (
         <div className="hidden text-[14px] font-semibold tabular-nums md:block">{formatEUR(item.amount)}</div>
       )}
-      <div className="shrink-0 text-[16px] font-semibold tabular-nums md:hidden">{formatEUR(item.amount)}</div>
       <div className="hidden items-center gap-3 md:flex">
         {item.ownerId !== null &&
           (isOwn ? (
