@@ -29,7 +29,7 @@ export function hasFilters(f: TransactionFilters) {
 
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-const PRESETS: { label: string; range: () => { from: string; to: string } }[] = [
+export const PRESETS: { label: string; range: () => { from: string; to: string } }[] = [
   {
     label: "Last 7 days",
     range: () => {
@@ -80,7 +80,7 @@ const PRESETS: { label: string; range: () => { from: string; to: string } }[] = 
 
 const shortDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-function dateSummary(f: TransactionFilters) {
+export function dateSummary(f: TransactionFilters) {
   if (f.dateLabel) return f.dateLabel;
   if (f.from && f.to) return `${shortDate(f.from)} – ${shortDate(f.to)}`;
   if (f.from) return `From ${shortDate(f.from)}`;
@@ -88,7 +88,7 @@ function dateSummary(f: TransactionFilters) {
   return "";
 }
 
-function amountSummary(f: TransactionFilters) {
+export function amountSummary(f: TransactionFilters) {
   const { minAmount: min, maxAmount: max } = f;
   if (min !== undefined && max !== undefined) return `${formatEUR(min)} – ${formatEUR(max)}`;
   if (min !== undefined) return `At least ${formatEUR(min)}`;
