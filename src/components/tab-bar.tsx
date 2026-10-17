@@ -34,8 +34,8 @@ export function TabBar({ tabs, label = "Sections" }: { tabs: Tab[]; label?: stri
             ref={active ? activeRef : undefined}
             href={tab.href}
             aria-current={active ? "page" : undefined}
-            className={`flex min-h-[var(--tap)] shrink-0 items-center justify-center gap-2 rounded-[9px] px-3.5 text-[14px] font-medium whitespace-nowrap transition-colors md:min-h-0 md:rounded-none md:border-b-2 md:pt-0 md:pb-3 md:text-[13.5px] ${
-              equal ? "flex-1 md:flex-none" : ""
+            className={`flex min-h-[var(--tap)] shrink-0 items-center justify-center gap-2 rounded-[9px] px-1.5 text-[13px] sm:px-3.5 sm:text-[14px] font-medium whitespace-nowrap transition-colors md:min-h-0 md:rounded-none md:border-b-2 md:pt-0 md:pb-3 md:text-[13.5px] ${
+              equal ? "min-w-0 flex-1 md:flex-none" : ""
             } ${
               active
                 ? "bg-surface text-text shadow-sm md:border-text md:bg-transparent md:shadow-none"

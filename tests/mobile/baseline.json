@@ -9,60 +9,64 @@
    "tinyText": 1
   },
   "dashboard": {
-   "smallTargets": 42,
-   "tinyText": 9
+   "smallTargets": 38,
+   "tinyText": 3
   },
   "budgets": {
-   "smallTargets": 49,
-   "tinyText": 30
+   "smallTargets": 45,
+   "tinyText": 24
   },
   "transactions": {
-   "smallTargets": 564,
-   "tinyText": 217
+   "smallTargets": 557,
+   "tinyText": 211
   },
   "accounts": {
-   "smallTargets": 24,
-   "tinyText": 15
+   "smallTargets": 20,
+   "tinyText": 9
   },
   "tasks": {
-   "smallTargets": 58,
-   "tinyText": 12
+   "smallTargets": 54,
+   "tinyText": 6
   },
   "shopping": {
-   "smallTargets": 37,
-   "tinyText": 8
+   "smallTargets": 33,
+   "tinyText": 2
   },
   "wishlist": {
-   "smallTargets": 20,
-   "tinyText": 11
+   "smallTargets": 16,
+   "tinyText": 5
   },
   "vault": {
-   "smallTargets": 18,
-   "tinyText": 16
+   "smallTargets": 13,
+   "tinyText": 10
+  },
+  "more": {
+   "smallTargets": 0,
+   "tinyText": 1
   },
   "settings": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   },
   "settings-profile": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   },
   "settings-categories": {
-   "smallTargets": 38,
-   "tinyText": 7
+   "smallTargets": 35,
+   "tinyText": 1
   },
   "settings-household": {
-   "smallTargets": 15,
-   "tinyText": 8
+   "smallTargets": 12,
+   "tinyText": 2
   },
   "settings-data": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   },
   "settings-notifications": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   }
  },
  "360": {
@@ -75,60 +79,64 @@
    "tinyText": 1
   },
   "dashboard": {
-   "smallTargets": 42,
-   "tinyText": 9
+   "smallTargets": 38,
+   "tinyText": 3
   },
   "budgets": {
-   "smallTargets": 49,
-   "tinyText": 30
+   "smallTargets": 45,
+   "tinyText": 24
   },
   "transactions": {
-   "smallTargets": 564,
-   "tinyText": 217
+   "smallTargets": 557,
+   "tinyText": 211
   },
   "accounts": {
-   "smallTargets": 24,
-   "tinyText": 15
+   "smallTargets": 20,
+   "tinyText": 9
   },
   "tasks": {
-   "smallTargets": 59,
-   "tinyText": 12
+   "smallTargets": 55,
+   "tinyText": 6
   },
   "shopping": {
-   "smallTargets": 37,
-   "tinyText": 8
+   "smallTargets": 33,
+   "tinyText": 2
   },
   "wishlist": {
-   "smallTargets": 20,
-   "tinyText": 11
+   "smallTargets": 16,
+   "tinyText": 5
   },
   "vault": {
-   "smallTargets": 18,
-   "tinyText": 16
+   "smallTargets": 13,
+   "tinyText": 10
+  },
+  "more": {
+   "smallTargets": 0,
+   "tinyText": 1
   },
   "settings": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   },
   "settings-profile": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   },
   "settings-categories": {
-   "smallTargets": 38,
-   "tinyText": 7
+   "smallTargets": 35,
+   "tinyText": 1
   },
   "settings-household": {
-   "smallTargets": 15,
-   "tinyText": 8
+   "smallTargets": 12,
+   "tinyText": 2
   },
   "settings-data": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   },
   "settings-notifications": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   }
  },
  "390": {
@@ -141,60 +149,64 @@
    "tinyText": 1
   },
   "dashboard": {
-   "smallTargets": 42,
-   "tinyText": 9
+   "smallTargets": 38,
+   "tinyText": 3
   },
   "budgets": {
-   "smallTargets": 49,
-   "tinyText": 30
+   "smallTargets": 45,
+   "tinyText": 24
   },
   "transactions": {
-   "smallTargets": 564,
-   "tinyText": 217
+   "smallTargets": 557,
+   "tinyText": 211
   },
   "accounts": {
-   "smallTargets": 25,
-   "tinyText": 15
+   "smallTargets": 21,
+   "tinyText": 9
   },
   "tasks": {
-   "smallTargets": 59,
-   "tinyText": 12
+   "smallTargets": 55,
+   "tinyText": 6
   },
   "shopping": {
-   "smallTargets": 37,
-   "tinyText": 8
+   "smallTargets": 33,
+   "tinyText": 2
   },
   "wishlist": {
-   "smallTargets": 20,
-   "tinyText": 11
+   "smallTargets": 16,
+   "tinyText": 5
   },
   "vault": {
-   "smallTargets": 18,
-   "tinyText": 16
+   "smallTargets": 13,
+   "tinyText": 10
+  },
+  "more": {
+   "smallTargets": 0,
+   "tinyText": 1
   },
   "settings": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   },
   "settings-profile": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   },
   "settings-categories": {
-   "smallTargets": 38,
-   "tinyText": 7
+   "smallTargets": 35,
+   "tinyText": 1
   },
   "settings-household": {
-   "smallTargets": 15,
-   "tinyText": 8
+   "smallTargets": 12,
+   "tinyText": 2
   },
   "settings-data": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   },
   "settings-notifications": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   }
  },
  "430": {
@@ -207,60 +219,64 @@
    "tinyText": 1
   },
   "dashboard": {
-   "smallTargets": 42,
-   "tinyText": 9
+   "smallTargets": 38,
+   "tinyText": 3
   },
   "budgets": {
-   "smallTargets": 52,
-   "tinyText": 30
+   "smallTargets": 48,
+   "tinyText": 24
   },
   "transactions": {
-   "smallTargets": 564,
-   "tinyText": 217
+   "smallTargets": 557,
+   "tinyText": 211
   },
   "accounts": {
-   "smallTargets": 25,
-   "tinyText": 15
+   "smallTargets": 21,
+   "tinyText": 9
   },
   "tasks": {
-   "smallTargets": 59,
-   "tinyText": 12
+   "smallTargets": 55,
+   "tinyText": 6
   },
   "shopping": {
-   "smallTargets": 37,
-   "tinyText": 8
+   "smallTargets": 33,
+   "tinyText": 2
   },
   "wishlist": {
-   "smallTargets": 20,
-   "tinyText": 11
+   "smallTargets": 16,
+   "tinyText": 5
   },
   "vault": {
-   "smallTargets": 18,
-   "tinyText": 16
+   "smallTargets": 13,
+   "tinyText": 10
+  },
+  "more": {
+   "smallTargets": 0,
+   "tinyText": 1
   },
   "settings": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   },
   "settings-profile": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   },
   "settings-categories": {
-   "smallTargets": 38,
-   "tinyText": 7
+   "smallTargets": 35,
+   "tinyText": 1
   },
   "settings-household": {
-   "smallTargets": 15,
-   "tinyText": 8
+   "smallTargets": 12,
+   "tinyText": 2
   },
   "settings-data": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   },
   "settings-notifications": {
-   "smallTargets": 7,
-   "tinyText": 7
+   "smallTargets": 4,
+   "tinyText": 1
   }
  },
  "768": {
@@ -303,6 +319,10 @@
   "vault": {
    "smallTargets": 19,
    "tinyText": 10
+  },
+  "more": {
+   "smallTargets": 5,
+   "tinyText": 1
   },
   "settings": {
    "smallTargets": 12,
