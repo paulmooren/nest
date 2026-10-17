@@ -60,7 +60,7 @@ export function AppShell({
   const title = section?.href === "/dashboard" || !section ? `${greeting()}, ${userName}` : section.label;
 
   return (
-    <div className="flex min-h-screen bg-bg">
+    <div className="flex min-h-dvh bg-bg">
       {/* Desktop sidebar — same grey as the shell, no panel of its own */}
       <nav className="fixed inset-y-0 left-0 z-20 hidden w-[240px] flex-col px-5 pt-7 pb-5 md:flex">
         <div className="mb-9 flex items-center gap-2.5 px-2">
@@ -128,7 +128,7 @@ export function AppShell({
       </nav>
 
       <main className="w-full min-w-0 md:ml-[240px] md:py-3 md:pr-3">
-        <div className="min-h-screen bg-surface px-4 pt-7 pb-28 md:min-h-[calc(100vh-1.5rem)] md:rounded-[24px] md:px-10 md:pt-9 md:pb-14">
+        <div className="min-h-dvh bg-surface px-4 pt-7 pb-28 md:min-h-[calc(100dvh-1.5rem)] md:rounded-[24px] md:px-10 md:pt-9 md:pb-14">
           <div className="mx-auto max-w-[1180px]">
             <div className="mb-7 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2">

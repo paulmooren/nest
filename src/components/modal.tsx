@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Dialog } from "@base-ui/react/dialog";
 
 import { openedByKeyboard, returnFocusTo, useOpener } from "@/components/ui/focus";
@@ -34,6 +34,10 @@ export function Modal({
   width?: string;
 }) {
   const popupRef = useRef<HTMLDivElement>(null);
+  // Swiping the grab handle down dismisses the sheet (phones only: the handle is hidden from `sm`).
+  const dragStart = useRef<number | null>(null);
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
   // Focus goes back to what opened this when it closes.
   const opener = useOpener();
 
@@ -60,13 +64,40 @@ export function Modal({
               // that didn't before, and on a phone the on-screen keyboard stays closed. Tab then reaches the fields.
               return openType === "keyboard" || openedByKeyboard(opener) ? (popup.querySelector<HTMLElement>(FIRST_FIELD) ?? popup) : popup;
             }}
-            className={`relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[24px] bg-surface shadow-2xl outline-none sm:rounded-[24px] ${width}`}
+            style={dragY > 0 ? { transform: `translateY(${dragY}px)`, transition: dragging ? "none" : "transform 200ms ease-out" } : undefined}
+            className={`relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[24px] bg-surface shadow-2xl outline-none sm:rounded-[24px] ${width}`}
           >
-            <div className="flex items-center justify-between px-6 pt-6 pb-2">
+            <div
+              aria-hidden
+              className="flex h-7 shrink-0 touch-none items-end justify-center sm:hidden"
+              onPointerDown={(e) => {
+                dragStart.current = e.clientY;
+                setDragging(true);
+                e.currentTarget.setPointerCapture(e.pointerId);
+              }}
+              onPointerMove={(e) => {
+                if (dragStart.current !== null) setDragY(Math.max(0, e.clientY - dragStart.current));
+              }}
+              onPointerUp={() => {
+                const dismiss = dragY > 100;
+                dragStart.current = null;
+                setDragging(false);
+                if (dismiss) onClose();
+                else setDragY(0);
+              }}
+              onPointerCancel={() => {
+                dragStart.current = null;
+                setDragging(false);
+                setDragY(0);
+              }}
+            >
+              <span className="mb-1 h-1 w-10 rounded-full bg-border" />
+            </div>
+            <div className="flex items-center justify-between px-6 pt-2 pb-2 sm:pt-6">
               <Dialog.Title className="font-display text-[20px] font-bold tracking-tight">{title}</Dialog.Title>
               <Dialog.Close
                 aria-label="Close"
-                className="flex h-8 w-8 items-center justify-center rounded-full text-text-muted hover:bg-surface-2 hover:text-text"
+                className="tap-target flex h-8 w-8 items-center justify-center rounded-full text-text-muted hover:bg-surface-2 hover:text-text"
               >
                 ✕
               </Dialog.Close>
@@ -87,7 +118,7 @@ export function Modal({
 export function ModalFooter({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <div
-      className={`sticky bottom-0 z-10 -mx-6 mt-6 flex items-center gap-3 border-t border-border-soft bg-surface px-6 py-4 ${className}`}
+      className={`sticky bottom-0 z-10 -mx-6 mt-6 flex items-center gap-3 border-t border-border-soft bg-surface px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] ${className}`}
     >
       {children}
     </div>

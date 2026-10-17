@@ -29,6 +29,10 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#18181b",
+  // Draw under the notch and home indicator (the bars pad themselves with env(safe-area-inset-*)),
+  // and let the on-screen keyboard shrink the layout viewport so sticky actions stay above it.
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({
