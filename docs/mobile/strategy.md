@@ -139,3 +139,24 @@ Each phase is one branch/PR and leaves the app shippable. Desktop (768 / 1280) i
 6. **Gesture appetite:** are swipe actions welcome, or keep everything tap-based?
 
 On approval I start Phase 0 and report after each phase.
+
+---
+
+## Implementation status (2026-10-17)
+
+Branch `mobile/phase-0-foundations`. Decisions taken along the way:
+
+- **Navigation is a burger menu with a left drawer**, not a bottom bar (a bottom bar fights the mobile browser's own controls). The drawer lists every destination, the settings pages and sign-out. Supersedes section 3.1 and the "More" screen.
+- **Finance keeps its name** (CONTEXT.md) instead of "Money".
+- Offline caching and queued writes are **not** done (skipped by decision); dark mode stays out of scope.
+
+| Phase | State |
+|---|---|
+| 0 Foundations | Done: viewport/safe area/dvh, tap-target and 16px-input rules, sheet with swipe-dismiss, segmented tabs, audit gate |
+| 1 Shell | Done: burger drawer, sticky title bar, floating page actions |
+| 2 Lists and Tasks | Done: row sheets, 44px targets, 12px text floor |
+| 3 Finance | Done: grouped transaction list + filter/detail sheets + 50-row paging, budget/account rows with sheets, group rows |
+| 4 Vault, Settings, Auth, Onboarding | Done: Vault reveal/⋯ sheet, 44px settings controls, auth autocomplete/enterKeyHint, onboarding sizes |
+| 5 Resilience and polish | Open: chart touch scrub, empty/error states, motion pass, Lighthouse and real-device pass |
+
+Measured with `tests/mobile/audit.mjs` at 390px: small tap targets went from ~1,100 (567 on Transactions alone) to 12; sub-12px text from ~330 to ~3; no horizontal overflow at 320-768 (`baseline.json` `knownOverflow` is empty).

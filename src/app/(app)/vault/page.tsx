@@ -14,6 +14,8 @@ import { expiryLabel } from "@/lib/vault";
 import { formatDate } from "@/lib/format";
 import { PencilIcon, TrashIcon } from "@/components/action-icons";
 import { useConfirm } from "@/components/confirm-dialog";
+import { Modal, ModalFooter } from "@/components/modal";
+import { ChoiceChips, SheetField } from "@/components/choice-chips";
 
 /** A revealed entry hides itself again after this long. */
 const AUTO_HIDE_MS = 60_000;
@@ -36,6 +38,8 @@ function Vault() {
 
   const [creating, setCreating] = useState(false);
   const [revealed, setRevealed] = useState<Record<string, Revealed>>({});
+  // On a phone, visibility, Edit and Delete sit behind a "⋯" button in a sheet.
+  const [sheetFor, setSheetFor] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
@@ -78,7 +82,7 @@ function Vault() {
         <Button
           type="button"
           onClick={() => setCreating((c) => !c)}
-          className="rounded-xl bg-accent-fill px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink hover:opacity-90"
+          className="min-h-[var(--tap-primary)] rounded-xl bg-accent-fill px-5 text-[15px] font-semibold text-accent-ink hover:opacity-90 md:min-h-0 md:px-4 md:py-2.5 md:text-[13.5px]"
         >
           {creating ? "Cancel" : "+ New entry"}
         </Button>
@@ -164,7 +168,7 @@ function Vault() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 text-[12.5px] font-medium">
+                  <div className="hidden items-center gap-3 text-[12.5px] font-medium md:flex">
                     {isMine && (
                       <VisibilityToggle
                         visible={entry.visibleToHousehold}
@@ -212,13 +216,84 @@ function Vault() {
                       </>
                     )}
                   </div>
+
+                  <div className="flex w-full items-center gap-2 md:hidden">
+                    <Button
+                      type="button"
+                      onClick={() => (data ? hide(entry.id) : show(entry.id))}
+                      disabled={!data && reveal.isPending}
+                      className="min-h-[var(--tap-primary)] flex-1 rounded-xl border border-border px-4 text-[15px] font-medium text-text disabled:opacity-60"
+                    >
+                      {data ? "Hide" : "Reveal"}
+                    </Button>
+                    {(canEdit || isMine) && (
+                      <Button
+                        type="button"
+                        onClick={() => setSheetFor(entry.id)}
+                        aria-label={`${entry.title}: more actions`}
+                        className="flex h-[var(--tap-primary)] w-[var(--tap-primary)] shrink-0 items-center justify-center rounded-xl border border-border text-[20px] leading-none text-text-muted"
+                      >
+                        ⋯
+                      </Button>
+                    )}
+                  </div>
                 </div>
+
+                {sheetFor === entry.id && (
+                  <Modal title={entry.title} onClose={() => setSheetFor(null)}>
+                    {isMine && (
+                      <SheetField label="Visibility">
+                        <ChoiceChips
+                          label="Visibility"
+                          value={entry.visibleToHousehold ? "visible" : "private"}
+                          onChange={(v) => vault.setVisibility({ id: entry.id, visible: v === "visible" })}
+                          options={[
+                            { value: "private", label: "Private" },
+                            { value: "visible", label: "Visible to household" },
+                          ]}
+                        />
+                      </SheetField>
+                    )}
+                    <ModalFooter>
+                      {canEdit && (
+                        <Button
+                          type="button"
+                          onClick={async () => {
+                            setSheetFor(null);
+                            if (!data) await show(entry.id);
+                            setEditing(entry.id);
+                          }}
+                          className="min-h-[var(--tap-primary)] flex-1 rounded-xl bg-accent-fill px-5 text-[15px] font-semibold text-accent-ink"
+                        >
+                          Edit
+                        </Button>
+                      )}
+                      {canEdit && (
+                        <Button
+                          type="button"
+                          onClick={async () => {
+                            setSheetFor(null);
+                            if (await confirm({ title: `Delete "${entry.title}" from the Vault?` })) vault.remove({ id: entry.id });
+                          }}
+                          className="min-h-[var(--tap-primary)] rounded-xl border border-border-soft px-5 text-[15px] font-medium text-critical"
+                        >
+                          Delete
+                        </Button>
+                      )}
+                      {!canEdit && (
+                        <Button type="button" onClick={() => setSheetFor(null)} className="min-h-[var(--tap-primary)] flex-1 rounded-xl bg-accent-fill px-5 text-[15px] font-semibold text-accent-ink">
+                          Done
+                        </Button>
+                      )}
+                    </ModalFooter>
+                  </Modal>
+                )}
 
                 {data && (
                   <dl className="mt-4 flex flex-col gap-2.5 border-t border-border-soft pt-4">
                     {data.fields.map((field, i) => (
                       <div key={i} className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                        <dt className="w-40 shrink-0 text-[12.5px] text-text-muted">{field.label}</dt>
+                        <dt className="w-full shrink-0 text-[13px] text-text-muted md:w-40 md:text-[12.5px]">{field.label}</dt>
                         <dd className="min-w-0 flex-1 break-all font-mono text-[14px]">{field.value}</dd>
                         <CopyButton value={field.value} />
                       </div>
@@ -252,7 +327,7 @@ function CopyButton({ value }: { value: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="text-[12px] font-medium text-accent hover:opacity-80"
+      className="min-h-[var(--tap)] px-2 text-[14px] font-medium text-accent hover:opacity-80 md:min-h-0 md:px-0 md:text-[12px]"
     >
       {copied ? "Copied" : "Copy"}
     </Button>

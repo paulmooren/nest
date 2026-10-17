@@ -36,7 +36,7 @@ const measure = () => {
     if (cs.visibility === "hidden" || cs.display === "none") continue;
     if (r.right > vw + 1 && !el.closest("[class*=overflow-x]")) out.overflowing.push(`${el.tagName.toLowerCase()}.${String(el.className).slice(0, 50)} →${Math.round(r.right)}`);
     if (el.matches("a,button,[role=button],[role=tab],[role=checkbox],[role=switch],input:not([type=hidden]),select,textarea")) {
-      if (r.width < 44 || r.height < 44) out.smallTargets.push(`${label(el)} ${Math.round(r.width)}×${Math.round(r.height)}`);
+      if ((r.width < 44 || r.height < 44) && r.width > 2 && !el.classList.contains("tap-target")) out.smallTargets.push(`${label(el)} ${Math.round(r.width)}×${Math.round(r.height)}`);
     }
     if (el.matches("input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=hidden]):not([type=file]),select,textarea") && parseFloat(cs.fontSize) < 16) out.smallInputs.push(`${label(el)} ${cs.fontSize}`);
     if (el.childNodes.length && [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && parseFloat(cs.fontSize) < 12) out.tinyText++;

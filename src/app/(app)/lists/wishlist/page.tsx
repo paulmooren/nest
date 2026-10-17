@@ -76,7 +76,7 @@ function Wishlists() {
                 setChoice(m.user.id);
                 setAdding(false);
               }}
-              className={`inline-flex h-9 items-center gap-2 rounded-full border pr-4 pl-1.5 text-[13.5px] font-medium transition-colors ${
+              className={`inline-flex h-11 items-center gap-2 rounded-full border pr-4 pl-1.5 text-[14px] md:h-9 md:text-[13.5px] font-medium transition-colors ${
                 isActive
                   ? "border-text bg-text text-bg"
                   : "border-transparent bg-surface-2 text-text-muted hover:bg-border-soft hover:text-text"
@@ -94,7 +94,7 @@ function Wishlists() {
             setChoice(HOME);
             setAdding(false);
           }}
-          className={`inline-flex h-9 items-center rounded-full border px-4 text-[13.5px] font-medium transition-colors ${
+          className={`inline-flex h-11 items-center rounded-full border px-4 text-[14px] md:h-9 md:text-[13.5px] font-medium transition-colors ${
             isHome
               ? "border-text bg-text text-bg"
               : "border-transparent bg-surface-2 text-text-muted hover:bg-border-soft hover:text-text"

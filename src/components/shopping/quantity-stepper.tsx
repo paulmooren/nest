@@ -91,7 +91,7 @@ export function QuantityPill({
           type="button"
           onClick={() => setEditing(true)}
           aria-label={`Amount ${value ?? "1"}, click to change`}
-          className="min-h-11 min-w-8 px-1 text-center text-[16px] font-semibold tabular-nums md:min-h-0 md:min-w-7 md:text-[15px]"
+          className="min-h-11 min-w-11 px-1 text-center text-[16px] font-semibold tabular-nums md:min-h-0 md:min-w-7 md:text-[15px]"
         >
           {shown}
         </Button>

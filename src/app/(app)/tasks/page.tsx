@@ -80,7 +80,7 @@ function RemindersPanel({ members, currentUserId }: { members: Member[]; current
                 type="button"
                 aria-pressed={filter === p.id}
                 onClick={() => setFilter(p.id)}
-                className={`inline-flex h-8 items-center rounded-full border px-3.5 text-[13px] font-medium transition-colors ${
+                className={`inline-flex h-11 items-center rounded-full border px-4 text-[14px] md:h-8 md:px-3.5 md:text-[13px] font-medium transition-colors ${
                   filter === p.id
                     ? "border-text bg-text text-bg"
                     : "border-transparent bg-surface-2 text-text-muted hover:bg-border-soft hover:text-text"
@@ -324,7 +324,7 @@ function TaskChecklist({
             type="button"
             onClick={() => setShowCompleted((v) => !v)}
             aria-expanded={showCompleted}
-            className="flex w-full items-center justify-between px-6 pt-4 pb-1 text-left"
+            className="flex min-h-[var(--tap)] w-full items-center justify-between px-4 pt-4 pb-1 text-left md:px-6"
           >
             <span className="text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">
               Completed · {completed.length}

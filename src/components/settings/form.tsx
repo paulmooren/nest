@@ -29,7 +29,7 @@ export function UpdateButton({
     <Button
       type="submit"
       disabled={disabled}
-      className="self-start rounded-xl bg-accent-fill px-5 py-2.5 text-[13.5px] font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:bg-surface-2 disabled:text-text-faint disabled:hover:opacity-100"
+      className="self-start rounded-xl bg-accent-fill min-h-[var(--tap)] px-5 py-2.5 text-[13.5px] font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:bg-surface-2 disabled:text-text-faint disabled:hover:opacity-100"
     >
       {children}
     </Button>

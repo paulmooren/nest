@@ -34,11 +34,11 @@ export default function CategoriesSettingsPage() {
                   categoryActions.update({ id: c.id, name: e.target.value });
                 }
               }}
-              className="flex-1 rounded-lg bg-transparent px-2 py-1 text-[13.5px] outline-none focus:bg-surface-2"
+              className="min-h-[var(--tap)] min-w-0 flex-1 rounded-lg bg-transparent px-2 py-1 text-[13.5px] outline-none focus:bg-surface-2 md:min-h-0"
             />
             <Button
               onClick={() => categoryActions.remove({ id: c.id })}
-              className="text-[12px] text-text-muted hover:text-critical"
+              className="min-h-[var(--tap)] px-2 text-[14px] text-text-muted hover:text-critical md:min-h-0 md:px-0 md:text-[12px]"
             >
               Delete
             </Button>
@@ -64,7 +64,7 @@ export default function CategoriesSettingsPage() {
         />
         <Button
           type="submit"
-          className="rounded-xl border border-border-soft px-5 py-2.5 text-[13.5px] font-medium text-text-muted hover:text-text"
+          className="rounded-xl border border-border-soft min-h-[var(--tap)] px-5 py-2.5 text-[13.5px] font-medium text-text-muted hover:text-text"
         >
           Add
         </Button>

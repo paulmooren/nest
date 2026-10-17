@@ -1,9 +1,9 @@
 /** Small pieces shared by the sign-in family of screens, so each page only holds its own words. */
 export const authInputClass =
-  "w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] text-text placeholder:text-text-faint outline-none focus:border-accent";
+  "w-full rounded-xl border border-border bg-surface min-h-[var(--tap-primary)] px-3.5 py-2.5 text-[14px] text-text placeholder:text-text-faint outline-none focus:border-accent";
 
 export const authPrimaryButtonClass =
-  "w-full rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink transition-opacity hover:opacity-90";
+  "min-h-[var(--tap-primary)] w-full rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink transition-opacity hover:opacity-90";
 
 export function AuthHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (

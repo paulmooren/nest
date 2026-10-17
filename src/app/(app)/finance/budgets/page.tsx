@@ -767,12 +767,12 @@ function RecurringRow({
           {...listeners}
           aria-label={`Reorder ${item.name}`}
           title="Drag to reorder"
-          className="-ml-3 flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded text-text-faint hover:text-text active:cursor-grabbing md:h-6 md:w-5"
+          className="-ml-4 -mr-1 flex h-11 w-11 shrink-0 cursor-grab touch-none items-center justify-center rounded text-text-faint hover:text-text active:cursor-grabbing md:-ml-3 md:mr-0 md:h-6 md:w-5"
         >
           <GripIcon />
         </Button>
       ) : (
-        <span className="-ml-3 block w-8 shrink-0 md:w-5" aria-hidden />
+        <span className="-ml-4 -mr-1 block w-11 shrink-0 md:-ml-3 md:mr-0 md:w-5" aria-hidden />
       )}
       <span
         className="block w-[3px] shrink-0 self-stretch rounded-full"

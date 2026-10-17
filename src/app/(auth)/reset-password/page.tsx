@@ -50,12 +50,14 @@ export default async function ResetPasswordPage({
           <Input
             type="password"
             name="password"
+            autoComplete="new-password"
+            enterKeyHint="next"
             required
             minLength={8}
             placeholder="New password (min. 8 characters)"
             className={authInputClass}
           />
-          <Input type="password" name="confirm" required minLength={8} placeholder="Repeat the new password" className={authInputClass} />
+          <Input type="password" name="confirm" autoComplete="new-password" enterKeyHint="go" required minLength={8} placeholder="Repeat the new password" className={authInputClass} />
           <Button type="submit" className={authPrimaryButtonClass}>
             Save password
           </Button>

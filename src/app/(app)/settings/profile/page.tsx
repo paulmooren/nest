@@ -23,7 +23,7 @@ export default function ProfileSettingsPage() {
         <form action={signOutAction}>
           <Button
             type="submit"
-            className="rounded-xl border border-border-soft px-5 py-2.5 text-[13.5px] font-medium text-critical hover:bg-surface-2"
+            className="rounded-xl border border-border-soft min-h-[var(--tap)] px-5 py-2.5 text-[13.5px] font-medium text-critical hover:bg-surface-2"
           >
             Sign out
           </Button>

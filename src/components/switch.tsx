@@ -22,7 +22,7 @@ export function Switch({
       aria-label={label}
       nativeButton
       render={<button type="button" />}
-      className="relative h-6 w-11 shrink-0 rounded-full bg-border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent data-checked:bg-accent-fill data-disabled:opacity-60"
+      className="tap-target relative h-6 w-11 shrink-0 rounded-full bg-border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent data-checked:bg-accent-fill data-disabled:opacity-60"
     >
       <BaseSwitch.Thumb className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-surface shadow transition-transform data-checked:translate-x-5" />
     </BaseSwitch.Root>

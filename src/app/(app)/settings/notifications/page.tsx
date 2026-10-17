@@ -154,7 +154,7 @@ export default function NotificationsSettingsPage() {
               type="button"
               onClick={() => sendTest.mutate()}
               disabled={sendTest.isPending || status.devices === 0}
-              className="self-start rounded-xl border border-border px-5 py-2.5 text-[13.5px] font-medium hover:bg-surface-hover disabled:text-text-faint disabled:hover:bg-transparent"
+              className="self-start rounded-xl border border-border min-h-[var(--tap)] px-5 py-2.5 text-[13.5px] font-medium hover:bg-surface-hover disabled:text-text-faint disabled:hover:bg-transparent"
             >
               {sendTest.isPending ? "Sending…" : "Send me a test notification"}
             </Button>
