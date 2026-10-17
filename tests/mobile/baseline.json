@@ -40,10 +40,6 @@
    "smallTargets": 13,
    "tinyText": 10
   },
-  "more": {
-   "smallTargets": 0,
-   "tinyText": 1
-  },
   "settings": {
    "smallTargets": 4,
    "tinyText": 1
@@ -109,10 +105,6 @@
   "vault": {
    "smallTargets": 13,
    "tinyText": 10
-  },
-  "more": {
-   "smallTargets": 0,
-   "tinyText": 1
   },
   "settings": {
    "smallTargets": 4,
@@ -180,10 +172,6 @@
    "smallTargets": 13,
    "tinyText": 10
   },
-  "more": {
-   "smallTargets": 0,
-   "tinyText": 1
-  },
   "settings": {
    "smallTargets": 4,
    "tinyText": 1
@@ -250,10 +238,6 @@
    "smallTargets": 13,
    "tinyText": 10
   },
-  "more": {
-   "smallTargets": 0,
-   "tinyText": 1
-  },
   "settings": {
    "smallTargets": 4,
    "tinyText": 1
@@ -319,10 +303,6 @@
   "vault": {
    "smallTargets": 19,
    "tinyText": 10
-  },
-  "more": {
-   "smallTargets": 5,
-   "tinyText": 1
   },
   "settings": {
    "smallTargets": 12,

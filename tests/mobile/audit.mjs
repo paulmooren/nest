@@ -19,7 +19,7 @@ const ROUTES = [
   ["signin", "/signin", null], ["signup", "/signup", null],
   ["dashboard", "/dashboard", "Alex"], ["budgets", "/finance/budgets", "Alex"], ["transactions", "/finance/transactions", "Alex"],
   ["accounts", "/finance/accounts", "Alex"], ["tasks", "/tasks", "Alex"], ["shopping", "/lists/shopping", "Alex"],
-  ["wishlist", "/lists/wishlist", "Alex"], ["vault", "/vault", "Alex"], ["more", "/more", "Alex"], ["settings", "/settings", "Alex"],
+  ["wishlist", "/lists/wishlist", "Alex"], ["vault", "/vault", "Alex"], ["settings", "/settings", "Alex"],
   ["settings-profile", "/settings/profile", "Alex"], ["settings-categories", "/settings/categories", "Alex"],
   ["settings-household", "/settings/household", "Alex"], ["settings-data", "/settings/data", "Alex"],
   ["settings-notifications", "/settings/notifications", "Alex"],

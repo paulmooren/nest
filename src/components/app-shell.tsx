@@ -8,12 +8,12 @@ import { Avatar } from "@/components/avatar";
 import { useModules } from "@/components/use-modules";
 import { PAGE_ACTIONS_ID } from "@/components/page-actions";
 import { DemoBadge } from "@/components/demo-badge";
+import { NavDrawer } from "@/components/nav-drawer";
 import type { ModuleKey } from "@/lib/modules";
 
 import {
   DashboardIcon,
   ListIcon,
-  MoreIcon,
   TasksIcon,
   TransactionsIcon,
   VaultIcon,
@@ -28,11 +28,6 @@ const ALL_NAV_ITEMS: { href: string; label: string; Icon: typeof DashboardIcon; 
   { href: "/vault", label: "Vault", Icon: VaultIcon, modules: ["vault"] },
 ];
 
-// The phone bottom bar: four destinations and "More" (Vault, Settings, sign out). Labels are short so five fit at 320px;
-// the Finance Module keeps its name (CONTEXT.md) rather than becoming "Money". MORE_PATHS keep "More" lit on its sub-pages.
-const BAR_LABELS: Record<string, string> = { "/dashboard": "Home" };
-const MORE_PATHS = ["/more", "/vault", "/settings"];
-
 function greeting() {
   const hour = new Date().getHours();
   if (hour < 11) return "Good morning";
@@ -41,10 +36,10 @@ function greeting() {
 }
 
 /**
- * The frame of the app: a light-grey shell (sidebar, bottom bar) around one
+ * The frame of the app: a light-grey shell (sidebar) around one
  * white content panel, so the eye lands on the content, not the navigation.
  * On desktop the panel floats inside the shell with rounded corners; on a
- * phone it runs edge to edge and only the bottom bar stays grey.
+ * phone it runs edge to edge and the menu drawer is the only grey.
  */
 export function AppShell({
   userName,
@@ -58,12 +53,9 @@ export function AppShell({
   const { isEnabled } = useModules();
   const NAV_ITEMS = ALL_NAV_ITEMS.filter((item) => !item.modules || item.modules.some(isEnabled));
 
-  const section = [...NAV_ITEMS, { href: "/settings", label: "Settings" }, { href: "/more", label: "More" }].find((item) =>
+  const section = [...NAV_ITEMS, { href: "/settings", label: "Settings" }].find((item) =>
     pathname.startsWith(item.href),
   );
-  // Vault lives under More on a phone, so only the other destinations get a bar slot.
-  const BAR_ITEMS = NAV_ITEMS.filter((item) => item.href !== "/vault");
-  const moreActive = MORE_PATHS.some((path) => pathname.startsWith(path));
   // The dashboard greets you; every other page is titled by its section.
   const title = section?.href === "/dashboard" || !section ? `${greeting()}, ${userName}` : section.label;
 
@@ -112,42 +104,20 @@ export function AppShell({
         </Link>
       </nav>
 
-      {/* Mobile bottom bar — the one grey strip left on a phone. Five equal slots, each at least 44px wide and tall. */}
-      <nav
-        aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-20 flex border-t border-border-soft bg-bg px-1 pt-1 md:hidden [padding-bottom:calc(0.25rem+env(safe-area-inset-bottom))]"
-      >
-        {[...BAR_ITEMS.map((item) => ({ ...item, label: BAR_LABELS[item.href] ?? item.label, active: pathname.startsWith(item.href) })),
-          { href: "/more", label: "More", Icon: MoreIcon, active: moreActive }].map(({ href, label, Icon, active }) => (
-          <Link
-            key={href}
-            href={href}
-            aria-current={active ? "page" : undefined}
-            className={`flex min-h-[var(--tap-primary)] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl ${
-              active ? "text-text" : "text-text-muted"
-            }`}
-          >
-            <span className="block h-6 w-6">
-              <Icon active={active} />
-            </span>
-            <span className={`text-[12px] leading-none ${active ? "font-semibold" : "font-medium"}`}>{label}</span>
-          </Link>
-        ))}
-      </nav>
-
       <main className="w-full min-w-0 md:ml-[240px] md:py-3 md:pr-3">
-        <div className="min-h-dvh bg-surface px-4 pt-0 pb-40 md:min-h-[calc(100dvh-1.5rem)] md:rounded-[24px] md:px-10 md:pt-9 md:pb-14">
+        <div className="min-h-dvh bg-surface px-4 pt-0 pb-28 md:min-h-[calc(100dvh-1.5rem)] md:rounded-[24px] md:px-10 md:pt-9 md:pb-14">
           <div className="mx-auto max-w-[1180px]">
-            {/* On a phone the title bar sticks to the top and the page's actions float above the bottom bar (see PageActions). No backdrop-filter on the bar: it would become the containing block of the fixed actions. */}
-            <div className="sticky top-0 z-10 -mx-4 mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-border-soft bg-surface px-4 py-3 md:static md:mx-0 md:mb-7 md:border-0 md:bg-transparent md:p-0">
+            {/* On a phone the title bar (with the menu button) sticks to the top and the page's actions float at the bottom (see PageActions). No backdrop-filter on the bar: it would become the containing block of the fixed actions. */}
+            <div className="sticky top-0 z-10 -mx-4 mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-border-soft bg-surface px-4 py-2 md:static md:mx-0 md:mb-7 md:border-0 md:bg-transparent md:p-0">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 md:gap-x-4 md:gap-y-2">
+                <NavDrawer items={NAV_ITEMS} userName={userName} image={me?.image} />
                 <h1 className="font-display text-[20px] font-bold tracking-tight md:text-[32px]">{title}</h1>
                 <DemoBadge />
               </div>
               {/* Pages put their main actions here with <PageActions>. */}
               <div
                 id={PAGE_ACTIONS_ID}
-                className="fixed right-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-10 flex w-fit max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-end gap-2 rounded-2xl border border-border-soft bg-surface/95 p-2 shadow-lg backdrop-blur empty:hidden md:static md:z-auto md:flex-wrap md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none [&_button]:min-h-[var(--tap)] [&_button]:whitespace-nowrap md:[&_button]:min-h-0"
+                className="fixed right-3 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-10 flex w-fit max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-end gap-2 rounded-2xl border border-border-soft bg-surface/95 p-2 shadow-lg backdrop-blur empty:hidden md:static md:z-auto md:flex-wrap md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none [&_button]:min-h-[var(--tap)] [&_button]:whitespace-nowrap md:[&_button]:min-h-0"
               />
             </div>
             {children}
