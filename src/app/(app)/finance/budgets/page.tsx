@@ -36,6 +36,7 @@ import { parseMoney } from "@/lib/money";
 import { VisibilityToggle, VisibilityBadge } from "@/components/finance/visibility-toggle";
 import { InlineSelect } from "@/components/ui/select";
 import { ChoiceChips, SheetField } from "@/components/choice-chips";
+import { useIsPhone } from "@/components/use-media-query";
 import { Modal, ModalFooter } from "@/components/modal";
 
 type TxType = "EXPENSE" | "INCOME" | "TRANSFER";
@@ -560,8 +561,6 @@ function RecurringColumn({
   onDeleteGroup: (id: string) => void;
 }) {
   const [adding, setAdding] = useState(false);
-  // On a phone the drag handles are hidden until you ask to reorder, so rows get the full width.
-  const [reordering, setReordering] = useState(false);
   const multiMember = members.length > 1;
 
   const items = entries.map((e) => e.item);
@@ -593,7 +592,6 @@ function RecurringColumn({
       currentUserId={currentUserId}
       accounts={accounts}
       groups={budgetGroups}
-      reordering={reordering}
       onUpdate={(values) => onUpdate(entry.item.id, values)}
       onDelete={() => onDelete(entry.item.id)}
       onToggleVisibility={(visible) => onToggleVisibility(entry.item.id, visible)}
@@ -624,19 +622,7 @@ function RecurringColumn({
   return (
     <section className="overflow-hidden rounded-[20px] border border-border-soft bg-surface">
       <div className="px-4 pt-6 pb-4 md:px-6">
-        <div className="mb-1 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold">{title}</h2>
-          {items.length > 1 && (
-            <Button
-              type="button"
-              onClick={() => setReordering((r) => !r)}
-              aria-pressed={reordering}
-              className="-my-2 -mr-2 min-h-[var(--tap)] px-3 text-[14px] font-medium text-accent md:hidden"
-            >
-              {reordering ? "Done" : "Reorder"}
-            </Button>
-          )}
-        </div>
+        <h2 className="mb-1 text-[15px] font-semibold">{title}</h2>
         <p className={`font-display font-bold tracking-tight text-[22px] tabular-nums ${totalClass}`}>
           {formatEUR(total)} <span className="text-[13px] font-sans text-text-muted">/ month</span>
         </p>
@@ -707,7 +693,6 @@ function RecurringRow({
   currentUserId,
   accounts,
   groups,
-  reordering,
   onUpdate,
   onDelete,
   onToggleVisibility,
@@ -723,8 +708,6 @@ function RecurringRow({
   currentUserId: string;
   accounts: AccountOption[];
   groups: BudgetGroup[];
-  /** Phones only: show the drag handles. */
-  reordering: boolean;
   onUpdate: (values: Partial<FormValues>) => void;
   onDelete: () => void;
   onToggleVisibility: (visible: boolean) => void;
@@ -740,6 +723,8 @@ function RecurringRow({
   const notSeen = item.nextDueDate !== null && new Date(item.nextDueDate).getTime() < todayInHousehold().getTime();
   const isOwn = item.ownerId === currentUserId;
   const canEdit = item.ownerId === null || isOwn;
+  // On a phone there is no handle: press and hold anywhere on the row, then drag.
+  const phone = useIsPhone();
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
     disabled: !canEdit || editing,
@@ -770,9 +755,10 @@ function RecurringRow({
     <>
     <div
       ref={setNodeRef}
+      {...(phone && canEdit ? listeners : {})}
       // Up and down only: the row follows the pointer vertically.
       style={{ transform: CSS.Transform.toString(transform ? { ...transform, x: 0 } : null), transition }}
-      className={`relative flex items-center gap-3 border-b border-border-soft px-4 py-3.5 transition-colors last:border-b-0 hover:bg-surface-hover md:px-6 ${
+      className={`relative flex items-center gap-3 border-b border-border-soft px-4 py-3.5 transition-colors last:border-b-0 hover:bg-surface-hover max-md:select-none max-md:[-webkit-touch-callout:none] md:px-6 ${
         isDragging ? "z-10 bg-surface shadow-lg" : ""
       }`}
     >
@@ -785,7 +771,7 @@ function RecurringRow({
           {...listeners}
           aria-label={`Reorder ${item.name}`}
           title="Drag to reorder"
-          className={`-ml-4 -mr-1 h-11 w-11 shrink-0 cursor-grab touch-none items-center justify-center rounded text-text-faint hover:text-text active:cursor-grabbing md:-ml-3 md:mr-0 md:flex md:h-6 md:w-5 ${reordering ? "flex" : "hidden"}`}
+          className={`-ml-3 hidden h-6 w-5 shrink-0 cursor-grab touch-none items-center justify-center rounded text-text-faint hover:text-text active:cursor-grabbing md:flex`}
         >
           <GripIcon />
         </Button>
