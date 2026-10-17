@@ -35,6 +35,8 @@ import { InlineEdit } from "@/components/inline-edit";
 import { parseMoney } from "@/lib/money";
 import { VisibilityToggle, VisibilityBadge } from "@/components/finance/visibility-toggle";
 import { InlineSelect } from "@/components/ui/select";
+import { ChoiceChips, SheetField } from "@/components/choice-chips";
+import { Modal, ModalFooter } from "@/components/modal";
 
 type TxType = "EXPENSE" | "INCOME" | "TRANSFER";
 
@@ -205,7 +207,7 @@ function LeftEachMonth({
                 role="tab"
                 aria-selected={scope === s.key}
                 onClick={() => onScope(s.key)}
-                className={`rounded-lg px-3 py-1 text-[12.5px] font-medium transition-colors ${
+                className={`min-h-[var(--tap)] rounded-lg px-4 py-1 text-[14px] font-medium transition-colors md:min-h-0 md:px-3 md:text-[12.5px] ${
                   scope === s.key ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text"
                 }`}
               >
@@ -231,7 +233,7 @@ function LeftEachMonth({
         <Button
           type="button"
           onClick={() => document.querySelector("[data-proposal]")?.scrollIntoView({ behavior: "smooth", block: "center" })}
-          className="mt-3 rounded-lg bg-surface-2 px-3 py-1.5 text-[12.5px] font-medium text-text hover:bg-surface-hover"
+          className="mt-3 min-h-[var(--tap)] rounded-lg bg-surface-2 px-4 py-1.5 text-[14px] font-medium text-text hover:bg-surface-hover md:min-h-0 md:px-3 md:text-[12.5px]"
         >
           {changed} amount{changed === 1 ? "" : "s"} changed — review
         </Button>
@@ -351,7 +353,7 @@ function SuggestionsPanel({ suggestions, onDismiss }: { suggestions: Suggestion[
         <Button
           onClick={() => add.mutate({ matchKeys: ticked.map((c) => c.matchKey) })}
           disabled={ticked.length === 0 || add.isPending}
-          className="rounded-xl bg-accent-fill px-4 py-2 text-[13px] font-semibold text-accent-ink hover:opacity-90 disabled:bg-surface-2 disabled:text-text-faint"
+          className="min-h-[var(--tap)] rounded-xl bg-accent-fill px-4 py-2 text-[14px] font-semibold text-accent-ink hover:opacity-90 disabled:bg-surface-2 disabled:text-text-faint md:min-h-0 md:text-[13px]"
         >
           {add.isPending ? "Adding…" : `Add selected (${ticked.length})`}
         </Button>
@@ -385,7 +387,7 @@ function SuggestionsPanel({ suggestions, onDismiss }: { suggestions: Suggestion[
               e.preventDefault();
               onDismiss(c.matchKey);
             }}
-            className="rounded-lg border border-border-soft px-3 py-1.5 text-[12.5px] font-medium text-text-muted hover:text-text"
+            className="min-h-[var(--tap)] rounded-lg border border-border-soft px-4 py-1.5 text-[14px] font-medium text-text-muted hover:text-text md:min-h-0 md:px-3 md:text-[12.5px]"
           >
             Not recurring
           </Button>
@@ -713,6 +715,8 @@ function RecurringRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  // On a phone the name opens a sheet with the row's other controls; the pill, icons and inline edits are desktop controls.
+  const [sheetOpen, setSheetOpen] = useState(false);
   const isTransfer = item.type === "TRANSFER";
   // Due, but not in the transactions yet: say so quietly — it still counts.
   const notSeen = item.nextDueDate !== null && new Date(item.nextDueDate).getTime() < todayInHousehold().getTime();
@@ -750,7 +754,7 @@ function RecurringRow({
       ref={setNodeRef}
       // Up and down only: the row follows the pointer vertically.
       style={{ transform: CSS.Transform.toString(transform ? { ...transform, x: 0 } : null), transition }}
-      className={`relative flex items-center gap-3 border-b border-border-soft px-6 py-3 transition-colors last:border-b-0 hover:bg-surface-hover ${
+      className={`relative flex items-center gap-3 border-b border-border-soft px-4 py-3 transition-colors last:border-b-0 hover:bg-surface-hover md:px-6 ${
         isDragging ? "z-10 bg-surface shadow-lg" : ""
       }`}
     >
@@ -763,19 +767,19 @@ function RecurringRow({
           {...listeners}
           aria-label={`Reorder ${item.name}`}
           title="Drag to reorder"
-          className="-ml-3 flex h-6 w-5 shrink-0 cursor-grab touch-none items-center justify-center rounded text-text-faint hover:text-text active:cursor-grabbing"
+          className="-ml-3 flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded text-text-faint hover:text-text active:cursor-grabbing md:h-6 md:w-5"
         >
           <GripIcon />
         </Button>
       ) : (
-        <span className="-ml-3 block w-5 shrink-0" aria-hidden />
+        <span className="-ml-3 block w-8 shrink-0 md:w-5" aria-hidden />
       )}
       <span
         className="block w-[3px] shrink-0 self-stretch rounded-full"
         style={{ background: item.category?.color ?? "#5c5f66" }}
       />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 text-[13.5px] font-medium">
+        <div className="hidden items-center gap-2 text-[13.5px] font-medium md:flex">
           {canEdit ? (
             <InlineEdit
               value={item.name}
@@ -787,7 +791,15 @@ function RecurringRow({
             item.name
           )}
         </div>
-        <div className="mt-1 text-[12px] text-text-muted">
+        <Button
+          type="button"
+          onClick={() => setSheetOpen(true)}
+          aria-label={`${item.name}: open details`}
+          className="block min-h-[var(--tap)] w-full py-1 text-left text-[16px] font-medium md:hidden"
+        >
+          {item.name}
+        </Button>
+        <div className="text-[13px] text-text-muted md:mt-1 md:text-[12px]">
           {isTransfer && (
             <>
               {side === "EXPENSE"
@@ -815,14 +827,14 @@ function RecurringRow({
                 <Button
                   type="button"
                   onClick={onAcceptProposal}
-                  className="rounded-md bg-accent-fill px-2 py-0.5 font-semibold text-accent-ink hover:opacity-90"
+                  className="min-h-[var(--tap)] rounded-md bg-accent-fill px-3 py-0.5 font-semibold text-accent-ink hover:opacity-90 md:min-h-0 md:px-2"
                 >
                   Update
                 </Button>
                 <Button
                   type="button"
                   onClick={onKeepAmount}
-                  className="rounded-md border border-border-soft px-2 py-0.5 font-medium text-text-muted hover:text-text"
+                  className="min-h-[var(--tap)] rounded-md border border-border-soft px-3 py-0.5 font-medium text-text-muted hover:text-text md:min-h-0 md:px-2"
                 >
                   Keep
                 </Button>
@@ -837,64 +849,95 @@ function RecurringRow({
       {item.amountVaries && (
         <span
           title="The amount changes from payment to payment; this is the average of the last three"
-          className="rounded-md bg-surface-2 px-1.5 py-0.5 text-[12px] font-medium text-text-muted"
+          className="hidden rounded-md bg-surface-2 px-1.5 py-0.5 text-[12px] font-medium text-text-muted md:inline"
         >
           varies
         </span>
       )}
       {canEdit ? (
-        <InlineEdit
-          value={String(item.amount)}
-          editValue={formatEUR(item.amount)}
-          display={formatEUR(item.amount)}
-          ariaLabel="Amount"
-          maxLength={14}
-          onCommit={(text) => {
-            // Accepts what was on screen ("€1,250.00") or a plain number ("1250,50").
-            const parsed = parseMoney(text);
-            if (parsed !== null && parsed > 0) onUpdate({ amount: parsed });
-          }}
-          className="text-right text-[14px] font-semibold tabular-nums"
-          buttonClassName="block"
-        />
+        <span className="hidden md:block">
+          <InlineEdit
+            value={String(item.amount)}
+            editValue={formatEUR(item.amount)}
+            display={formatEUR(item.amount)}
+            ariaLabel="Amount"
+            maxLength={14}
+            onCommit={(text) => {
+              // Accepts what was on screen ("€1,250.00") or a plain number ("1250,50").
+              const parsed = parseMoney(text);
+              if (parsed !== null && parsed > 0) onUpdate({ amount: parsed });
+            }}
+            className="text-right text-[14px] font-semibold tabular-nums"
+            buttonClassName="block"
+          />
+        </span>
       ) : (
-        <div className="text-[14px] font-semibold tabular-nums">{formatEUR(item.amount)}</div>
+        <div className="hidden text-[14px] font-semibold tabular-nums md:block">{formatEUR(item.amount)}</div>
       )}
-      {item.ownerId !== null &&
-        (isOwn ? (
-          <VisibilityToggle visible={item.visibleToHousehold} onChange={onToggleVisibility} />
-        ) : (
-          <VisibilityBadge />
-        ))}
-      {item.paymentCount > 0 && (
-        <Button
-          onClick={() => setShowHistory(true)}
-          aria-label={`Payment history of ${item.name}`}
-          title="Payment history"
-          className="h-4 w-4 shrink-0 text-text-muted hover:text-text"
-        >
-          <ChartIcon />
-        </Button>
-      )}
-      {canEdit && (
-        <>
+      <div className="shrink-0 text-[16px] font-semibold tabular-nums md:hidden">{formatEUR(item.amount)}</div>
+      <div className="hidden items-center gap-3 md:flex">
+        {item.ownerId !== null &&
+          (isOwn ? (
+            <VisibilityToggle visible={item.visibleToHousehold} onChange={onToggleVisibility} />
+          ) : (
+            <VisibilityBadge />
+          ))}
+        {item.paymentCount > 0 && (
           <Button
-            onClick={() => setEditing(true)}
-            aria-label={`Edit ${item.name}`}
+            onClick={() => setShowHistory(true)}
+            aria-label={`Payment history of ${item.name}`}
+            title="Payment history"
             className="h-4 w-4 shrink-0 text-text-muted hover:text-text"
           >
-            <PencilIcon />
+            <ChartIcon />
           </Button>
-          <Button
-            onClick={onDelete}
-            aria-label={`Delete ${item.name}`}
-            className="h-4 w-4 shrink-0 text-text-muted hover:text-critical"
-          >
-            <TrashIcon />
-          </Button>
-        </>
-      )}
+        )}
+        {canEdit && (
+          <>
+            <Button
+              onClick={() => setEditing(true)}
+              aria-label={`Edit ${item.name}`}
+              className="h-4 w-4 shrink-0 text-text-muted hover:text-text"
+            >
+              <PencilIcon />
+            </Button>
+            <Button
+              onClick={onDelete}
+              aria-label={`Delete ${item.name}`}
+              className="h-4 w-4 shrink-0 text-text-muted hover:text-critical"
+            >
+              <TrashIcon />
+            </Button>
+          </>
+        )}
+      </div>
     </div>
+    {sheetOpen && (
+      <RecurringSheet
+        item={item}
+        canEdit={canEdit}
+        isOwn={isOwn}
+        meta={
+          (isTransfer ? `${side === "EXPENSE" ? `Transfer to ${accountName(item.toAccountId)}` : `Transfer from ${accountName(item.accountId)}`} · ` : "") +
+          describeSchedule(item.intervalCount, item.intervalUnit) +
+          (item.nextDueDate ? ` · next ${formatDate(item.nextDueDate)}` : "")
+        }
+        onToggleVisibility={onToggleVisibility}
+        onEdit={() => {
+          setSheetOpen(false);
+          setEditing(true);
+        }}
+        onHistory={() => {
+          setSheetOpen(false);
+          setShowHistory(true);
+        }}
+        onDelete={() => {
+          setSheetOpen(false);
+          onDelete();
+        }}
+        onClose={() => setSheetOpen(false)}
+      />
+    )}
     {showHistory && <PaymentHistoryModal itemId={item.id} onClose={() => setShowHistory(false)} />}
     </>
   );
@@ -1087,5 +1130,83 @@ function InlineRecurringRow({
         <CloseIcon />
       </Button>
     </form>
+  );
+}
+
+/** A recurring item in full, as a bottom sheet: the phone's stand-in for the row's pill and icon buttons. */
+function RecurringSheet({
+  item,
+  canEdit,
+  isOwn,
+  meta,
+  onToggleVisibility,
+  onEdit,
+  onHistory,
+  onDelete,
+  onClose,
+}: {
+  item: Item;
+  canEdit: boolean;
+  isOwn: boolean;
+  meta: string;
+  onToggleVisibility: (visible: boolean) => void;
+  onEdit: () => void;
+  onHistory: () => void;
+  onDelete: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Modal title={item.name} onClose={onClose}>
+      <div className="flex flex-col gap-5">
+        <div>
+          <p className="font-display text-[32px] font-bold tracking-tight tabular-nums">{formatEUR(item.amount)}</p>
+          <p className="mt-1 text-[14px] text-text-muted">{meta}</p>
+          {item.amountVaries && <p className="mt-1 text-[14px] text-text-muted">The amount varies; this is the average of the last three payments.</p>}
+          {item.drift !== null && <p className="mt-1 text-[14px] text-text-muted">Payments are now {formatEUR(item.drift)}</p>}
+        </div>
+        {item.ownerId !== null &&
+          (isOwn ? (
+            <SheetField label="Visibility">
+              <ChoiceChips
+                label="Visibility"
+                value={item.visibleToHousehold ? "visible" : "private"}
+                onChange={(v) => onToggleVisibility(v === "visible")}
+                options={[
+                  { value: "private", label: "Private" },
+                  { value: "visible", label: "Visible to household" },
+                ]}
+              />
+            </SheetField>
+          ) : (
+            <VisibilityBadge />
+          ))}
+      </div>
+      <ModalFooter>
+        {canEdit && (
+          <Button
+            type="button"
+            onClick={onEdit}
+            className="min-h-[var(--tap-primary)] flex-1 rounded-xl bg-accent-fill px-5 text-[15px] font-semibold text-accent-ink"
+          >
+            Edit
+          </Button>
+        )}
+        {item.paymentCount > 0 && (
+          <Button type="button" onClick={onHistory} className="min-h-[var(--tap-primary)] rounded-xl border border-border-soft px-4 text-[15px] font-medium">
+            History
+          </Button>
+        )}
+        {canEdit && (
+          <Button type="button" onClick={onDelete} className="min-h-[var(--tap-primary)] rounded-xl border border-border-soft px-4 text-[15px] font-medium text-critical">
+            Delete
+          </Button>
+        )}
+        {!canEdit && (
+          <Button type="button" onClick={onClose} className="min-h-[var(--tap-primary)] flex-1 rounded-xl bg-accent-fill px-5 text-[15px] font-semibold text-accent-ink">
+            Done
+          </Button>
+        )}
+      </ModalFooter>
+    </Modal>
   );
 }
