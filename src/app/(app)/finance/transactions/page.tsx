@@ -41,7 +41,7 @@ import {
 } from "@/components/finance/transaction-filters";
 import { useCategoryAssign } from "@/components/finance/use-category-assign";
 import { AFTER_BULK_TRANSACTION_CHANGE, useTransactionActions } from "@/components/finance/use-transactions";
-import { groupLabel, type Member } from "@/components/finance/ownership-groups";
+import { groupLabel, groupOrder, type Member } from "@/components/finance/ownership-groups";
 import { useConfirm } from "@/components/confirm-dialog";
 import { useIsPhone } from "@/components/use-media-query";
 import { PopoverMenu, MenuItem } from "@/components/popover-menu";
@@ -235,35 +235,53 @@ function TransactionsPageInner() {
         ) : (
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           {accounts && accounts.length > 1 && (
-            <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by account">
-              <FilterChip active={!accountFilter} onClick={() => setAccountFilter("")}>
-                All
-              </FilterChip>
-              {accounts.map((a) => {
-                const active = accountFilter === a.id;
-                return (
-                  <FilterChip
-                    key={a.id}
-                    active={active}
-                    onClick={() => setAccountFilter(active ? "" : a.id)}
-                    title={`${a.name} · ${groupLabel(a.ownerId, members, currentUserId)}`}
-                  >
+            <PopoverMenu
+              align="left"
+              trigger={
+                <Button
+                  type="button"
+                  aria-label="Filter by account"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-full bg-surface-2 px-3 text-[13px] font-medium text-text hover:bg-border-soft"
+                >
+                  {filteredAccount && multiMember && (
+                    <Avatar
+                      name={ownerName(filteredAccount.ownerId, members, currentUserId)}
+                      image={members.find((m) => m.user.id === filteredAccount.ownerId)?.user.image}
+                    />
+                  )}
+                  {filteredAccount ? filteredAccount.name : "All accounts"}
+                  <span aria-hidden className="text-[10px] text-text-faint">▾</span>
+                </Button>
+              }
+            >
+              <MenuItem active={!accountFilter} onClick={() => setAccountFilter("")}>
+                All accounts
+              </MenuItem>
+              {groupOrder(members, currentUserId)
+                .filter((ownerId) => accounts.some((a) => a.ownerId === ownerId))
+                .map((ownerId) => (
+                  <div key={ownerId ?? "shared"}>
                     {multiMember && (
-                      <Avatar
-                        name={ownerName(a.ownerId, members, currentUserId)}
-                        image={members.find((m) => m.user.id === a.ownerId)?.user.image}
-                      />
+                      <p className="px-3.5 pt-2 pb-1 text-[12px] font-medium text-text-faint">
+                        {groupLabel(ownerId, members, currentUserId)}
+                      </p>
                     )}
-                    {a.name}
-                    {multiMember && (
-                      <span className={active ? "text-bg/70" : "text-text-faint"}>
-                        · {groupLabel(a.ownerId, members, currentUserId)}
-                      </span>
-                    )}
-                  </FilterChip>
-                );
-              })}
-            </div>
+                    {accounts
+                      .filter((a) => a.ownerId === ownerId)
+                      .map((a) => (
+                        <MenuItem key={a.id} active={accountFilter === a.id} onClick={() => setAccountFilter(a.id)}>
+                          {multiMember && (
+                            <Avatar
+                              name={ownerName(a.ownerId, members, currentUserId)}
+                              image={members.find((m) => m.user.id === a.ownerId)?.user.image}
+                            />
+                          )}
+                          {a.name}
+                        </MenuItem>
+                      ))}
+                  </div>
+                ))}
+            </PopoverMenu>
           )}
           <TransactionFilterBar
             filters={filters}
@@ -576,35 +594,6 @@ function ownerName(ownerId: string | null, members: Member[], currentUserId: str
   if (ownerId === null) return "Shared";
   const member = members.find((m) => m.user.id === ownerId);
   return member?.user.name || member?.user.email || (ownerId === currentUserId ? "You" : "?");
-}
-
-/** Quick-filter pill: filled when active, click again to clear. */
-function FilterChip({
-  active,
-  onClick,
-  title,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  title?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Button
-      type="button"
-      onClick={onClick}
-      title={title}
-      aria-pressed={active}
-      className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors ${
-        active
-          ? "border-text bg-text text-bg"
-          : "border-transparent bg-surface-2 text-text-muted hover:bg-border-soft hover:text-text"
-      }`}
-    >
-      {children}
-    </Button>
-  );
 }
 
 function ManualTransactionForm({

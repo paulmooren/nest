@@ -4,7 +4,7 @@ import type { PrismaClient } from "@prisma/client";
 
 import { createTRPCRouter, householdProcedure } from "@/server/api/trpc";
 import { clientIdSchema, rejectDuplicateId } from "@/server/api/client-id";
-import { nextOccurrence } from "@/lib/recurring";
+import { nextOccurrence, previousOccurrence } from "@/lib/recurring";
 import { BASES, amountForBasis, reviewAmount } from "@/lib/budget-basis";
 import { cleanText, detectRecurring, type DetectedItem } from "@/lib/recurring-detect";
 import { attachRecurringTransactions } from "@/server/api/recurring-match";
@@ -426,6 +426,8 @@ export const recurringRouter = createTRPCRouter({
         // and its date is where the next due date counts from.
         fromTransactionId: z.string().optional(),
         lastDate: z.coerce.date().optional(),
+        // When typed in by hand: the date the next payment is due. The cycle counts from there.
+        nextDate: z.coerce.date().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -481,7 +483,9 @@ export const recurringRouter = createTRPCRouter({
             matchText,
             source: "MANUAL",
             status: "ACTIVE",
-            lastSeenAt: input.lastDate ?? new Date(),
+            lastSeenAt:
+              input.lastDate ??
+              (input.nextDate ? previousOccurrence(input.nextDate, input.intervalCount, input.intervalUnit) : new Date()),
           },
         });
       } catch {
@@ -560,10 +564,12 @@ export const recurringRouter = createTRPCRouter({
         newGroupName: z.string().trim().min(1).max(60).optional(),
         newGroupId: clientIdSchema,
         status: z.enum(["ACTIVE", "CANCELLED"]).optional(),
+        // The date the next payment is due; the cycle counts from there.
+        nextDate: z.coerce.date().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, accountId, ownerId: inputOwnerId, budgetGroupId: groupInput, newGroupName, newGroupId, ...data } = input;
+      const { id, nextDate, accountId, ownerId: inputOwnerId, budgetGroupId: groupInput, newGroupName, newGroupId, ...data } = input;
       let ownerId = inputOwnerId;
       // Linking to an account moves the item to that account's owner;
       // unlinking (null) leaves the owner as it was unless one is passed.
@@ -585,7 +591,7 @@ export const recurringRouter = createTRPCRouter({
           householdId: ctx.householdId,
           OR: [{ ownerId: null }, { ownerId: ctx.userId }],
         },
-        select: { id: true, ownerId: true, type: true },
+        select: { id: true, ownerId: true, type: true, intervalCount: true, intervalUnit: true },
       });
       if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
       if (data.visibleToHousehold !== undefined && existing.ownerId === null) {
@@ -605,6 +611,15 @@ export const recurringRouter = createTRPCRouter({
           ...(data.amount !== undefined ? { basis: "FIXED" as const, keptAmount: null } : {}),
           ...(ownerId !== undefined ? { ownerId } : {}),
           ...(accountId !== undefined ? { accountId: linked?.accountId ?? null } : {}),
+          ...(nextDate
+            ? {
+                lastSeenAt: previousOccurrence(
+                  nextDate,
+                  data.intervalCount ?? existing.intervalCount,
+                  data.intervalUnit ?? existing.intervalUnit,
+                ),
+              }
+            : {}),
         },
       });
       if (data.amount !== undefined || accountId !== undefined) {

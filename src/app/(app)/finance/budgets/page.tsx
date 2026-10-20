@@ -6,6 +6,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { NumberField } from "@base-ui/react/number-field";
 import { Button } from "@base-ui/react/button";
 import { Input } from "@base-ui/react/input";
+import { DatePicker } from "@/components/ui/date-picker";
 
 import { trpc } from "@/trpc/react";
 import { useRefresh } from "@/trpc/optimistic";
@@ -16,7 +17,6 @@ import {
   entriesOf,
   monthlyOf,
   scopeOfOwner,
-  soFarThisMonth,
   totalsOf,
   type AccountRef,
   type Entry,
@@ -30,7 +30,7 @@ import { useBudgetGroupActions, useRecurringActions } from "@/components/finance
 import { AddGroup, ExpenseSections, type BudgetGroup } from "@/components/finance/expense-sections";
 import { Avatar } from "@/components/avatar";
 import { Checkbox } from "@/components/checkbox";
-import { groupOrder, groupLabel, type Member } from "@/components/finance/ownership-groups";
+import { groupLabel, type Member } from "@/components/finance/ownership-groups";
 import { InlineEdit } from "@/components/inline-edit";
 import { parseMoney } from "@/lib/money";
 import { VisibilityToggle, VisibilityBadge } from "@/components/finance/visibility-toggle";
@@ -96,9 +96,14 @@ type FormValues = {
   budgetGroupId?: string | null;
   /** A group to create on the spot and use. */
   newGroupName?: string;
+  /** The date (YYYY-MM-DD) the next payment is due; left out when unchanged. */
+  nextDate?: string;
 };
 
 type AccountOption = { id: string; name: string; institution: string | null; ownerId: string | null };
+
+/** Stands for "no account" in the account selection. */
+const NO_ACCOUNT = "none";
 
 export default function BudgetsPage() {
   const { data: household } = trpc.household.current.useQuery();
@@ -109,11 +114,11 @@ export default function BudgetsPage() {
   const currentUserId = me?.id ?? "";
 
   const [scope, setScope] = useState<ScopeKey>(YOU);
-  // Selecting an account narrows the lists to what runs through it; click it again to clear.
-  const [accountFilter, setAccountFilter] = useState("");
+  // The lists show one account at a time; until one is picked (or after a scope change) the first is shown.
+  const [pickedAccount, setPickedAccount] = useState("");
 
   const accountRefs = useMemo(
-    () => new Map<string, AccountRef>((accounts ?? []).map((a) => [a.id, { id: a.id, ownerId: a.ownerId }])),
+    () => new Map<string, AccountRef>((accounts ?? []).map((a) => [a.id, { id: a.id, ownerId: a.ownerId, type: a.type }])),
     [accounts],
   );
   const entries = useMemo(
@@ -137,6 +142,12 @@ export default function BudgetsPage() {
 
   const scopeEntries = entries.filter((e) => e.scope === activeScope);
   const scopeAccounts = (accounts ?? []).filter((a) => scopeOfOwner(a.ownerId, currentUserId) === activeScope);
+  // Items that run through no account get their own pill, so one selection always covers every item.
+  const hasUnlinked = scopeEntries.some((e) => !e.accountId);
+  const accountFilter =
+    pickedAccount === NO_ACCOUNT && hasUnlinked
+      ? NO_ACCOUNT
+      : (scopeAccounts.find((a) => a.id === pickedAccount)?.id ?? scopeAccounts[0]?.id ?? (hasUnlinked ? NO_ACCOUNT : ""));
 
   return (
     <div className="flex flex-col gap-5">
@@ -147,16 +158,16 @@ export default function BudgetsPage() {
         scope={activeScope}
         onScope={(key) => {
           setScope(key);
-          setAccountFilter("");
+          setPickedAccount("");
         }}
         hasItems={(items ?? []).length > 0}
         changed={new Set(scopeEntries.filter((e) => (e.item as Item).proposal !== null).map((e) => e.item.id)).size}
       />
       <AccountCards
         accounts={scopeAccounts}
-        entries={scopeEntries}
+        hasUnlinked={hasUnlinked}
         selected={accountFilter}
-        onSelect={setAccountFilter}
+        onSelect={setPickedAccount}
         members={members}
         currentUserId={currentUserId}
       />
@@ -167,7 +178,6 @@ export default function BudgetsPage() {
         accountFilter={accountFilter}
         scopeEntries={scopeEntries}
         scope={activeScope}
-        accountRefs={accountRefs}
       />
     </div>
   );
@@ -192,16 +202,20 @@ function LeftEachMonth({
   /** How many items have a proposed new amount waiting. */
   changed: number;
 }) {
-  const { income, expenses, left } = totalsOf(entries);
-  const sofar = soFarThisMonth(entries, todayInHousehold());
-  const label = scopes.find((s) => s.key === scope)?.label ?? "You";
+  const { left } = totalsOf(entries);
 
   return (
-    <section className="rounded-[20px] border border-border-soft bg-surface p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">Left each month</p>
-        {showScopes && (
-          <div role="tablist" aria-label="Whose budget" className="flex gap-1 rounded-xl bg-surface-2 p-1">
+    <section className="mb-1 md:mb-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+      <p
+        className={`font-display text-[40px] leading-none font-bold tracking-tight tabular-nums ${
+          left < 0 ? "text-critical" : "text-good"
+        }`}
+      >
+        {hasItems ? formatSignedEUR(left).replace(/^\+/, "") : formatEUR(0)}
+      </p>
+      {showScopes && (
+          <div role="tablist" aria-label="Whose budget" className="flex w-fit shrink-0 gap-1 rounded-xl bg-surface-2 p-1">
             {scopes.map((s) => (
               <Button
                 key={s.key}
@@ -218,16 +232,9 @@ function LeftEachMonth({
           </div>
         )}
       </div>
-      <p
-        className={`font-display mt-2 text-[40px] leading-none font-bold tracking-tight tabular-nums ${
-          left < 0 ? "text-critical" : "text-good"
-        }`}
-      >
-        {hasItems ? formatSignedEUR(left).replace(/^\+/, "") : formatEUR(0)}
-      </p>
       <p className="mt-2 text-[13.5px] text-text-muted">
         {hasItems
-          ? `left each month after fixed costs — ${formatEUR(income)} comes in, ${formatEUR(expenses)} goes out (${label.toLowerCase() === "you" ? "your accounts" : label})`
+          ? "left each month after fixed costs"
           : "Add your recurring income and expenses below, or confirm the suggestions, to see what is left each month."}
       </p>
       {changed > 0 && (
@@ -239,87 +246,78 @@ function LeftEachMonth({
           {changed} amount{changed === 1 ? "" : "s"} changed — review
         </Button>
       )}
-      {hasItems && (
-        <p className="mt-1 text-[12px] text-text-faint">
-          So far this month: {formatEUR(sofar.income)} in, {formatEUR(sofar.expenses)} out · everyday spending such as
-          groceries is not included
-        </p>
-      )}
     </section>
   );
 }
 
 /**
- * The monthly picture of each account in the chosen scope: its recurring
- * income and expenses, as monthly equivalents. Clicking a card narrows the
- * lists below to that account; click again to clear.
+ * One pill per account in the chosen scope. Exactly one is selected at a time and the lists below show what
+ * runs through it.
  */
 function AccountCards({
   accounts,
-  entries,
+  hasUnlinked,
   selected,
   onSelect,
   members,
   currentUserId,
 }: {
   accounts: AccountOption[];
-  entries: Entry[];
+  hasUnlinked: boolean;
   selected: string;
   onSelect: (id: string) => void;
   members: Member[];
   currentUserId: string;
 }) {
-  if (accounts.length === 0) return null;
+  if (accounts.length === 0 && !hasUnlinked) return null;
   const multiMember = members.length > 1;
 
   return (
-    <section>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {accounts.map((a) => {
-          const { income, expenses } = totalsOf(entries.filter((e) => e.accountId === a.id));
-          const active = selected === a.id;
-          return (
-            <Button
-              key={a.id}
-              type="button"
-              aria-pressed={active}
-              onClick={() => onSelect(active ? "" : a.id)}
-              className={`rounded-[20px] border bg-surface p-5 text-left transition-colors hover:bg-surface-hover ${
-                active ? "border-text" : "border-border-soft"
-              }`}
-            >
-              <div className="mb-3 flex items-center gap-2.5">
-                {multiMember && (
-                  <Avatar
-                    name={members.find((m) => m.user.id === a.ownerId)?.user.name || groupLabel(a.ownerId, members, currentUserId)}
-                    image={members.find((m) => m.user.id === a.ownerId)?.user.image}
-                    size={32}
-                  />
-                )}
-                <div className="min-w-0">
-                  <p className="truncate text-[13.5px] font-semibold">{a.name}</p>
-                  <p className="truncate text-[12px] tracking-[0.04em] text-text-faint">
-                    {[a.institution, multiMember ? groupLabel(a.ownerId, members, currentUserId) : null]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="mb-1 text-[12px] text-text-faint">Income / month</p>
-                  <p className="text-[16px] font-semibold text-good tabular-nums">{formatEUR(income)}</p>
-                </div>
-                <div>
-                  <p className="mb-1 text-[12px] text-text-faint">Expenses / month</p>
-                  <p className="text-[16px] font-semibold tabular-nums">{formatEUR(expenses)}</p>
-                </div>
-              </div>
-            </Button>
-          );
-        })}
-      </div>
-    </section>
+    <div role="radiogroup" aria-label="Account" className="flex flex-wrap gap-2">
+      {accounts.map((a) => {
+        const active = selected === a.id;
+        return (
+          <Button
+            key={a.id}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onSelect(a.id)}
+            className={`inline-flex min-h-[var(--tap)] items-center gap-2 rounded-full border py-1 pr-4 text-[14px] font-medium transition-colors md:min-h-9 md:text-[13px] ${
+              multiMember ? "pl-1.5" : "pl-4"
+            } ${
+              active
+                ? "border-text bg-text text-bg"
+                : "border-border-soft bg-surface text-text-muted hover:bg-surface-hover hover:text-text"
+            }`}
+          >
+            {multiMember && (
+              <Avatar
+                name={members.find((m) => m.user.id === a.ownerId)?.user.name || groupLabel(a.ownerId, members, currentUserId)}
+                image={members.find((m) => m.user.id === a.ownerId)?.user.image}
+                size={24}
+              />
+            )}
+            {a.name}
+          </Button>
+        );
+      })}
+      {hasUnlinked && (
+        <Button
+          type="button"
+          role="radio"
+          aria-checked={selected === NO_ACCOUNT}
+          onClick={() => onSelect(NO_ACCOUNT)}
+          className={`inline-flex min-h-[var(--tap)] items-center rounded-full border px-4 py-1 text-[14px] font-medium transition-colors md:min-h-9 md:text-[13px] ${
+            selected === NO_ACCOUNT
+              ? "border-text bg-text text-bg"
+              : "border-border-soft bg-surface text-text-muted hover:bg-surface-hover hover:text-text"
+          }`}
+        >
+          No account
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -406,7 +404,6 @@ function RecurringItems({
   accountFilter,
   scopeEntries,
   scope,
-  accountRefs,
 }: {
   members: Member[];
   currentUserId: string;
@@ -414,7 +411,6 @@ function RecurringItems({
   accountFilter: string;
   scopeEntries: Entry<Item>[] | Entry[];
   scope: ScopeKey;
-  accountRefs: Map<string, AccountRef>;
 }) {
   const { data: suggestions } = trpc.recurring.suggestions.useQuery();
   const { data: categories } = trpc.category.list.useQuery();
@@ -438,7 +434,7 @@ function RecurringItems({
   const monthlyExpenses = expenses.reduce((sum, e) => sum + monthlyOf(e.item), 0);
 
   const mine = (suggestions ?? []).filter(
-    (c) => scopeOfOwner(c.ownerId, currentUserId) === scope && (!accountFilter || c.accountId === accountFilter),
+    (c) => scopeOfOwner(c.ownerId, currentUserId) === scope && (!accountFilter || (accountFilter !== NO_ACCOUNT && c.accountId === accountFilter)),
   ) as Suggestion[];
 
   return (
@@ -458,7 +454,6 @@ function RecurringItems({
           accounts={accounts}
           accountFilter={accountFilter}
           accountName={accountName}
-          accountRefs={accountRefs}
           onAdd={(values) => recurring.create({ ...values, type: "INCOME" })}
           onUpdate={(id, values) => recurring.update({ id, ...values })}
           onDelete={(id) => recurring.remove({ id })}
@@ -485,7 +480,6 @@ function RecurringItems({
           accounts={accounts}
           accountFilter={accountFilter}
           accountName={accountName}
-          accountRefs={accountRefs}
           onAdd={(values) => recurring.create({ ...values, type: "EXPENSE" })}
           onUpdate={(id, values) => recurring.update({ id, ...values })}
           onDelete={(id) => recurring.remove({ id })}
@@ -517,7 +511,6 @@ function RecurringColumn({
   accounts,
   accountFilter,
   accountName,
-  accountRefs,
   onAdd,
   onUpdate,
   onDelete,
@@ -543,7 +536,6 @@ function RecurringColumn({
   accounts: AccountOption[];
   accountFilter: string;
   accountName: (id: string | null) => string;
-  accountRefs: Map<string, AccountRef>;
   onAdd: (values: FormValues) => void;
   onUpdate: (id: string, values: Partial<FormValues>) => void;
   onDelete: (id: string) => void;
@@ -561,26 +553,8 @@ function RecurringColumn({
   onDeleteGroup: (id: string) => void;
 }) {
   const [adding, setAdding] = useState(false);
-  const multiMember = members.length > 1;
 
   const items = entries.map((e) => e.item);
-  const groups = multiMember
-    ? groupOrder(members, currentUserId)
-        .map((ownerId) => ({
-          ownerId,
-          groupItems: entries.filter((e) => (accountRefs.get(e.accountId ?? "")?.ownerId ?? e.item.ownerId) === ownerId),
-        }))
-        .filter(
-          (g) =>
-            g.groupItems.length > 0 ||
-            (!accountFilter && (g.ownerId === currentUserId || g.ownerId === null)),
-        )
-    : [];
-
-  // A brand-new, still empty group is shown in the first owner group you can edit that has items to put in it.
-  const editable = (ownerId: string | null) => ownerId === null || ownerId === currentUserId;
-  const freshHost = (groups.find((g) => g.groupItems.length > 0 && editable(g.ownerId)) ?? groups.find((g) => editable(g.ownerId)))?.ownerId;
-
   const renderRow = (entry: Entry<Item>) => (
     <RecurringRow
       key={`${entry.item.id}-${entry.side}`}
@@ -620,7 +594,7 @@ function RecurringColumn({
     );
 
   return (
-    <section className="overflow-hidden rounded-[20px] border border-border-soft bg-surface">
+    <section className="md:overflow-hidden md:rounded-[20px] md:border md:border-border-soft md:bg-surface">
       <div className="px-4 pt-6 pb-4 md:px-6">
         <h2 className="mb-1 text-[15px] font-semibold">{title}</h2>
         <p className={`font-display font-bold tracking-tight text-[22px] tabular-nums ${totalClass}`}>
@@ -635,23 +609,7 @@ function RecurringColumn({
         </p>
       )}
 
-      {multiMember
-        ? groups.map(({ ownerId, groupItems }) => (
-            <div key={ownerId ?? "shared"}>
-              <div className="flex items-baseline justify-between px-4 pt-3 pb-1 md:px-6">
-                <p className="text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">
-                  {groupLabel(ownerId, members, currentUserId)}
-                </p>
-                {groupItems.length > 0 && (
-                  <p className="text-[12px] text-text-muted tabular-nums">
-                    {formatEUR(groupItems.reduce((sum, e) => sum + monthlyOf(e.item), 0))} / mo
-                  </p>
-                )}
-              </div>
-              {renderList(groupItems, ownerId === freshHost)}
-            </div>
-          ))
-        : renderList(entries, true)}
+      {renderList(entries, true)}
 
       {adding ? (
         <InlineRecurringRow
@@ -661,7 +619,7 @@ function RecurringColumn({
           members={members}
           currentUserId={currentUserId}
           accounts={accounts}
-          defaultAccountId={accountFilter}
+          defaultAccountId={accountFilter === NO_ACCOUNT ? "" : accountFilter}
           onSubmit={(values) => {
             onAdd(values);
             setAdding(false);
@@ -981,6 +939,8 @@ function InlineRecurringRow({
 }) {
   const [intervalCount, setIntervalCount] = useState(String(initial?.intervalCount ?? 1));
   const [intervalUnit, setIntervalUnit] = useState<ScheduleUnit>(initial?.intervalUnit ?? "MONTH");
+  const initialNext = (initial?.nextDueDate ? new Date(initial.nextDueDate) : todayInHousehold()).toISOString().slice(0, 10);
+  const [nextDate, setNextDate] = useState(initialNext);
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   // "" = Other, a group id, or NEW_GROUP to type the name of a new one.
   const [groupChoice, setGroupChoice] = useState(initial?.budgetGroupId ?? "");
@@ -1009,6 +969,7 @@ function InlineRecurringRow({
           amount: Number(form.get("amount") || 0),
           intervalCount: Math.max(1, Math.min(365, Math.round(Number(intervalCount) || 1))),
           intervalUnit,
+          ...(nextDate && (!initial || nextDate !== initialNext) ? { nextDate } : {}),
           categoryId: categoryId || null,
           ...(type === "INCOME"
             ? {}
@@ -1056,6 +1017,10 @@ function InlineRecurringRow({
               onChange={(v) => setIntervalUnit(v as ScheduleUnit)}
               options={SCHEDULE_UNITS.map((u) => ({ value: u, label: unitLabel(u, Number(intervalCount) || 1) }))}
             />
+          </span>
+          <span className="inline-flex items-center gap-1 text-text-muted">
+            Next
+            <DatePicker value={nextDate} onChange={setNextDate} aria-label="Next payment on" />
           </span>
           <InlineSelect
             value={categoryId}

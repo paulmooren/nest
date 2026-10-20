@@ -2,7 +2,7 @@
 
 import { amountForBasis, reviewAmount } from "@/lib/budget-basis";
 import { newId } from "@/lib/client-id";
-import { nextOccurrence } from "@/lib/recurring";
+import { nextOccurrence, previousOccurrence } from "@/lib/recurring";
 import { applyMove, applyReorder } from "@/lib/recurring-order";
 import { trpc } from "@/trpc/react";
 import { useOptimisticMutation, type CacheEditor, type QueryPath } from "@/trpc/optimistic";
@@ -48,7 +48,11 @@ export function useRecurringActions(historyOfItem?: string) {
     update: (v, cache) => {
       const linked = accountOwner(v.accountId);
       const budgetGroupId = resolveGroup(cache, v.type, v) ?? null;
-      const lastSeenAt = v.lastDate ? new Date(v.lastDate as Date) : new Date();
+      const lastSeenAt = v.lastDate
+        ? new Date(v.lastDate as Date)
+        : v.nextDate
+          ? previousOccurrence(new Date(v.nextDate as Date), v.intervalCount ?? 1, v.intervalUnit ?? "MONTH")
+          : new Date();
       const rows = utils.recurring.list.getData() ?? [];
       const sortOrder = Math.max(0, ...rows.map((r) => r.sortOrder)) + 1;
       cache.update("recurring.list", (items) => [
@@ -118,6 +122,10 @@ export function useRecurringActions(historyOfItem?: string) {
             intervalUnit,
             nextDueDate: item.lastSeenAt ? nextOccurrence(new Date(item.lastSeenAt), intervalCount, intervalUnit) : null,
           };
+          if (v.nextDate) {
+            const due = new Date(v.nextDate as Date);
+            Object.assign(next, { lastSeenAt: previousOccurrence(due, intervalCount, intervalUnit), nextDueDate: due });
+          }
           if (v.categoryId !== undefined) Object.assign(next, { categoryId: v.categoryId, category: categoryOf(v.categoryId) });
           // Linking to an account moves the item to that account's owner; unlinking leaves the owner as it was.
           if (v.ownerId !== undefined) next.ownerId = v.ownerId;

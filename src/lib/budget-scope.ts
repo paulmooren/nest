@@ -23,7 +23,10 @@ export type BudgetItem = {
   lastSeenAt: string | Date | null;
 };
 
-export type AccountRef = { id: string; ownerId: string | null };
+export type AccountRef = { id: string; ownerId: string | null; type: string };
+
+/** Day-to-day money: only recurring items on these accounts count toward "Left each month". */
+export const SPENDING_ACCOUNT_TYPES = ["CHECKING", "CASH", "CREDIT_CARD"];
 
 /** One side of an item as it lands on an account: an expense out of one, income into another. */
 export type Entry<T extends BudgetItem = BudgetItem> = {
@@ -31,6 +34,8 @@ export type Entry<T extends BudgetItem = BudgetItem> = {
   side: "INCOME" | "EXPENSE";
   accountId: string | null;
   scope: ScopeKey;
+  /** Whether this side counts toward "Left each month": on a spending account, or on none (the type is unknown). */
+  counts: boolean;
 };
 
 export function scopeOfOwner(ownerId: string | null, currentUserId: string): ScopeKey {
@@ -54,10 +59,22 @@ export function entriesOf<T extends BudgetItem>(
   const entries: Entry<T>[] = [];
 
   if (item.type === "TRANSFER") {
-    entries.push({ item, side: "EXPENSE", accountId: item.accountId, scope: scopeOfOwner(sourceOwner, currentUserId) });
+    entries.push({
+      item,
+      side: "EXPENSE",
+      accountId: item.accountId,
+      scope: scopeOfOwner(sourceOwner, currentUserId),
+      counts: countsToward(source),
+    });
     const dest = item.toAccountId ? accounts.get(item.toAccountId) : undefined;
     if (dest) {
-      entries.push({ item, side: "INCOME", accountId: dest.id, scope: scopeOfOwner(dest.ownerId, currentUserId) });
+      entries.push({
+        item,
+        side: "INCOME",
+        accountId: dest.id,
+        scope: scopeOfOwner(dest.ownerId, currentUserId),
+        counts: countsToward(dest),
+      });
     }
     return entries;
   }
@@ -67,8 +84,13 @@ export function entriesOf<T extends BudgetItem>(
     side: item.type,
     accountId: item.accountId,
     scope: scopeOfOwner(sourceOwner, currentUserId),
+    counts: countsToward(source),
   });
   return entries;
+}
+
+function countsToward(account: AccountRef | undefined): boolean {
+  return !account || SPENDING_ACCOUNT_TYPES.includes(account.type);
 }
 
 export function monthlyOf(item: BudgetItem): number {
@@ -79,6 +101,7 @@ export function totalsOf(entries: Entry[]) {
   let income = 0;
   let expenses = 0;
   for (const e of entries) {
+    if (!e.counts) continue;
     if (e.side === "INCOME") income += monthlyOf(e.item);
     else expenses += monthlyOf(e.item);
   }
@@ -91,7 +114,7 @@ export function soFarThisMonth(entries: Entry[], today: Date) {
   let income = 0;
   let expenses = 0;
   for (const e of entries) {
-    if (!e.item.lastSeenAt || new Date(e.item.lastSeenAt).getTime() < monthStart) continue;
+    if (!e.counts || !e.item.lastSeenAt || new Date(e.item.lastSeenAt).getTime() < monthStart) continue;
     // An item that comes less often than monthly isn't "this month's" money.
     if (monthlyOf(e.item) !== e.item.amount) continue;
     if (e.side === "INCOME") income += e.item.amount;

@@ -4,7 +4,7 @@ import { TabBar } from "@/components/tab-bar";
 
 export function FinanceTabs({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6 md:gap-8">
       <TabBar
         label="Finance sections"
         tabs={[

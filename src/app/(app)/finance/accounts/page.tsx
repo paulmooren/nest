@@ -63,15 +63,18 @@ export default function AccountsPage() {
   const liabilities = accounts?.filter((a) => !(ASSET_ACCOUNT_TYPES as readonly string[]).includes(a.type));
 
   return (
-    <section className="rounded-[20px] border border-border-soft bg-surface p-6">
-      <div className="mb-4 flex items-baseline justify-between">
-        <h2 className="text-[15px] font-semibold">Accounts</h2>
+    <div className="flex flex-col gap-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-[20px] font-semibold tracking-tight">Accounts</h2>
+          <p className="mt-1 text-[13.5px] text-text-muted">View your accounts and add new ones.</p>
+        </div>
         <Button
           onClick={() => {
             setEditingAccount(null);
             setShowAccountForm(true);
           }}
-          className="min-h-[var(--tap)] px-2 text-[15px] font-medium text-accent hover:opacity-80 md:min-h-0 md:px-0 md:text-[12.5px]"
+          className="min-h-[var(--tap)] shrink-0 px-2 text-[15px] font-medium text-accent hover:opacity-80 md:min-h-0 md:px-0 md:text-[12.5px]"
         >
           + Add account
         </Button>
@@ -112,6 +115,7 @@ export default function AccountsPage() {
         </Modal>
       )}
 
+      <section className="md:rounded-[20px] md:border md:border-border-soft md:bg-surface md:p-6">
       {assets && assets.length > 0 && (
         <>
           <p className="mt-4 mb-2 text-[12px] font-semibold tracking-[0.09em] text-text-faint uppercase">
@@ -191,7 +195,8 @@ export default function AccountsPage() {
       {accounts?.length === 0 && !showAccountForm && (
         <p className="text-[13px] text-text-muted">No accounts yet. Add your first one.</p>
       )}
-    </section>
+      </section>
+    </div>
   );
 }
 

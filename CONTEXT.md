@@ -67,7 +67,7 @@ Money moved between two accounts the Household tracks. It is neither income nor 
 _Avoid_: Internal payment, own-account payment
 
 **Left each month**:
-Recurring income minus recurring expenses for one scope: each account, You (your personal accounts together), or Household (the shared accounts together). It deliberately ignores everyday spending such as groceries.
+Recurring income minus recurring expenses for one scope: You (your personal accounts together), Household (the shared accounts together) or a partner's accounts you can see. Only Checking, Cash and Credit card accounts count; items on Savings, Investment, Loan and Mortgage accounts stay listed but are left out, and a recurring transfer into such an account counts as an expense on the account it leaves. It deliberately ignores everyday spending such as groceries.
 _Avoid_: Budget (alone), remaining, free cash
 
 **Suggestion**:
