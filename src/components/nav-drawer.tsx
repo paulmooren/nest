@@ -6,26 +6,17 @@ import { usePathname } from "next/navigation";
 import { Dialog } from "@base-ui/react/dialog";
 
 import { Avatar } from "@/components/avatar";
-import { IS_DEMO_CLIENT } from "@/lib/demo";
 import { signOutAction } from "@/app/(app)/settings/actions";
 
 export type DrawerItem = { href: string; label: string; Icon: (props: { active?: boolean }) => React.ReactElement };
 
-const SETTINGS = [
-  { href: "/settings/profile", label: "Profile" },
-  { href: "/settings/household", label: "Household" },
-  { href: "/settings/categories", label: "Categories" },
-  // No push notifications in the Demo.
-  ...(IS_DEMO_CLIENT ? [] : [{ href: "/settings/notifications", label: "Notifications" }]),
-  { href: "/settings/data", label: "Data" },
-];
-
-const ROW = "flex min-h-[var(--tap-primary)] items-center gap-3 rounded-xl px-3 text-[16px]";
+const ROW = "flex min-h-14 items-center gap-4 rounded-xl px-3 text-[18px]";
 
 /**
- * The phone's navigation: a burger button that opens a drawer from the left with every destination, the
- * settings pages and sign-out. (A bottom tab bar fights the mobile browser's own bottom controls.)
- * Built on the Base UI Dialog, so focus is trapped inside, Escape closes it and focus returns to the button.
+ * The phone's navigation: a burger button at the right of the title bar that opens a full-screen menu with every
+ * destination, the way into Settings (the account row) and sign-out. (A bottom tab bar fights the mobile browser's
+ * own bottom controls.) Built on the Base UI Dialog, so focus is trapped inside, Escape closes it and focus
+ * returns to the button.
  */
 export function NavDrawer({
   items,
@@ -38,6 +29,7 @@ export function NavDrawer({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const settingsActive = pathname.startsWith("/settings");
 
   // Following a link closes the drawer (the page changes under it).
   useEffect(() => {
@@ -49,15 +41,14 @@ export function NavDrawer({
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger
         aria-label="Open menu"
-        className="-ml-2 flex h-[var(--tap)] w-[var(--tap)] shrink-0 items-center justify-center rounded-xl text-text hover:bg-surface-2 md:hidden"
+        className="-mr-2 flex h-[var(--tap)] w-[var(--tap)] shrink-0 items-center justify-center rounded-xl text-text hover:bg-surface-2 md:hidden"
       >
         <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
           <path d="M4 7h16M4 12h16M4 17h16" />
         </svg>
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 bg-black/40 supports-[-webkit-touch-callout:none]:absolute" />
-        <Dialog.Popup className="fixed inset-y-0 left-0 flex h-dvh w-[86%] max-w-[330px] flex-col bg-bg shadow-2xl outline-none">
+        <Dialog.Popup className="fixed inset-0 flex h-dvh w-full flex-col bg-bg outline-none transition duration-150 data-ending-style:translate-y-1 data-ending-style:opacity-0 data-starting-style:translate-y-1 data-starting-style:opacity-0">
           <div className="flex items-center justify-between px-4 pt-4 pb-2">
             <div className="flex items-center gap-2.5">
               <div className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] bg-accent-fill">
@@ -67,7 +58,7 @@ export function NavDrawer({
             </div>
             <Dialog.Close
               aria-label="Close menu"
-              className="flex h-[var(--tap)] w-[var(--tap)] items-center justify-center rounded-full text-text-muted hover:bg-surface-2"
+              className="-mr-2 flex h-[var(--tap)] w-[var(--tap)] items-center justify-center rounded-full text-text-muted hover:bg-surface-2"
             >
               ✕
             </Dialog.Close>
@@ -82,9 +73,9 @@ export function NavDrawer({
                     key={href}
                     href={href}
                     aria-current={active ? "page" : undefined}
-                    className={`${ROW} ${active ? "bg-surface font-semibold text-text" : "font-medium text-text-muted"}`}
+                    className={`${ROW} ${active ? "font-semibold text-text" : "font-medium text-text-muted"}`}
                   >
-                    <span className="block h-5 w-5 shrink-0">
+                    <span className="block h-6 w-6 shrink-0">
                       <Icon active={active} />
                     </span>
                     {label}
@@ -93,27 +84,24 @@ export function NavDrawer({
               })}
             </div>
 
-            <h2 className="mt-6 mb-1 px-3 text-[12px] font-semibold tracking-wider text-text-muted uppercase">Settings</h2>
-            <div className="flex flex-col gap-0.5">
-              {SETTINGS.map(({ href, label }) => {
-                const active = pathname.startsWith(href);
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    aria-current={active ? "page" : undefined}
-                    className={`${ROW} ${active ? "bg-surface font-semibold text-text" : "font-medium text-text-muted"}`}
-                  >
-                    {label}
-                  </Link>
-                );
-              })}
-            </div>
           </nav>
 
-          <div className="flex items-center gap-3 border-t border-border-soft px-4 pt-3 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))]">
-            <Avatar name={userName} image={image} size={32} />
-            <span className="min-w-0 flex-1 truncate text-[15px] font-medium">{userName}</span>
+          <div className="flex items-center gap-2 border-t border-border-soft px-3 pt-3 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))]">
+            <Link
+              href="/settings"
+              aria-current={settingsActive ? "page" : undefined}
+              className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-xl px-3"
+            >
+              <span className={`rounded-full ${settingsActive ? "ring-2 ring-text ring-offset-2 ring-offset-bg" : ""}`}>
+                <Avatar name={userName} image={image} size={32} />
+              </span>
+              <span className="min-w-0">
+                <span className={`block truncate text-[16px] ${settingsActive ? "font-semibold text-text" : "font-medium"}`}>
+                  {userName}
+                </span>
+                <span className="block text-[13px] text-text-muted">Settings</span>
+              </span>
+            </Link>
             <form action={signOutAction}>
               <button type="submit" className="min-h-[var(--tap)] rounded-xl px-3 text-[15px] font-medium text-critical hover:bg-surface-2">
                 Sign out

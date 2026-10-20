@@ -110,7 +110,6 @@ export function AppShell({
             {/* On a phone the title bar (with the menu button) sticks to the top and the page's actions float at the bottom (see PageActions). No backdrop-filter on the bar: it would become the containing block of the fixed actions. */}
             <div className="sticky top-0 z-10 -mx-4 mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-border-soft bg-surface px-4 py-2 md:static md:mx-0 md:mb-7 md:border-0 md:bg-transparent md:p-0">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 md:gap-x-4 md:gap-y-2">
-                <NavDrawer items={NAV_ITEMS} userName={userName} image={me?.image} />
                 <h1 className="font-display text-[20px] font-bold tracking-tight md:text-[32px]">{title}</h1>
                 <DemoBadge />
               </div>
@@ -119,6 +118,7 @@ export function AppShell({
                 id={PAGE_ACTIONS_ID}
                 className="fixed right-3 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-10 flex w-fit max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-end gap-2 rounded-2xl border border-border-soft bg-surface/95 p-2 shadow-lg backdrop-blur empty:hidden md:static md:z-auto md:flex-wrap md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none [&_button]:min-h-[var(--tap)] [&_button]:whitespace-nowrap md:[&_button]:min-h-0"
               />
+              <NavDrawer items={NAV_ITEMS} userName={userName} image={me?.image} />
             </div>
             {children}
           </div>
