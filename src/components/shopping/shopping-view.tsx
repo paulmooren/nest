@@ -7,6 +7,8 @@ import { Input } from "@base-ui/react/input";
 import { Radio } from "@base-ui/react/radio";
 import { RadioGroup } from "@base-ui/react/radio-group";
 
+import { useDelayed } from "@/components/use-delayed";
+import { RowsSkeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { InlineEdit } from "@/components/inline-edit";
@@ -48,11 +50,12 @@ function ShoppingLists() {
   const { data: favorites } = useShoppingFavorites(selected?.id);
   const actions = useShoppingActions(selected?.id);
   const ticks = useTickGrace();
+  const showSkeleton = useDelayed(!lists || !me);
 
   // A list that could not be deleted comes back selected again.
   const listActions = useShoppingListActions({ onDeleteUndone: setChoice });
 
-  if (!lists || !me) return null;
+  if (!lists || !me) return showSkeleton ? <RowsSkeleton rows={7} /> : null;
 
   const multiMember = (household?.members.length ?? 0) > 1;
   // Ticked items stay (struck through) only for the grace period, then drop off.

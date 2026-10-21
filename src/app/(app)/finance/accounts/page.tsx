@@ -16,6 +16,8 @@ import { VisibilityToggle } from "@/components/finance/visibility-toggle";
 import { Modal, ModalFooter } from "@/components/modal";
 import { ChoiceChips, SheetField } from "@/components/choice-chips";
 import { Field, SelectInput, inputClass } from "@/components/settings/form";
+import { useDelayed } from "@/components/use-delayed";
+import { AccountsSkeleton } from "@/components/finance/finance-skeletons";
 import { useConfirm } from "@/components/confirm-dialog";
 
 const ACCOUNT_TYPES = Object.keys(ACCOUNT_TYPE_LABELS) as AccountType[];
@@ -58,9 +60,12 @@ export default function AccountsPage() {
 
   const members: Member[] = household?.members ?? [];
   const currentUserId = me?.id ?? "";
+  const showSkeleton = useDelayed(accounts === undefined);
 
   const assets = accounts?.filter((a) => (ASSET_ACCOUNT_TYPES as readonly string[]).includes(a.type));
   const liabilities = accounts?.filter((a) => !(ASSET_ACCOUNT_TYPES as readonly string[]).includes(a.type));
+
+  if (accounts === undefined) return showSkeleton ? <AccountsSkeleton /> : null;
 
   return (
     <div className="flex flex-col gap-6">

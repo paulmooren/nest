@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@base-ui/react/button";
 
+import { useDelayed } from "@/components/use-delayed";
+import { RowsSkeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/react";
 import { useVaultActions } from "@/components/vault/use-vault";
 import { Avatar } from "@/components/avatar";
@@ -35,6 +37,7 @@ function Vault() {
   const { data: entries } = trpc.vault.list.useQuery();
   const { data: me } = trpc.user.me.useQuery();
   const { data: household } = trpc.household.current.useQuery();
+  const showSkeleton = useDelayed(!entries || !me);
 
   const [creating, setCreating] = useState(false);
   const [revealed, setRevealed] = useState<Record<string, Revealed>>({});
@@ -71,7 +74,7 @@ function Vault() {
     return data;
   }
 
-  if (!entries || !me) return null;
+  if (!entries || !me) return showSkeleton ? <RowsSkeleton rows={6} /> : null;
 
   const members = household?.members ?? [];
   const multiMember = members.length > 1;

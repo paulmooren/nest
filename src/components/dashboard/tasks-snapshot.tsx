@@ -64,9 +64,9 @@ export function TasksSnapshot({ showTasks = true, showVault = false }: { showTas
   if (dueReminders.length === 0 && checklist.length === 0 && vaultRows.length === 0) return null;
 
   return (
-    <section className="overflow-hidden rounded-[20px] border border-border-soft bg-surface">
+    <section className="-mx-4 md:mx-0 md:overflow-hidden md:rounded-[20px] md:border md:border-border-soft md:bg-surface">
       {reminderActions.toast}
-      <div className="mb-3 flex items-center justify-between px-6 pt-4 md:items-baseline md:pt-6">
+      <div className="mb-3 flex items-center justify-between px-4 pt-4 md:items-baseline md:px-6 md:pt-6">
         <h2 className="text-[15px] font-semibold">{showTasks ? "Tasks" : "Coming up"}</h2>
         <Link href={showTasks ? "/tasks" : "/vault"} className="flex min-h-[var(--tap)] items-center px-2 -mr-2 text-[14px] font-medium text-accent hover:opacity-80 md:min-h-0 md:text-[12.5px]">
           View all

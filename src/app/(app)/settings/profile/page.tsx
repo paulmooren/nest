@@ -5,6 +5,8 @@ import { Button } from "@base-ui/react/button";
 import { Input } from "@base-ui/react/input";
 
 import { IS_DEMO_CLIENT } from "@/lib/demo";
+import { useDelayed } from "@/components/use-delayed";
+import { FormSkeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/react";
 import { useRefresh } from "@/trpc/optimistic";
 import { useProfileActions } from "@/components/settings/use-settings";
@@ -14,6 +16,10 @@ import { fileToAvatarDataUrl } from "@/lib/image";
 import { signOutAction } from "../actions";
 
 export default function ProfileSettingsPage() {
+  const { data: me } = trpc.user.me.useQuery();
+  const showSkeleton = useDelayed(me === undefined);
+  if (me === undefined) return showSkeleton ? <FormSkeleton /> : null;
+
   return (
     <>
       <ProfileSection />

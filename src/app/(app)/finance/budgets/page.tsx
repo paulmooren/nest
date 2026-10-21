@@ -6,6 +6,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { NumberField } from "@base-ui/react/number-field";
 import { Button } from "@base-ui/react/button";
 import { Input } from "@base-ui/react/input";
+import { useDelayed } from "@/components/use-delayed";
+import { BudgetsSkeleton } from "@/components/finance/finance-skeletons";
 import { DatePicker } from "@/components/ui/date-picker";
 
 import { trpc } from "@/trpc/react";
@@ -148,6 +150,9 @@ export default function BudgetsPage() {
     pickedAccount === NO_ACCOUNT && hasUnlinked
       ? NO_ACCOUNT
       : (scopeAccounts.find((a) => a.id === pickedAccount)?.id ?? scopeAccounts[0]?.id ?? (hasUnlinked ? NO_ACCOUNT : ""));
+
+  const showSkeleton = useDelayed(accounts === undefined || items === undefined);
+  if (accounts === undefined || items === undefined) return showSkeleton ? <BudgetsSkeleton /> : null;
 
   return (
     <div className="flex flex-col gap-5">

@@ -7,6 +7,8 @@ import Link from "next/link";
 import { useModules } from "@/components/use-modules";
 import { MissingStatementsCard } from "@/components/dashboard/missing-statements-card";
 import { ShoppingCard } from "@/components/dashboard/shopping-card";
+import { DashboardSummary } from "@/components/dashboard/dashboard-summary";
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import { TasksSnapshot } from "@/components/dashboard/tasks-snapshot";
 import { OnboardingWizard } from "@/components/dashboard/onboarding-wizard";
 
@@ -28,7 +30,7 @@ export function DashboardView() {
   }
 
   if (isLoading || showWizard === null) {
-    return <div className="py-10 text-center text-text-muted">Loading…</div>;
+    return <DashboardSkeleton />;
   }
 
   if (showWizard) {
@@ -49,7 +51,8 @@ export function DashboardView() {
 
   // The two working lists sit side by side on a wide screen; on a phone Tasks comes first.
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6 md:gap-8">
+      <DashboardSummary tasks={tasks} shopping={shopping} vault={vault} />
       {finance && <MissingStatementsCard />}
       <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
         {shopping && <ShoppingCard />}

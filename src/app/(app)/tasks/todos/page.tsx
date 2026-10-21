@@ -12,15 +12,20 @@ import { AssigneeAvatar } from "@/components/tasks/assignee-avatar";
 import { PriorityPill, PRIORITY_ORDER } from "@/components/tasks/priority-pill";
 import { CELL_TEXT, type Task, type Member, type TaskPriority } from "@/components/tasks/types";
 
+import { useDelayed } from "@/components/use-delayed";
+import { RowsSkeleton } from "@/components/ui/skeleton";
 export default function TodosPage() {
   const { data: tasks } = trpc.task.list.useQuery();
   const { data: household } = trpc.household.current.useQuery();
   const { data: me } = trpc.user.me.useQuery();
   const taskActions = useTaskActions();
+  const showSkeleton = useDelayed(tasks === undefined);
+
+  if (tasks === undefined) return showSkeleton ? <RowsSkeleton rows={7} /> : null;
 
   return (
     <TaskChecklist
-      tasks={(tasks ?? []) as Task[]}
+      tasks={tasks as Task[]}
       members={household?.members ?? []}
       currentUserId={me?.id ?? ""}
       onToggle={taskActions.toggle}

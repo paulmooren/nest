@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Button } from "@base-ui/react/button";
 import { Input } from "@base-ui/react/input";
 
+import { useDelayed } from "@/components/use-delayed";
+import { FormSkeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/react";
 import { useCategoryActions } from "@/components/finance/use-categories";
 import { ColorBarPicker } from "@/components/finance/color-picker";
@@ -12,8 +14,11 @@ import { SettingsSection, inputClass } from "@/components/settings/form";
 export default function CategoriesSettingsPage() {
   const { data: categories } = trpc.category.list.useQuery();
   const categoryActions = useCategoryActions();
+  const showSkeleton = useDelayed(categories === undefined);
   const [newCategory, setNewCategory] = useState("");
   const [newColor, setNewColor] = useState("#7fb8e8");
+
+  if (categories === undefined) return showSkeleton ? <FormSkeleton fields={5} /> : null;
 
   return (
     <SettingsSection title="Categories">

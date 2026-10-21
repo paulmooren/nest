@@ -44,6 +44,8 @@ import { AFTER_BULK_TRANSACTION_CHANGE, useTransactionActions } from "@/componen
 import { groupLabel, groupOrder, type Member } from "@/components/finance/ownership-groups";
 import { useConfirm } from "@/components/confirm-dialog";
 import { useIsPhone } from "@/components/use-media-query";
+import { useDelayed } from "@/components/use-delayed";
+import { RowsSkeleton } from "@/components/ui/skeleton";
 import { PopoverMenu, MenuItem } from "@/components/popover-menu";
 import { TransactionFilterSheet } from "@/components/finance/transaction-filter-sheet";
 import { TransactionSheet } from "@/components/finance/transaction-sheet";
@@ -133,6 +135,7 @@ function TransactionsPageInner() {
   );
 
   const transactionActions = useTransactionActions();
+  const showSkeleton = useDelayed(transactions === undefined);
   const { assign: assignCategory, toast: categoryToast } = useCategoryAssign(categories ?? []);
   // Removing everything, like importing, is worked out by the server: it waits, and the button shows it.
   const refresh = useRefresh();
@@ -379,6 +382,7 @@ function TransactionsPageInner() {
 
         {isPhone && (
           <PhoneTransactionList
+            loading={transactions === undefined && showSkeleton}
             transactions={transactions}
             filtering={filtering}
             accountFilter={accountFilter}
@@ -411,6 +415,7 @@ function TransactionsPageInner() {
               <div className={COL_ACTIONS} />
             </div>
 
+            {transactions === undefined && showSkeleton && <RowsSkeleton boxed={false} rows={8} />}
             {transactions?.length === 0 && (
               <p className="px-6 py-4 text-[13px] text-text-muted">
                 {filtering ? "No transactions match these filters." : "No transactions yet."}
@@ -1046,6 +1051,7 @@ function dayLabel(key: string) {
  * the amount always in view on the right. Tapping a row opens the sheet with everything you can do to it.
  */
 function PhoneTransactionList({
+  loading,
   transactions,
   filtering,
   accountFilter,
@@ -1062,6 +1068,7 @@ function PhoneTransactionList({
   onMarkRecurring,
   onDelete,
 }: {
+  loading: boolean;
   transactions: TransactionRows | undefined;
   filtering: boolean;
   accountFilter: string;
@@ -1105,6 +1112,7 @@ function PhoneTransactionList({
 
   return (
     <div className="mt-4 -mx-4 border-t border-border-soft">
+      {loading && <RowsSkeleton boxed={false} rows={8} />}
       {transactions?.length === 0 && (
         <p className="px-4 py-6 text-[15px] text-text-muted">{filtering ? "No transactions match these filters." : "No transactions yet."}</p>
       )}

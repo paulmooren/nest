@@ -1,9 +1,9 @@
-import { CardBones, LoadingScreen } from "@/components/skeleton";
+import { LoadingScreen, FormSkeleton } from "@/components/ui/skeleton";
 
 export default function Loading() {
   return (
     <LoadingScreen>
-      <CardBones rows={6} />
+      <FormSkeleton />
     </LoadingScreen>
   );
 }

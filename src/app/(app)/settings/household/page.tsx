@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Button } from "@base-ui/react/button";
 import { Input } from "@base-ui/react/input";
 
+import { useDelayed } from "@/components/use-delayed";
+import { FormSkeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/react";
 import { useRefresh } from "@/trpc/optimistic";
 import { useHouseholdSettingsActions } from "@/components/settings/use-settings";
@@ -25,6 +27,7 @@ export default function HouseholdSettingsPage() {
   });
   const [name, setName] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const showSkeleton = useDelayed(household === undefined);
   const value = name ?? household?.name ?? "";
   const dirty = !!household && value.trim() !== "" && value.trim() !== household.name;
 
@@ -36,6 +39,8 @@ export default function HouseholdSettingsPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }
+
+  if (household === undefined) return showSkeleton ? <FormSkeleton /> : null;
 
   return (
     <>

@@ -14,9 +14,20 @@ import { PopoverPanel } from "@/components/popover-menu";
 import { dueBucket, describeSchedule, todayInHousehold, type DueBucket, type ScheduleMode, type ScheduleUnit } from "@/lib/schedule";
 import type { Member } from "@/components/tasks/types";
 
+import { useDelayed } from "@/components/use-delayed";
+import { PillsSkeleton, RowsSkeleton } from "@/components/ui/skeleton";
 export default function RemindersPage() {
   const { data: household } = trpc.household.current.useQuery();
   const { data: me } = trpc.user.me.useQuery();
+  const { data: reminders } = trpc.reminder.list.useQuery();
+  const showSkeleton = useDelayed(reminders === undefined);
+  if (reminders === undefined)
+    return showSkeleton ? (
+      <div className="flex flex-col gap-5">
+        <PillsSkeleton />
+        <RowsSkeleton rows={6} />
+      </div>
+    ) : null;
   return <RemindersPanel members={household?.members ?? []} currentUserId={me?.id ?? ""} />;
 }
 

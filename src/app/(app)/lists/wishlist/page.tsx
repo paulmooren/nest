@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button } from "@base-ui/react/button";
 
+import { useDelayed } from "@/components/use-delayed";
+import { PillsSkeleton, RowsSkeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/react";
 import { hasPendingChanges } from "@/trpc/optimistic";
 import { useWishlistActions } from "@/components/wishlist/use-wishlist";
@@ -45,7 +47,14 @@ function Wishlists() {
 
   const wishlist = useWishlistActions();
 
-  if (!household || !me) return null;
+  const showSkeleton = useDelayed(!household || !me);
+  if (!household || !me)
+    return showSkeleton ? (
+      <div className="flex flex-col gap-5">
+        <PillsSkeleton />
+        <RowsSkeleton rows={5} />
+      </div>
+    ) : null;
 
   // Everyone except housemates who have hidden their list — those don't appear at all.
   const people = [
