@@ -10,7 +10,18 @@ import { signOutAction } from "@/app/(app)/settings/actions";
 
 export type DrawerItem = { href: string; label: string; Icon: (props: { active?: boolean }) => React.ReactElement };
 
-const ROW = "flex min-h-14 items-center gap-4 rounded-xl px-3 text-[18px]";
+const ROW = "flex min-h-12 items-center gap-4 px-4 text-[16px]";
+// The burger and the close button are one button in one place, so the menu seems to open from it and close back into it.
+const MENU_BUTTON =
+  "-mr-2 flex h-[var(--tap)] w-[var(--tap)] shrink-0 items-center justify-center rounded-xl text-text hover:bg-surface-2";
+
+function MenuIcon({ path }: { path: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+      <path d={path} />
+    </svg>
+  );
+}
 
 /**
  * The phone's navigation: a burger button at the right of the title bar that opens a full-screen menu with every
@@ -41,73 +52,59 @@ export function NavDrawer({
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger
         aria-label="Open menu"
-        className="-mr-2 flex h-[var(--tap)] w-[var(--tap)] shrink-0 items-center justify-center rounded-xl text-text hover:bg-surface-2 md:hidden"
+        className={`${MENU_BUTTON} md:hidden`}
       >
-        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-          <path d="M4 7h16M4 12h16M4 17h16" />
-        </svg>
+        <MenuIcon path="M4 7h16M4 12h16M4 17h16" />
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Popup className="fixed inset-0 flex h-dvh w-full flex-col bg-bg outline-none transition duration-150 data-ending-style:translate-y-1 data-ending-style:opacity-0 data-starting-style:translate-y-1 data-starting-style:opacity-0">
-          <div className="flex items-center justify-between px-4 pt-4 pb-2">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] bg-accent-fill">
-                <span className="font-display text-[16px] font-bold text-accent-ink">N</span>
-              </div>
-              <Dialog.Title className="font-display text-[17px] font-bold tracking-tight">Nest</Dialog.Title>
-            </div>
-            <Dialog.Close
-              aria-label="Close menu"
-              className="-mr-2 flex h-[var(--tap)] w-[var(--tap)] items-center justify-center rounded-full text-text-muted hover:bg-surface-2"
-            >
-              ✕
+          <Dialog.Title className="sr-only">Nest</Dialog.Title>
+          <div className="flex items-start justify-between px-4 pt-2">
+            <span className={`mt-1 rounded-full ${settingsActive ? "ring-2 ring-text ring-offset-2 ring-offset-bg" : ""}`}>
+              <Avatar name={userName} image={image} size={56} />
+            </span>
+            <Dialog.Close aria-label="Close menu" className={MENU_BUTTON}>
+              <MenuIcon path="M6 6l12 12M18 6L6 18" />
             </Dialog.Close>
           </div>
+          <Link
+            href="/settings"
+            aria-current={settingsActive ? "page" : undefined}
+            className="flex min-h-14 items-center justify-between gap-3 border-b border-border-soft px-4"
+          >
+            <span className="min-w-0 truncate text-[18px] font-bold">{userName}</span>
+            <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-text-muted" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </Link>
 
-          <nav aria-label="Main" className="flex-1 overflow-y-auto overscroll-contain px-3 pb-4">
-            <div className="flex flex-col gap-0.5">
-              {items.map(({ href, label, Icon }) => {
-                const active = pathname.startsWith(href);
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    aria-current={active ? "page" : undefined}
-                    className={`${ROW} ${active ? "font-semibold text-text" : "font-medium text-text-muted"}`}
-                  >
-                    <span className="block h-6 w-6 shrink-0">
-                      <Icon active={active} />
-                    </span>
-                    {label}
-                  </Link>
-                );
-              })}
-            </div>
-
+          <nav aria-label="Main" className="flex-1 overflow-y-auto overscroll-contain py-2">
+            {items.map(({ href, label, Icon }) => {
+              const active = pathname.startsWith(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  className={`${ROW} ${active ? "font-semibold text-text" : "font-medium text-text-muted"}`}
+                >
+                  <span className="block h-[22px] w-[22px] shrink-0">
+                    <Icon active={active} />
+                  </span>
+                  {label}
+                </Link>
+              );
+            })}
           </nav>
 
-          <div className="flex items-center gap-2 border-t border-border-soft px-3 pt-3 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))]">
-            <Link
-              href="/settings"
-              aria-current={settingsActive ? "page" : undefined}
-              className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-xl px-3"
-            >
-              <span className={`rounded-full ${settingsActive ? "ring-2 ring-text ring-offset-2 ring-offset-bg" : ""}`}>
-                <Avatar name={userName} image={image} size={32} />
-              </span>
-              <span className="min-w-0">
-                <span className={`block truncate text-[16px] ${settingsActive ? "font-semibold text-text" : "font-medium"}`}>
-                  {userName}
-                </span>
-                <span className="block text-[13px] text-text-muted">Settings</span>
-              </span>
-            </Link>
-            <form action={signOutAction}>
-              <button type="submit" className="min-h-[var(--tap)] rounded-xl px-3 text-[15px] font-medium text-critical hover:bg-surface-2">
-                Sign out
-              </button>
-            </form>
-          </div>
+          <form action={signOutAction} className="border-t border-border-soft py-2 [padding-bottom:calc(0.5rem+env(safe-area-inset-bottom))]">
+            <button type="submit" className={`${ROW} w-full text-left font-medium text-text-muted`}>
+              <svg viewBox="0 0 24 24" className="h-[22px] w-[22px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9" />
+              </svg>
+              Sign out
+            </button>
+          </form>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
