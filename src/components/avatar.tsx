@@ -14,9 +14,10 @@ export function Avatar({
   size?: number;
   className?: string;
 }) {
-  const style = { width: size, height: size, fontSize: Math.max(9, Math.round(size * 0.45)) };
+  const style = { width: size, height: size, fontSize: Math.max(12,Math.round(size * 0.45)) };
   return (
     <BaseAvatar.Root
+      aria-hidden
       style={style}
       className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-2 font-semibold text-text-muted ${className}`}
     >

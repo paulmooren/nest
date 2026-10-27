@@ -8,6 +8,8 @@ import { AuthHeader, AuthNote, authInputClass, authPrimaryButtonClass } from "@/
 import { isDemoServer } from "@/lib/demo";
 import { requestPasswordReset } from "./actions";
 
+export const metadata = { title: "Reset your password" };
+
 export default async function ForgotPasswordPage({ searchParams }: { searchParams: Promise<{ sent?: string }> }) {
   if (isDemoServer()) redirect("/signin");
   const { sent } = await searchParams;

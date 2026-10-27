@@ -18,7 +18,7 @@ export function AuthFrame({ children, width = "max-w-[380px]" }: { children: Rea
         <DemoBadge />
       </div>
       <div className="flex min-h-dvh items-center justify-center bg-surface px-4 py-12 md:min-h-[calc(100dvh-1.5rem)] md:rounded-[24px]">
-        <div className={`w-full ${width}`}>{children}</div>
+        <main className={`w-full ${width}`}>{children}</main>
       </div>
     </div>
   );

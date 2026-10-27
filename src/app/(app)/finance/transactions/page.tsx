@@ -626,12 +626,27 @@ function ManualTransactionForm({
   const [accountId, setAccountId] = useState(
     initialAccountId && accounts.some((a) => a.id === initialAccountId) ? initialAccountId : (accounts[0]?.id ?? ""),
   );
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   return (
     <form
+      noValidate
       className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2"
+      onInput={(e) => {
+        const name = (e.target as HTMLInputElement).name;
+        if (name && errors[name]) setErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => key !== name)));
+      }}
       onSubmit={(e) => {
         e.preventDefault();
+        // Own validation instead of the browser's pop-up bubble: the message is shown next to the field, tied to it for screen readers, and focus goes to the first problem.
+        const invalid = [...e.currentTarget.elements].filter(
+          (el): el is HTMLInputElement | HTMLSelectElement => "validity" in el && !(el as HTMLInputElement).validity.valid && !!(el as HTMLInputElement).name,
+        );
+        if (invalid.length > 0) {
+          setErrors(Object.fromEntries(invalid.map((el) => [el.name, el.validationMessage])));
+          invalid[0].focus();
+          return;
+        }
         const form = new FormData(e.currentTarget);
         onSubmit({
           accountId,
@@ -661,14 +676,14 @@ function ManualTransactionForm({
           <option value="TRANSFER">Transfer</option>
         </SelectInput>
       </Field>
-      <Field label="Description">
+      <Field label="Description" error={errors.merchant}>
         <Input name="merchant" required autoFocus placeholder="e.g. Albert Heijn" className={inputClass} />
       </Field>
-      <Field label="Amount (€)">
+      <Field label="Amount (€)" error={errors.amount}>
         <Input name="amount" type="number" step="0.01" required placeholder="0.00" className={inputClass} />
       </Field>
       {type === "TRANSFER" ? (
-        <Field label="To account">
+        <Field label="To account" error={errors.transferToAccountId}>
           <SelectInput name="transferToAccountId" required defaultValue="">
             <option value="">Choose destination account</option>
             {accounts
@@ -758,7 +773,7 @@ function CsvImportForm({
   async function handleFile(file: File) {
     setError(null);
     setFileName(file.name);
-    const parsed = parseStatementText(await file.text());
+    const parsed = await parseStatementText(await file.text());
     if (!parsed) {
       setError("Couldn't read the file. Is it a valid CSV file?");
       return;

@@ -10,8 +10,8 @@
   --border: #e0e0e3;
   --border-soft: #ececee;
   --text: #18181b;
-  --text-muted: #71717a;
-  --text-faint: #a1a1aa;
+  --text-muted: #5c5c66;
+  --text-faint: #6e6e78;
 
   --accent: #18181b;
   --accent-fill: #18181b;
@@ -143,6 +143,13 @@ button:disabled,
   a[href]:active {
     opacity: 0.7;
   }
+}
+
+/* Keyboard focus ring. Unlayered on purpose, so it wins over the outline-none utilities scattered through the components;
+   pointer clicks never match :focus-visible, so mouse and touch users see no ring. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {

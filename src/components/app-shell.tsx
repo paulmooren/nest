@@ -77,6 +77,7 @@ export function AppShell({
               <Link
                 key={href}
                 href={href}
+                aria-current={active ? "page" : undefined}
                 className={`flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-[14px] transition-colors ${
                   active ? "font-semibold text-text" : "font-medium text-text-muted hover:text-text"
                 }`}
@@ -95,6 +96,7 @@ export function AppShell({
         <Link
           href="/settings"
           aria-label="Your profile and settings"
+          aria-current={pathname.startsWith("/settings") ? "page" : undefined}
           className={`flex items-center gap-2.5 rounded-xl border bg-surface px-3 py-2.5 transition-colors ${
             pathname.startsWith("/settings") ? "border-border" : "border-border-soft hover:border-border"
           }`}

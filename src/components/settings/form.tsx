@@ -8,11 +8,17 @@ export const inputClass =
   "w-full rounded-xl border border-border-soft bg-surface px-3.5 py-3 text-[14px] outline-none transition-colors placeholder:text-text-faint focus:border-accent disabled:bg-surface-2 disabled:text-text-muted";
 
 /** A labelled control. The label is tied to the control inside it (an Input, Select or Number Field), so clicking it focuses the control and a screen reader reads it with the control. */
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
   return (
-    <BaseField.Root className="flex flex-col gap-2">
+    <BaseField.Root invalid={!!error} className="flex flex-col gap-2">
       <BaseField.Label className="text-[12.5px] text-text-muted">{label}</BaseField.Label>
       {children}
+      {/* Marks the control aria-invalid and ties this message to it, so a screen reader reads it when the control is focused. */}
+      {error && (
+        <BaseField.Error match className="text-[12.5px] text-critical">
+          {error}
+        </BaseField.Error>
+      )}
     </BaseField.Root>
   );
 }

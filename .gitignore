@@ -50,3 +50,6 @@ next-env.d.ts
 # visual check output (screenshots)
 /.visual
 .email-outbox.jsonl
+
+# Vault attachments stored on disk in local development
+.vault-files

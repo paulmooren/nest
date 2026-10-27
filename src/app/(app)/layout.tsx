@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
+import { PhoneHint } from "@/components/use-media-query";
+import { guessPhone } from "@/lib/device";
+import { TRPCProvider } from "@/trpc/react";
 import { HydrateClient, caller, getServerContext, loadHousehold, loadQuery } from "@/trpc/server";
 
 export default async function AppLayout({
@@ -22,9 +25,14 @@ export default async function AppLayout({
 
   const userName = ctx.session.user.name ?? ctx.session.user.email?.split("@")[0] ?? "there";
 
+  // The data layer (tRPC, React Query) is provided here, not in the root layout, so the sign-in screens don't load it.
   return (
-    <HydrateClient>
-      <AppShell userName={userName}>{children}</AppShell>
-    </HydrateClient>
+    <TRPCProvider>
+      <HydrateClient>
+        <PhoneHint phone={await guessPhone()}>
+          <AppShell userName={userName}>{children}</AppShell>
+        </PhoneHint>
+      </HydrateClient>
+    </TRPCProvider>
   );
 }

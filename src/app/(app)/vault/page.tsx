@@ -1,28 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@base-ui/react/button";
+import { Input } from "@base-ui/react/input";
 
 import { useDelayed } from "@/components/use-delayed";
 import { RowsSkeleton } from "@/components/ui/skeleton";
+import type { inferRouterOutputs } from "@trpc/server";
+
+import type { AppRouter } from "@/server/api/root";
 import { trpc } from "@/trpc/react";
-import { useVaultActions } from "@/components/vault/use-vault";
 import { Avatar } from "@/components/avatar";
 import { PageActions } from "@/components/page-actions";
 import { ModuleGate } from "@/components/use-modules";
-import { VisibilityToggle, VisibilityBadge } from "@/components/finance/visibility-toggle";
-import { VaultEntryForm } from "@/components/vault/entry-form";
+import { CategoryManager } from "@/components/vault/category-manager";
+import { prepareFiles, stashDroppedFiles } from "@/components/vault/uploads";
 import { expiryLabel } from "@/lib/vault";
-import { formatDate } from "@/lib/format";
-import { PencilIcon, TrashIcon } from "@/components/action-icons";
-import { useConfirm } from "@/components/confirm-dialog";
-import { Modal, ModalFooter } from "@/components/modal";
-import { ChoiceChips, SheetField } from "@/components/choice-chips";
-
-/** A revealed entry hides itself again after this long. */
-const AUTO_HIDE_MS = 60_000;
-
-type Revealed = { fields: { label: string; value: string }[]; note: string | null };
 
 export default function VaultPage() {
   return (
@@ -32,307 +27,219 @@ export default function VaultPage() {
   );
 }
 
+type Entry = inferRouterOutputs<AppRouter>["vault"]["list"][number];
+
 function Vault() {
-  const confirm = useConfirm();
+  const router = useRouter();
   const { data: entries } = trpc.vault.list.useQuery();
+  const { data: categories } = trpc.vault.listCategories.useQuery();
   const { data: me } = trpc.user.me.useQuery();
   const { data: household } = trpc.household.current.useQuery();
-  const showSkeleton = useDelayed(!entries || !me);
+  const showSkeleton = useDelayed(!entries || !categories || !me);
 
-  const [creating, setCreating] = useState(false);
-  const [revealed, setRevealed] = useState<Record<string, Revealed>>({});
-  // On a phone, visibility, Edit and Delete sit behind a "⋯" button in a sheet.
-  const [sheetFor, setSheetFor] = useState<string | null>(null);
-  const [editing, setEditing] = useState<string | null>(null);
-  const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-
-  // Never leave decrypted values sitting in memory after leaving the page.
-  useEffect(() => {
-    const t = timers.current;
-    return () => Object.values(t).forEach(clearTimeout);
-  }, []);
-
-  const vault = useVaultActions();
-  // Revealing decrypts on the server, so it waits (the button shows it) and nothing is guessed.
-  const reveal = trpc.vault.reveal.useMutation();
-
-  function hide(id: string) {
-    clearTimeout(timers.current[id]);
-    delete timers.current[id];
-    setRevealed((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-  }
-
-  async function show(id: string) {
-    const data = await reveal.mutateAsync({ id });
-    setRevealed((prev) => ({ ...prev, [id]: { fields: data.fields, note: data.note } }));
-    clearTimeout(timers.current[id]);
-    timers.current[id] = setTimeout(() => hide(id), AUTO_HIDE_MS);
-    return data;
-  }
-
-  if (!entries || !me) return showSkeleton ? <RowsSkeleton rows={6} /> : null;
+  const [query, setQuery] = useState("");
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [managing, setManaging] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
   const members = household?.members ?? [];
   const multiMember = members.length > 1;
+  const categoryName = useMemo(() => new Map((categories ?? []).map((c) => [c.id, c.name])), [categories]);
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (entries ?? []).filter((e) => {
+      if (categoryId && e.categoryId !== categoryId) return false;
+      if (!q) return true;
+      const haystack = [
+        e.title,
+        categoryName.get(e.categoryId) ?? "",
+        e.expiryLabel ?? "",
+        ...e.secretLabels,
+        ...e.plainFields.flatMap((f) => [f.label, f.value]),
+      ];
+      return haystack.some((s) => s.toLowerCase().includes(q));
+    });
+  }, [entries, query, categoryId, categoryName]);
+
+  if (!entries || !categories || !me) return showSkeleton ? <RowsSkeleton rows={6} /> : null;
+
+  const searching = query.trim() !== "" || categoryId !== null;
+  const pinned = searching ? [] : visible.filter((e) => e.pinned);
+  const rest = searching ? visible : visible.filter((e) => !e.pinned);
+  const groups = categories
+    .map((c) => ({ category: c, entries: rest.filter((e) => e.categoryId === c.id) }))
+    .filter((g) => g.entries.length > 0);
+
+  const counts = new Map<string, number>();
+  for (const e of entries) counts.set(e.categoryId, (counts.get(e.categoryId) ?? 0) + 1);
+
+  async function onDrop(files: FileList) {
+    const { ok } = await prepareFiles([...files]);
+    if (ok.length === 0) return;
+    stashDroppedFiles(ok);
+    router.push("/vault/new");
+  }
+
+  const row = (entry: Entry) => (
+    <EntryRow
+      key={entry.id}
+      entry={entry}
+      category={searching ? categoryName.get(entry.categoryId) : undefined}
+      owner={multiMember && entry.ownerId ? members.find((m) => m.user.id === entry.ownerId) : undefined}
+    />
+  );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div
+      className="flex flex-col gap-6"
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes("Files")) {
+          e.preventDefault();
+          setDragging(true);
+        }
+      }}
+      onDragLeave={(e) => {
+        if (e.currentTarget === e.target) setDragging(false);
+      }}
+      onDrop={(e) => {
+        if (!e.dataTransfer.files.length) return;
+        e.preventDefault();
+        setDragging(false);
+        void onDrop(e.dataTransfer.files);
+      }}
+    >
       <PageActions>
-        <Button
-          type="button"
-          onClick={() => setCreating((c) => !c)}
-          className="min-h-[var(--tap-primary)] rounded-xl bg-accent-fill px-5 text-[15px] font-semibold text-accent-ink hover:opacity-90 md:min-h-0 md:px-4 md:py-2.5 md:text-[13.5px]"
+        <Link
+          href="/vault/new"
+          className="inline-flex min-h-[var(--tap-primary)] items-center rounded-xl bg-accent-fill px-5 text-[15px] font-semibold text-accent-ink hover:opacity-90 md:min-h-0 md:px-4 md:py-2.5 md:text-[13.5px]"
         >
-          {creating ? "Cancel" : "+ New entry"}
-        </Button>
+          + New entry
+        </Link>
       </PageActions>
-      <p className="text-[13px] text-text-muted">
-        Numbers and notes are encrypted and stay hidden until you reveal them.
-      </p>
 
-      {creating && (
-        <section className="rounded-[20px] border border-border-soft bg-surface">
-          <VaultEntryForm
-            onSubmit={(values) => {
-              vault.create(values);
-              setCreating(false);
-            }}
-            onCancel={() => setCreating(false)}
-          />
-        </section>
-      )}
-
-      {entries.length === 0 && !creating && (
-        <p className="rounded-[20px] border border-border-soft bg-surface px-6 py-8 text-[13.5px] text-text-muted">
-          Nothing in the Vault yet. Add your passport number, policy numbers, account numbers — anything you&apos;d
-          otherwise dig around for.
+      {dragging && (
+        <p className="rounded-2xl border border-dashed border-accent bg-surface-2 px-6 py-6 text-center text-[14px] text-text-muted">
+          Drop files to start a new entry
         </p>
       )}
 
-      {entries.map((entry) => {
-        const isShared = entry.ownerId === null;
-        const isMine = entry.ownerId === me.id;
-        const canEdit = isShared || isMine;
-        const owner = members.find((m) => m.user.id === entry.ownerId);
-        const data = revealed[entry.id];
-        const expiry = entry.expiresOn ? expiryLabel(entry.expiresOn) : null;
+      <div className="flex flex-col gap-3">
+        <Input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search titles, labels and details"
+          aria-label="Search the Vault"
+          className="w-full rounded-xl border border-border-soft bg-surface px-4 py-3 text-[15px] outline-none transition-colors placeholder:text-text-faint focus:border-accent md:max-w-md md:py-2.5 md:text-[14px]"
+        />
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0" role="group" aria-label="Filter by category">
+          <Chip active={categoryId === null} onClick={() => setCategoryId(null)}>
+            All <span className="text-text-faint">{entries.length}</span>
+          </Chip>
+          {categories
+            .filter((c) => counts.has(c.id) || categoryId === c.id)
+            .map((c) => (
+              <Chip key={c.id} active={categoryId === c.id} onClick={() => setCategoryId(categoryId === c.id ? null : c.id)}>
+                {c.name} <span className="text-text-faint">{counts.get(c.id) ?? 0}</span>
+              </Chip>
+            ))}
+          <Button
+            type="button"
+            onClick={() => setManaging(true)}
+            className="inline-flex min-h-[var(--tap)] shrink-0 items-center px-3 text-[13px] font-medium text-accent hover:opacity-80 md:min-h-0 md:py-1.5"
+          >
+            Edit categories
+          </Button>
+        </div>
+      </div>
 
-        return (
-          <section key={entry.id} className="overflow-hidden rounded-[20px] border border-border-soft bg-surface">
-            {editing === entry.id && data ? (
-              <VaultEntryForm
-                initial={{
-                  title: entry.title,
-                  category: entry.category,
-                  expiresOn: entry.expiresOn,
-                  shared: isShared,
-                  fields: data.fields,
-                  note: data.note,
-                }}
-                onSubmit={(values) => {
-                  vault.update(entry.id, values);
-                  hide(entry.id);
-                  setEditing(null);
-                }}
-                onCancel={() => setEditing(null)}
-              />
-            ) : (
-              <div className="px-4 py-4 md:px-6">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-[16px] font-semibold">{entry.title}</h2>
-                      <span className="rounded-full border border-border-soft bg-surface-2 px-2.5 py-0.5 text-[12px] font-medium text-text-muted">
-                        {entry.category}
-                      </span>
-                      {expiry && (
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-[12px] font-medium ${
-                            expiry.critical ? "bg-critical/10 text-critical" : "bg-surface-2 text-text-muted"
-                          }`}
-                          title={formatDate(entry.expiresOn!)}
-                        >
-                          {expiry.text}
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-1 flex items-center gap-2 text-[12px] text-text-muted">
-                      {multiMember && !isShared && owner && (
-                        <Avatar name={owner.user.name || owner.user.email} image={owner.user.image} size={18} />
-                      )}
-                      <span>
-                        {isShared ? "Shared" : isMine ? "Personal" : `${owner?.user.name || owner?.user.email}'s`}
-                        {!data && entry.fieldLabels.length > 0 && ` · ${entry.fieldLabels.join(", ")}`}
-                      </span>
-                    </div>
-                  </div>
+      {entries.length === 0 && (
+        <p className="text-[13.5px] text-text-muted">
+          Nothing in the Vault yet. Add your passport, policy numbers, warranties, invoices — anything you&apos;d
+          otherwise dig around for. You can also drop a file here to start.
+        </p>
+      )}
 
-                  <div className="hidden items-center gap-3 text-[12.5px] font-medium md:flex">
-                    {isMine && (
-                      <VisibilityToggle
-                        visible={entry.visibleToHousehold}
-                        onChange={(visible) => vault.setVisibility({ id: entry.id, visible })}
-                      />
-                    )}
-                    {!isMine && !isShared && <VisibilityBadge />}
-                    {data ? (
-                      <Button type="button" onClick={() => hide(entry.id)} className="text-text-muted hover:text-text">
-                        Hide
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        onClick={() => show(entry.id)}
-                        disabled={reveal.isPending}
-                        className="rounded-full border border-border px-3.5 py-1.5 text-text hover:border-text disabled:opacity-60"
-                      >
-                        Reveal
-                      </Button>
-                    )}
-                    {canEdit && (
-                      <>
-                        <Button
-                          type="button"
-                          aria-label={`Edit ${entry.title}`}
-                          onClick={async () => {
-                            if (!data) await show(entry.id);
-                            setEditing(entry.id);
-                          }}
-                          className="h-4 w-4 text-text-faint hover:text-text"
-                        >
-                          <PencilIcon />
-                        </Button>
-                        <Button
-                          type="button"
-                          aria-label={`Delete ${entry.title}`}
-                          onClick={async () => {
-                            if (await confirm({ title: `Delete "${entry.title}" from the Vault?` })) vault.remove({ id: entry.id });
-                          }}
-                          className="h-4 w-4 text-text-faint hover:text-critical"
-                        >
-                          <TrashIcon />
-                        </Button>
-                      </>
-                    )}
-                  </div>
+      {entries.length > 0 && visible.length === 0 && (
+        <p className="text-[13.5px] text-text-muted">Nothing matches. Search covers titles, labels and plain details — not secrets or file contents.</p>
+      )}
 
-                  <div className="flex w-full items-center gap-2 md:hidden">
-                    <Button
-                      type="button"
-                      onClick={() => (data ? hide(entry.id) : show(entry.id))}
-                      disabled={!data && reveal.isPending}
-                      className="min-h-[var(--tap-primary)] flex-1 rounded-xl border border-border px-4 text-[15px] font-medium text-text disabled:opacity-60"
-                    >
-                      {data ? "Hide" : "Reveal"}
-                    </Button>
-                    {(canEdit || isMine) && (
-                      <Button
-                        type="button"
-                        onClick={() => setSheetFor(entry.id)}
-                        aria-label={`${entry.title}: more actions`}
-                        className="flex h-[var(--tap-primary)] w-[var(--tap-primary)] shrink-0 items-center justify-center rounded-xl border border-border text-[20px] leading-none text-text-muted"
-                      >
-                        ⋯
-                      </Button>
-                    )}
-                  </div>
-                </div>
+      {pinned.length > 0 && <Section title="Pinned">{pinned.map(row)}</Section>}
+      {searching ? (
+        visible.length > 0 && <Section title={`${visible.length} ${visible.length === 1 ? "entry" : "entries"}`}>{rest.map(row)}</Section>
+      ) : (
+        groups.map((g) => (
+          <Section key={g.category.id} title={g.category.name}>
+            {g.entries.map(row)}
+          </Section>
+        ))
+      )}
 
-                {sheetFor === entry.id && (
-                  <Modal title={entry.title} onClose={() => setSheetFor(null)}>
-                    {isMine && (
-                      <SheetField label="Visibility">
-                        <ChoiceChips
-                          label="Visibility"
-                          value={entry.visibleToHousehold ? "visible" : "private"}
-                          onChange={(v) => vault.setVisibility({ id: entry.id, visible: v === "visible" })}
-                          options={[
-                            { value: "private", label: "Private" },
-                            { value: "visible", label: "Visible to household" },
-                          ]}
-                        />
-                      </SheetField>
-                    )}
-                    <ModalFooter>
-                      {canEdit && (
-                        <Button
-                          type="button"
-                          onClick={async () => {
-                            setSheetFor(null);
-                            if (!data) await show(entry.id);
-                            setEditing(entry.id);
-                          }}
-                          className="min-h-[var(--tap-primary)] flex-1 rounded-xl bg-accent-fill px-5 text-[15px] font-semibold text-accent-ink"
-                        >
-                          Edit
-                        </Button>
-                      )}
-                      {canEdit && (
-                        <Button
-                          type="button"
-                          onClick={async () => {
-                            setSheetFor(null);
-                            if (await confirm({ title: `Delete "${entry.title}" from the Vault?` })) vault.remove({ id: entry.id });
-                          }}
-                          className="min-h-[var(--tap-primary)] rounded-xl border border-border-soft px-5 text-[15px] font-medium text-critical"
-                        >
-                          Delete
-                        </Button>
-                      )}
-                      {!canEdit && (
-                        <Button type="button" onClick={() => setSheetFor(null)} className="min-h-[var(--tap-primary)] flex-1 rounded-xl bg-accent-fill px-5 text-[15px] font-semibold text-accent-ink">
-                          Done
-                        </Button>
-                      )}
-                    </ModalFooter>
-                  </Modal>
-                )}
-
-                {data && (
-                  <dl className="mt-4 flex flex-col gap-2.5 border-t border-border-soft pt-4">
-                    {data.fields.map((field, i) => (
-                      <div key={i} className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                        <dt className="w-full shrink-0 text-[13px] text-text-muted md:w-40 md:text-[12.5px]">{field.label}</dt>
-                        <dd className="min-w-0 flex-1 break-all font-mono text-[14px]">{field.value}</dd>
-                        <CopyButton value={field.value} />
-                      </div>
-                    ))}
-                    {data.note && (
-                      <div className="mt-1 whitespace-pre-wrap rounded-xl bg-surface-2 px-3.5 py-3 text-[13.5px]">
-                        {data.note}
-                      </div>
-                    )}
-                    {data.fields.length === 0 && !data.note && (
-                      <p className="text-[13px] text-text-muted">Nothing stored in this entry.</p>
-                    )}
-                  </dl>
-                )}
-              </div>
-            )}
-          </section>
-        );
-      })}
+      {managing && <CategoryManager onClose={() => setManaging(false)} />}
     </div>
   );
 }
 
-function CopyButton({ value }: { value: string }) {
-  const [copied, setCopied] = useState(false);
+function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <Button
       type="button"
-      onClick={async () => {
-        await navigator.clipboard.writeText(value);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      }}
-      className="min-h-[var(--tap)] px-2 text-[14px] font-medium text-accent hover:opacity-80 md:min-h-0 md:px-0 md:text-[12px]"
+      aria-pressed={active}
+      onClick={onClick}
+      className={`inline-flex min-h-[var(--tap)] shrink-0 items-center gap-1.5 rounded-full border px-4 text-[14px] font-medium transition-colors md:min-h-0 md:px-3.5 md:py-1.5 md:text-[13px] ${
+        active ? "border-text bg-text text-bg" : "border-transparent bg-surface-2 text-text-muted hover:text-text"
+      }`}
     >
-      {copied ? "Copied" : "Copy"}
+      {children}
     </Button>
+  );
+}
+
+/** A heading and its rows: boxed on larger screens, plain rows on a phone. */
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="flex flex-col gap-2">
+      <h2 className="text-[13px] font-semibold tracking-wide text-text-muted">{title}</h2>
+      <div className="flex flex-col divide-y divide-border-soft md:overflow-hidden md:rounded-[20px] md:border md:border-border-soft md:bg-surface">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function EntryRow({
+  entry,
+  category,
+  owner,
+}: {
+  entry: Entry;
+  category?: string;
+  owner?: { user: { name: string | null; email: string; image: string | null } };
+}) {
+  const expiry = entry.expiresOn ? expiryLabel(entry.expiresOn, entry.expiryLabel) : null;
+  const subtitle = [category, entry.attachmentCount > 0 ? `${entry.attachmentCount} file${entry.attachmentCount === 1 ? "" : "s"}` : null]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <Link
+      href={`/vault/${entry.id}`}
+      className="flex min-h-[var(--tap-primary)] items-center gap-3 py-3 transition-colors hover:bg-surface-hover md:px-6"
+    >
+      {owner && <Avatar name={owner.user.name || owner.user.email} image={owner.user.image} size={22} />}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[15.5px] font-medium md:text-[14.5px]">{entry.title}</p>
+        {subtitle && <p className="truncate text-[12.5px] text-text-muted">{subtitle}</p>}
+      </div>
+      {expiry && (
+        <span
+          className={`shrink-0 rounded-full px-2.5 py-0.5 text-[12px] font-medium ${
+            expiry.critical ? "bg-critical/10 text-critical" : "bg-surface-2 text-text-muted"
+          }`}
+        >
+          {expiry.text}
+        </span>
+      )}
+    </Link>
   );
 }
