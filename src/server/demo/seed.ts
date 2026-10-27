@@ -7,6 +7,7 @@ import { addInterval, todayInHousehold } from "@/lib/schedule";
 import { recomputeNetWorthSnapshot } from "@/server/api/net-worth";
 import { attachRecurringTransactions } from "@/server/api/recurring-match";
 import { encryptValue } from "@/server/vault-crypto";
+import { ensureVaultCategories } from "@/server/vault-access";
 
 /**
  * Fills the Demo with one made-up household (Alex and Sam), with dates counted
@@ -447,26 +448,35 @@ export async function seedDemo(prisma: PrismaClient, now: Date = new Date()) {
   lap("wishlists");
   // ── Vault: made-up values, encrypted like real ones ──────────────────────
   const enc = (v: string) => encryptValue(v, householdId);
-  const vault = (title: string, category: string, owner: string | null, visible: boolean, expiresInDays: number | null, fields: [string, string][], note?: string) =>
+  await ensureVaultCategories(prisma, householdId);
+  const categoryIds = new Map(
+    (await prisma.vaultCategory.findMany({ where: { householdId }, select: { id: true, name: true } })).map((c) => [c.name, c.id]),
+  );
+  type DemoField = [label: string, kind: "text" | "date" | "secret", value: string];
+  const vault = (title: string, category: string, owner: string | null, visible: boolean, expiresInDays: number | null, expiryLabel: string | null, fields: DemoField[], note?: string, pinned = false) =>
     prisma.vaultEntry.create({
       data: {
         householdId,
         createdAt: stamp(),
         ownerId: owner,
         visibleToHousehold: visible,
+        pinned,
         title,
-        category,
+        categoryId: categoryIds.get(category)!,
         expiresOn: expiresInDays === null ? null : daysFromToday(expiresInDays),
-        fields: fields.map(([label, value]) => ({ label, value: enc(value) })),
+        expiryLabel,
+        fields: fields.map(([label, kind, value]) => ({ label, kind, value: kind === "secret" ? enc(value) : value })),
         noteEnc: note ? enc(note) : null,
       },
     });
   await Promise.all([
-    vault("Passport — Alex", "ID", alex, true, 40, [["Number", "NX0000000"]], "Renew before the summer trip"),
-    vault("Home and liability insurance", "Insurance", null, true, 210, [["Policy number", "GF-0098213"], ["Claims line", "+31 00 000 0000"]]),
-    vault("Wi-Fi at home", "Utility", null, true, null, [["Network", "Nest-5G"], ["Password", "not-a-real-password"]]),
-    vault("Car registration", "Vehicle", null, true, 320, [["Plate", "00-DEM-0"]]),
-    vault("Driving licence — Sam", "ID", sam, false, 900, [["Number", "DL0000000"]]),
+    vault("Passport — Alex", "ID", alex, true, 40, "Valid until", [["Number", "secret", "NX0000000"], ["Issued in", "text", "Amsterdam"]], "Renew before the summer trip", true),
+    vault("Home and liability insurance", "Insurance", null, true, 210, "Renews on", [["Provider", "text", "Demo Insurance"], ["Policy number", "secret", "GF-0098213"], ["Claims line", "text", "+31 00 000 0000"]], undefined, true),
+    vault("Wi-Fi at home", "Utility", null, true, null, null, [["Network", "text", "Nest-5G"], ["Password", "secret", "not-a-real-password"]]),
+    vault("Car registration", "Vehicle", null, true, 320, "Valid until", [["Plate", "text", "00-DEM-0"]]),
+    vault("Driving licence — Sam", "ID", sam, false, 900, "Valid until", [["Number", "secret", "DL0000000"]]),
+    vault("Washing machine warranty", "Warranty", null, true, 150, "Warranty ends", [["Product", "text", "Demo WashPro 8"], ["Purchased", "date", "2025-03-14"], ["Serial number", "text", "WM-000123"]]),
+    vault("Tax return 2025", "Taxes", alex, true, 95, "File by", [["Year", "text", "2025"], ["Reference", "secret", "TR-2025-0000"]]),
   ]);
 
   lap("vault");

@@ -6,4 +6,4 @@ The Vault stores sensitive numbers (passport, insurance, bank details). Values a
 
 - Vault values are never included in data export.
 - The key must be backed up separately from the database.
-- Files (scans, PDFs) are out of scope; if they are ever added this decision must be revisited.
+- Files (scans, PDFs) were out of scope here; ADR 0008 revisits this and adds them under the same key.
