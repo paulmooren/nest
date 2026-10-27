@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getHouseholdIdForUser } from "@/server/api/household";
 import { AuthFrame } from "@/components/auth-frame";
 import { HouseholdSetupForm } from "@/components/household-setup-form";
+import { TRPCProvider } from "@/trpc/react";
 
 export const metadata = { title: "Set up your household" };
 
@@ -17,7 +18,9 @@ export default async function HouseholdSetupPage() {
 
   return (
     <AuthFrame width="max-w-md">
-      <HouseholdSetupForm />
+      <TRPCProvider>
+        <HouseholdSetupForm />
+      </TRPCProvider>
     </AuthFrame>
   );
 }

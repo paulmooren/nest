@@ -8,7 +8,7 @@ import { Button } from "@base-ui/react/button";
 import { Input } from "@base-ui/react/input";
 import { useDelayed } from "@/components/use-delayed";
 import { BudgetsSkeleton } from "@/components/finance/finance-skeletons";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DatePicker } from "@/components/ui/date-picker-lazy";
 
 import { trpc } from "@/trpc/react";
 import { useRefresh } from "@/trpc/optimistic";
