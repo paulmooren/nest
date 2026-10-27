@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
+import { PhoneHint } from "@/components/use-media-query";
+import { guessPhone } from "@/lib/device";
 import { TRPCProvider } from "@/trpc/react";
 import { HydrateClient, caller, getServerContext, loadHousehold, loadQuery } from "@/trpc/server";
 
@@ -27,7 +29,9 @@ export default async function AppLayout({
   return (
     <TRPCProvider>
       <HydrateClient>
-        <AppShell userName={userName}>{children}</AppShell>
+        <PhoneHint phone={await guessPhone()}>
+          <AppShell userName={userName}>{children}</AppShell>
+        </PhoneHint>
       </HydrateClient>
     </TRPCProvider>
   );
