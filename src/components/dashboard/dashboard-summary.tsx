@@ -64,7 +64,7 @@ export function DashboardSummary({ tasks: showTasks, shopping: showShopping, vau
         : shown.map((p, i) => (
             <span key={p.href}>
               {i > 0 && " · "}
-              <Link href={p.href} className="hover:text-text hover:underline">
+              <Link href={p.href} className="tap-target hover:text-text hover:underline">
                 <span className="font-semibold text-text">{p.count}</span> {p.count === 1 ? p.one : p.many}
               </Link>
             </span>

@@ -14,7 +14,7 @@ export function Avatar({
   size?: number;
   className?: string;
 }) {
-  const style = { width: size, height: size, fontSize: Math.max(9, Math.round(size * 0.45)) };
+  const style = { width: size, height: size, fontSize: Math.max(12,Math.round(size * 0.45)) };
   return (
     <BaseAvatar.Root
       style={style}
