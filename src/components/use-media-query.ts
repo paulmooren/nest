@@ -15,5 +15,13 @@ export function useMediaQuery(query: string): boolean {
   );
 }
 
+/** False on the server and during hydration, true after. For work that depends on the screen and must wait for the real one. */
+export const useHydrated = () =>
+  useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+
 /** Below Tailwind's `md` breakpoint: the layouts that swap a table for a list and popovers for sheets. */
 export const useIsPhone = () => useMediaQuery("(max-width: 767px)");

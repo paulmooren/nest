@@ -43,7 +43,7 @@ import { useCategoryAssign } from "@/components/finance/use-category-assign";
 import { AFTER_BULK_TRANSACTION_CHANGE, useTransactionActions } from "@/components/finance/use-transactions";
 import { groupLabel, groupOrder, type Member } from "@/components/finance/ownership-groups";
 import { useConfirm } from "@/components/confirm-dialog";
-import { useIsPhone } from "@/components/use-media-query";
+import { useHydrated, useIsPhone } from "@/components/use-media-query";
 import { useDelayed } from "@/components/use-delayed";
 import { RowsSkeleton } from "@/components/ui/skeleton";
 import { PopoverMenu, MenuItem } from "@/components/popover-menu";
@@ -85,6 +85,9 @@ function TransactionsPageInner() {
   const [filters, setFilters] = useState<TransactionFilters>(NO_FILTERS);
   const filtering = hasFilters(filters);
   const isPhone = useIsPhone();
+  // During hydration isPhone is still false, which would ask for the desktop page size on a phone. Wait for the real screen;
+  // rows the server already loaded for this size are in the cache either way.
+  const hydrated = useHydrated();
   const [pages, setPages] = useState(1);
   const pageSize = isPhone ? PHONE_PAGE_SIZE : PAGE_SIZE;
   const limit = pageSize * pages;
@@ -107,7 +110,7 @@ function TransactionsPageInner() {
       ...(filters.maxAmount !== undefined ? { maxAmount: filters.maxAmount } : {}),
     },
     // Keep the old rows on screen while a new filter loads, so the list doesn't flash empty.
-    { placeholderData: (previous) => previous },
+    { placeholderData: (previous) => previous, enabled: hydrated },
   );
   const { data: household } = trpc.household.current.useQuery();
   const { data: me } = trpc.user.me.useQuery();
@@ -634,7 +637,7 @@ function ManualTransactionForm({
       className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2"
       onInput={(e) => {
         const name = (e.target as HTMLInputElement).name;
-        if (name && errors[name]) setErrors(({ [name]: _gone, ...rest }) => rest);
+        if (name && errors[name]) setErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => key !== name)));
       }}
       onSubmit={(e) => {
         e.preventDefault();
@@ -773,7 +776,7 @@ function CsvImportForm({
   async function handleFile(file: File) {
     setError(null);
     setFileName(file.name);
-    const parsed = parseStatementText(await file.text());
+    const parsed = await parseStatementText(await file.text());
     if (!parsed) {
       setError("Couldn't read the file. Is it a valid CSV file?");
       return;
