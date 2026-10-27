@@ -6,6 +6,8 @@ import { AuthFrame } from "@/components/auth-frame";
 import { DEMO_PERSONAS, isDemoServer } from "@/lib/demo";
 import { signInAsPersona, signInWithGoogle, signInWithPassword } from "./actions";
 
+export const metadata = { title: "Sign in" };
+
 const ERROR_MESSAGES: Record<string, string> = {
   "invalid-credentials": "Incorrect email or password.",
   account_not_linked:

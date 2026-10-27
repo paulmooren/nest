@@ -8,6 +8,8 @@ import { AuthError, AuthHeader, authInputClass, authPrimaryButtonClass } from "@
 import { isDemoServer } from "@/lib/demo";
 import { resetPassword } from "./actions";
 
+export const metadata = { title: "Choose a new password" };
+
 const ERROR_MESSAGES: Record<string, string> = {
   "weak-password": "Password must be at least 8 characters.",
   mismatch: "The two passwords don't match.",

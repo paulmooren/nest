@@ -1,3 +1,5 @@
+import { formatDate } from "@/lib/format";
+
 /** Categories every Household starts with, in order. "Other" is the fallback and can't be deleted. */
 export const DEFAULT_VAULT_CATEGORIES = [
   "ID",
@@ -74,12 +76,19 @@ export function daysUntil(date: Date | string): number {
   return Math.round((target - today) / 86_400_000);
 }
 
-export function expiryLabel(date: Date | string, label?: string | null): { text: string; critical: boolean } {
+/**
+ * `text` is the headline. A custom label ("Valid until", "Renews on") ends in a preposition and takes a date, not
+ * "in 40 days", so with a label the headline is label + date and `relative` carries the countdown separately.
+ */
+export function expiryLabel(
+  date: Date | string,
+  label?: string | null,
+): { text: string; relative: string; critical: boolean } {
   const days = daysUntil(date);
-  const noun = label ?? "Expires";
-  if (days < 0) return { text: days === -1 ? `${noun} yesterday` : `${noun} ${-days} days ago`, critical: true };
-  if (days === 0) return { text: `${noun} today`, critical: true };
-  return { text: `${noun} in ${days} day${days === 1 ? "" : "s"}`, critical: days <= VAULT_EXPIRY_WARNING_DAYS };
+  const relative =
+    days < -1 ? `${-days} days ago` : days === -1 ? "yesterday" : days === 0 ? "today" : `in ${days} day${days === 1 ? "" : "s"}`;
+  const critical = days <= VAULT_EXPIRY_WARNING_DAYS;
+  return { text: label ? `${label} ${formatDate(date)}` : `Expires ${relative}`, relative, critical };
 }
 
 export function formatFileSize(bytes: number): string {

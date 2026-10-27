@@ -39,6 +39,11 @@ function EntryDetail({ id }: { id: string }) {
   const vault = useVaultActions();
   const refresh = useRefreshVault();
   const { data: entry, error } = trpc.vault.get.useQuery({ id }, { retry: false });
+  // The section layout titles this page "Vault"; name the entry too, so a tab or history list tells entries apart.
+  const entryTitle = entry?.title;
+  useEffect(() => {
+    if (entryTitle) document.title = `${entryTitle} · Vault · Nest`;
+  }, [entryTitle]);
   const { data: categories } = trpc.vault.listCategories.useQuery();
   const { data: me } = trpc.user.me.useQuery();
   const { data: household } = trpc.household.current.useQuery();
@@ -183,8 +188,10 @@ function EntryDetail({ id }: { id: string }) {
         </div>
         {expiry && (
           <p className={`text-[15px] font-medium ${expiry.critical ? "text-critical" : "text-text"}`}>
-            {expiry.text}
-            <span className="ml-2 text-[13px] font-normal text-text-muted">{formatDate(entry.expiresOn!)}</span>
+            {expiry.text}{" "}
+            <span className="ml-2 text-[13px] font-normal text-text-muted">
+              {entry.expiryLabel ? expiry.relative : formatDate(entry.expiresOn!)}
+            </span>
           </p>
         )}
         <div className="flex flex-wrap items-center gap-2">
@@ -270,7 +277,7 @@ function EntryDetail({ id }: { id: string }) {
                 type="button"
                 disabled={uploading}
                 onClick={() => fileInput.current?.click()}
-                className="min-h-[var(--tap)] px-2 text-[14px] font-medium text-accent hover:opacity-80 disabled:opacity-60 md:min-h-0 md:text-[12.5px]"
+                className="tap-target min-h-[var(--tap)] px-2 text-[14px] font-medium text-accent hover:opacity-80 disabled:opacity-60 md:min-h-0 md:text-[12.5px]"
               >
                 {uploading ? "Uploading…" : "+ Add file"}
               </Button>
@@ -321,7 +328,7 @@ function EntryDetail({ id }: { id: string }) {
 
 function BackLink() {
   return (
-    <Link href="/vault" className="inline-flex min-h-[var(--tap)] w-fit items-center text-[14px] font-medium text-accent hover:opacity-80 md:min-h-0 md:text-[13px]">
+    <Link href="/vault" className="tap-target inline-flex min-h-[var(--tap)] w-fit items-center text-[14px] font-medium text-accent hover:opacity-80 md:min-h-0 md:text-[13px]">
       ← Vault
     </Link>
   );
@@ -371,7 +378,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
         setTimeout(() => setCopied(false), 1500);
       }}
       aria-label={`${copied ? "Copied" : "Copy"} ${label}`}
-      className="min-h-[var(--tap)] px-2 text-[14px] font-medium text-accent hover:opacity-80 md:min-h-0 md:px-0 md:text-[12px]"
+      className="tap-target min-h-[var(--tap)] px-2 text-[14px] font-medium text-accent hover:opacity-80 md:min-h-0 md:px-0 md:text-[12px]"
     >
       {copied ? "Copied" : "Copy"}
     </Button>

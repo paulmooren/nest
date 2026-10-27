@@ -7,6 +7,8 @@ import { AuthFrame } from "@/components/auth-frame";
 import { isDemoServer } from "@/lib/demo";
 import { signUpWithPassword } from "./actions";
 
+export const metadata = { title: "Create account" };
+
 const ERROR_MESSAGES: Record<string, string> = {
   "weak-password": "Password must be at least 8 characters.",
   "email-taken": "That email is already registered — try signing in instead.",

@@ -6,6 +6,8 @@ import { getHouseholdIdForUser } from "@/server/api/household";
 import { AuthFrame } from "@/components/auth-frame";
 import { HouseholdSetupForm } from "@/components/household-setup-form";
 
+export const metadata = { title: "Set up your household" };
+
 export default async function HouseholdSetupPage() {
   const session = await getSession();
   if (!session?.user) redirect("/signin");

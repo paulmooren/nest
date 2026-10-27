@@ -19,7 +19,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Nest",
+  title: { default: "Nest", template: "%s · Nest" },
   description: "An overview of your accounts, budgets, and spending.",
   // Lets iOS run the saved home-screen app full screen, with the right name.
   appleWebApp: { capable: true, title: "Nest", statusBarStyle: "default" },

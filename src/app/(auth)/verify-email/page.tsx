@@ -3,6 +3,8 @@ import Link from "next/link";
 import { AuthFrame } from "@/components/auth-frame";
 import { AuthHeader, AuthNote } from "@/components/auth-ui";
 
+export const metadata = { title: "Verify your email" };
+
 const NOTES: Record<string, string> = {
   invalid: "That confirmation link is invalid or has expired. Sign in and we'll send you a new one.",
   unverified: "Your email isn't confirmed yet. We've just sent you a new link.",
