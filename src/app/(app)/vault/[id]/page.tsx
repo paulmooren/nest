@@ -233,7 +233,7 @@ function EntryDetail({ id }: { id: string }) {
               <dd className={`min-w-0 flex-1 break-all text-[14.5px] ${f.kind === "secret" ? "font-mono" : ""}`}>
                 {f.value === null ? <span className="tracking-widest text-text-faint">••••••••</span> : f.kind === "date" && f.value ? formatDate(f.value) : f.value}
               </dd>
-              {f.value !== null && <CopyButton value={f.value} />}
+              {f.value !== null && <CopyButton value={f.value} label={f.label} />}
             </div>
           ))}
           {entry.hasNote && (
@@ -345,6 +345,8 @@ function ActionButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
+      // Stay focusable while busy, so activating "Reveal secrets" doesn't drop keyboard focus to the page.
+      focusableWhenDisabled
       className={`min-h-[var(--tap)] rounded-full px-4 text-[14px] font-medium transition-colors disabled:opacity-60 md:min-h-0 md:px-3.5 md:py-1.5 md:text-[13px] ${
         primary
           ? "bg-accent-fill text-accent-ink hover:opacity-90"
@@ -358,7 +360,7 @@ function ActionButton({
   );
 }
 
-function CopyButton({ value }: { value: string }) {
+function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <Button
@@ -368,6 +370,7 @@ function CopyButton({ value }: { value: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
+      aria-label={`${copied ? "Copied" : "Copy"} ${label}`}
       className="min-h-[var(--tap)] px-2 text-[14px] font-medium text-accent hover:opacity-80 md:min-h-0 md:px-0 md:text-[12px]"
     >
       {copied ? "Copied" : "Copy"}
