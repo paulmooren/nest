@@ -37,12 +37,15 @@ export function ResponsiveSheet({
   onOpenChange,
   title,
   description,
+  wide,
   children,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: React.ReactNode
   description?: React.ReactNode
+  /** A wider dialog on desktop, for a table or a long form. A phone sheet is always full width. */
+  wide?: boolean
   children: React.ReactNode
 }) {
   const phone = useIsPhone()
@@ -63,7 +66,7 @@ export function ResponsiveSheet({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent initialFocus={initialFocus}>
+      <DialogContent initialFocus={initialFocus} className={cn("max-h-[90dvh] overflow-y-auto", wide && "sm:max-w-3xl")}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}

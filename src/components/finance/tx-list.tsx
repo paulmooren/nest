@@ -11,6 +11,7 @@ import { ConfirmDelete } from "@/components/ds/confirm-delete";
 import { Field } from "@/components/ds/field";
 import { ResponsiveSheet } from "@/components/ds/responsive-sheet";
 import { Row, RowList } from "@/components/ds/row";
+import { RepeatIcon } from "lucide-react";
 import { TRANSFER_COLOR } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 
@@ -40,12 +41,18 @@ export function TxRows({
   transactions,
   accountId,
   showAccount,
+  showDate = true,
+  isRecurring,
   onOpen,
 }: {
   transactions: Tx[];
   accountId?: string;
   /** Name the account in the meta line, for lists that mix accounts. */
   showAccount?: boolean;
+  /** Off when a heading above the rows already says the day. */
+  showDate?: boolean;
+  /** Which rows belong to a recurring item; they get a small repeat mark. */
+  isRecurring?: (tx: Tx) => boolean;
   onOpen: (tx: Tx) => void;
 }) {
   return (
@@ -53,7 +60,7 @@ export function TxRows({
       {transactions.map((t) => {
         const d = describeTx(t, accountId);
         const meta = [
-          formatDate(t.date),
+          showDate ? formatDate(t.date) : undefined,
           t.type === "TRANSFER" ? "Transfer" : (t.category?.name ?? "No category"),
           showAccount ? t.account?.name : undefined,
         ]
@@ -63,7 +70,16 @@ export function TxRows({
           <Row
             key={t.id}
             leading={<span className="block size-3 rounded-full" style={{ background: d.color }} aria-hidden />}
-            title={d.label}
+            title={
+              isRecurring?.(t) ? (
+                <span className="inline-flex items-center gap-1.5">
+                  {d.label}
+                  <RepeatIcon className="size-3.5 text-success" role="img" aria-label="Recurring" />
+                </span>
+              ) : (
+                d.label
+              )
+            }
             meta={meta}
             trailing={<AmountText value={d.value} signed={d.signed} className="font-semibold" />}
             onClick={() => onOpen(t)}
@@ -81,6 +97,8 @@ export function TxSheet({
   categories,
   canEdit,
   onCategory,
+  onMarkRecurring,
+  recurringText,
   onDelete,
   onClose,
 }: {
@@ -89,6 +107,10 @@ export function TxSheet({
   categories: TxCategory[];
   canEdit: boolean;
   onCategory: (categoryId: string | null) => void;
+  /** Offered when the transaction is not part of a recurring item yet. */
+  onMarkRecurring?: () => void;
+  /** Set when it is: "Recurring · every month". */
+  recurringText?: string | null;
   onDelete: () => void;
   onClose: () => void;
 }) {
@@ -128,6 +150,12 @@ export function TxSheet({
             </Field>
           )}
           {tx.note && <p className="text-sm text-muted-foreground">{tx.note}</p>}
+          {recurringText && <p className="text-sm text-success">{recurringText}</p>}
+          {canEdit && !recurringText && onMarkRecurring && (
+            <Button variant="outline" className="self-start" onClick={onMarkRecurring}>
+              <RepeatIcon /> Mark as recurring
+            </Button>
+          )}
           <div className="flex gap-2">
             <Button size="lg" className="flex-1" onClick={onClose}>
               Done
