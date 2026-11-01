@@ -17,7 +17,7 @@ import { EmptyState } from "@/components/ds/empty-state";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ds/select";
 import { Skeleton } from "@/components/ds/skeleton";
 import { FinancePage } from "@/components/finance/finance-page";
-import { MarkRecurringModal, type RecurringSource } from "@/components/finance/mark-recurring-modal";
+import { MarkRecurringSheet, type RecurringSource } from "@/components/finance/mark-recurring-sheet";
 import { groupLabel, type Member } from "@/components/finance/ownership-groups";
 import {
   NO_FILTERS,
@@ -370,7 +370,7 @@ function Transactions() {
       )}
 
       {recurringFor && (
-        <MarkRecurringModal
+        <MarkRecurringSheet
           source={recurringFor}
           categories={categories ?? []}
           onClose={() => setRecurringFor(null)}

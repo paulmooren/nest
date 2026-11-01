@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -30,6 +31,8 @@ export function SortableList({
   onReorder: (ids: string[]) => void;
   children: React.ReactNode;
 }) {
+  // A fixed id, so the server and the browser agree on the ids dnd-kit puts in aria-describedby.
+  const contextId = useId();
   const sensors = useSensors(
     // A small movement before it counts as a drag, so a plain click on the grip does nothing.
     useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
@@ -47,7 +50,7 @@ export function SortableList({
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+    <DndContext id={contextId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         {children}
       </SortableContext>
@@ -83,6 +86,8 @@ export function SortableBoard({
   onDrop: (drop: BoardDrop) => void;
   children: React.ReactNode;
 }) {
+  // A fixed id, so the server and the browser agree on the ids dnd-kit puts in aria-describedby.
+  const contextId = useId();
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
@@ -120,7 +125,7 @@ export function SortableBoard({
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragEnd={onDragEnd}>
+    <DndContext id={contextId} sensors={sensors} collisionDetection={collisionDetection} onDragEnd={onDragEnd}>
       {children}
     </DndContext>
   );
