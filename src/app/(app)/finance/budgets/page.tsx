@@ -12,7 +12,7 @@ import { DatePicker } from "@/components/ui/date-picker-lazy";
 
 import { trpc } from "@/trpc/react";
 import { useRefresh } from "@/trpc/optimistic";
-import { formatEUR, formatSignedEUR, formatDate } from "@/lib/format";
+import { formatEUR, formatSignedEUR } from "@/lib/format";
 import {
   HOUSEHOLD,
   YOU,
@@ -35,9 +35,7 @@ import { Checkbox } from "@/components/checkbox";
 import { groupLabel, type Member } from "@/components/finance/ownership-groups";
 import { InlineEdit } from "@/components/inline-edit";
 import { parseMoney } from "@/lib/money";
-import { VisibilityToggle, VisibilityBadge } from "@/components/finance/visibility-toggle";
 import { InlineSelect } from "@/components/ui/select";
-import { ChoiceChips, SheetField } from "@/components/choice-chips";
 import { useIsPhone } from "@/components/use-media-query";
 import { Modal, ModalFooter } from "@/components/modal";
 
@@ -463,7 +461,6 @@ function RecurringItems({
           onUpdate={(id, values) => recurring.update({ id, ...values })}
           onDelete={(id) => recurring.remove({ id })}
           onReorder={(ids) => recurring.reorder({ ids })}
-          onToggleVisibility={(id, visible) => recurring.update({ id, visibleToHousehold: visible })}
           onAcceptProposal={(id) => recurring.acceptProposal({ id })}
           onKeepAmount={(id) => recurring.keepAmount({ id })}
           groups={groups}
@@ -489,7 +486,6 @@ function RecurringItems({
           onUpdate={(id, values) => recurring.update({ id, ...values })}
           onDelete={(id) => recurring.remove({ id })}
           onReorder={(ids) => recurring.reorder({ ids })}
-          onToggleVisibility={(id, visible) => recurring.update({ id, visibleToHousehold: visible })}
           onAcceptProposal={(id) => recurring.acceptProposal({ id })}
           onKeepAmount={(id) => recurring.keepAmount({ id })}
           groups={groups}
@@ -520,7 +516,6 @@ function RecurringColumn({
   onUpdate,
   onDelete,
   onReorder,
-  onToggleVisibility,
   onAcceptProposal,
   onKeepAmount,
   groups: budgetGroups,
@@ -546,7 +541,6 @@ function RecurringColumn({
   onDelete: (id: string) => void;
   /** The new order of these items, after one was dragged. */
   onReorder: (ids: string[]) => void;
-  onToggleVisibility: (id: string, visible: boolean) => void;
   onAcceptProposal: (id: string) => void;
   onKeepAmount: (id: string) => void;
   groups: BudgetGroup[];
@@ -573,7 +567,6 @@ function RecurringColumn({
       groups={budgetGroups}
       onUpdate={(values) => onUpdate(entry.item.id, values)}
       onDelete={() => onDelete(entry.item.id)}
-      onToggleVisibility={(visible) => onToggleVisibility(entry.item.id, visible)}
       onAcceptProposal={() => onAcceptProposal(entry.item.id)}
       onKeepAmount={() => onKeepAmount(entry.item.id)}
     />
@@ -658,7 +651,6 @@ function RecurringRow({
   groups,
   onUpdate,
   onDelete,
-  onToggleVisibility,
   onAcceptProposal,
   onKeepAmount,
 }: {
@@ -673,7 +665,6 @@ function RecurringRow({
   groups: BudgetGroup[];
   onUpdate: (values: Partial<FormValues>) => void;
   onDelete: () => void;
-  onToggleVisibility: (visible: boolean) => void;
   onAcceptProposal: () => void;
   onKeepAmount: () => void;
 }) {
@@ -682,8 +673,6 @@ function RecurringRow({
   // On a phone the name opens a sheet with the row's other controls; the pill, icons and inline edits are desktop controls.
   const [sheetOpen, setSheetOpen] = useState(false);
   const isTransfer = item.type === "TRANSFER";
-  // Due, but not in the transactions yet: say so quietly — it still counts.
-  const notSeen = item.nextDueDate !== null && new Date(item.nextDueDate).getTime() < todayInHousehold().getTime();
   const isOwn = item.ownerId === currentUserId;
   const canEdit = item.ownerId === null || isOwn;
   // On a phone there is no handle: press and hold anywhere on the row, then drag.
@@ -721,7 +710,7 @@ function RecurringRow({
       {...(phone && canEdit ? listeners : {})}
       // Up and down only: the row follows the pointer vertically.
       style={{ transform: CSS.Transform.toString(transform ? { ...transform, x: 0 } : null), transition }}
-      className={`relative flex items-center gap-3 border-b border-border-soft px-4 py-3.5 transition-colors last:border-b-0 hover:bg-surface-hover max-md:select-none max-md:[-webkit-touch-callout:none] md:px-6 ${
+      className={`relative flex flex-wrap items-center gap-3 border-b border-border-soft px-4 py-4 transition-colors last:border-b-0 hover:bg-surface-hover max-md:select-none max-md:[-webkit-touch-callout:none] md:px-6 ${
         isDragging ? "z-10 bg-surface shadow-lg" : ""
       }`}
     >
@@ -746,17 +735,50 @@ function RecurringRow({
         style={{ background: item.category?.color ?? "#5c5f66" }}
       />
       <div className="min-w-0 flex-1">
-        <div className="hidden items-center gap-2 text-[13.5px] font-medium md:flex">
-          {canEdit ? (
-            <InlineEdit
-              value={item.name}
-              ariaLabel="Name"
-              onCommit={(name) => onUpdate({ name })}
-              className="text-[13.5px] font-medium"
-            />
-          ) : (
-            item.name
+        {/* Desktop: name and amount share the first line. */}
+        <div className="hidden items-center justify-between gap-4 text-[13.5px] font-medium md:flex">
+          <div className="flex min-w-0 items-center gap-2">
+            {canEdit ? (
+              <InlineEdit
+                value={item.name}
+                ariaLabel="Name"
+                onCommit={(name) => onUpdate({ name })}
+                className="text-[13.5px] font-medium"
+              />
+            ) : (
+              item.name
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+          {item.amountVaries && (
+            <span
+              title="The amount changes from payment to payment; this is the average of the last three"
+              className="rounded-md bg-surface-2 px-1.5 py-0.5 text-[12px] font-medium text-text-muted"
+            >
+              varies
+            </span>
           )}
+          {canEdit ? (
+            <span>
+              <InlineEdit
+                value={String(item.amount)}
+                editValue={formatEUR(item.amount)}
+                display={formatEUR(item.amount)}
+                ariaLabel="Amount"
+                maxLength={14}
+                onCommit={(text) => {
+                  // Accepts what was on screen ("€1,250.00") or a plain number ("1250,50").
+                  const parsed = parseMoney(text);
+                  if (parsed !== null && parsed > 0) onUpdate({ amount: parsed });
+                }}
+                className="text-right text-[14px] font-semibold tabular-nums"
+                buttonClassName="block"
+              />
+            </span>
+          ) : (
+            <div className="text-[14px] font-semibold tabular-nums">{formatEUR(item.amount)}</div>
+          )}
+          </div>
         </div>
         {/* Phone: name and amount share the first line, the schedule sits under them at full width. */}
         <div className="flex items-start justify-between gap-3 md:hidden">
@@ -780,78 +802,12 @@ function RecurringRow({
             </>
           )}
           {describeSchedule(item.intervalCount, item.intervalUnit)}
-          {item.nextDueDate &&
-            (notSeen ? (
-              <span className="text-text-faint"> · expected {formatDate(item.nextDueDate)} — not seen yet</span>
-            ) : (
-              <> · next {formatDate(item.nextDueDate)}</>
-            ))}
         </div>
-        {item.proposal !== null && (
-          <div data-proposal className="mt-1.5 flex flex-wrap items-center gap-2 text-[12px]">
-            <span className="font-medium text-text">
-              New amount {formatEUR(item.proposal)}
-              <span className="font-normal text-text-faint"> · was {formatEUR(item.amount)}</span>
-            </span>
-            {canEdit && (
-              <>
-                <Button
-                  type="button"
-                  onClick={onAcceptProposal}
-                  className="min-h-[var(--tap)] rounded-md bg-accent-fill px-3 py-0.5 font-semibold text-accent-ink hover:opacity-90 md:min-h-0 md:px-2"
-                >
-                  Update
-                </Button>
-                <Button
-                  type="button"
-                  onClick={onKeepAmount}
-                  className="min-h-[var(--tap)] rounded-md border border-border-soft px-3 py-0.5 font-medium text-text-muted hover:text-text md:min-h-0 md:px-2"
-                >
-                  Keep
-                </Button>
-              </>
-            )}
-          </div>
-        )}
         {item.drift !== null && (
           <p className="mt-1 text-[12px] text-text-faint">Payments are now {formatEUR(item.drift)}</p>
         )}
       </div>
-      {item.amountVaries && (
-        <span
-          title="The amount changes from payment to payment; this is the average of the last three"
-          className="hidden rounded-md bg-surface-2 px-1.5 py-0.5 text-[12px] font-medium text-text-muted md:inline"
-        >
-          varies
-        </span>
-      )}
-      {canEdit ? (
-        <span className="hidden md:block">
-          <InlineEdit
-            value={String(item.amount)}
-            editValue={formatEUR(item.amount)}
-            display={formatEUR(item.amount)}
-            ariaLabel="Amount"
-            maxLength={14}
-            onCommit={(text) => {
-              // Accepts what was on screen ("€1,250.00") or a plain number ("1250,50").
-              const parsed = parseMoney(text);
-              if (parsed !== null && parsed > 0) onUpdate({ amount: parsed });
-            }}
-            className="text-right text-[14px] font-semibold tabular-nums"
-            buttonClassName="block"
-          />
-        </span>
-      ) : (
-        <div className="hidden text-[14px] font-semibold tabular-nums md:block">{formatEUR(item.amount)}</div>
-      )}
-      <div className="hidden items-center gap-3 md:flex">
-        {item.ownerId !== null &&
-          (isOwn ? (
-            <VisibilityToggle visible={item.visibleToHousehold} onChange={onToggleVisibility} />
-          ) : (
-            <VisibilityBadge />
-          ))}
+      <div className="hidden shrink-0 items-center gap-3 md:flex">
         {item.paymentCount > 0 && (
           <Button
             onClick={() => setShowHistory(true)}
@@ -881,18 +837,46 @@ function RecurringRow({
           </>
         )}
       </div>
+      {item.proposal !== null && (
+        // Its own full-width line under the row, so the prompt never competes with the name and controls for space.
+        <div
+          data-proposal
+          className="flex w-full flex-wrap items-center gap-x-3 gap-y-2 pt-1 pl-[15px] text-[13px] md:pl-[35px]"
+        >
+          <span className="font-medium text-text">
+            New amount {formatEUR(item.proposal)}
+            <span className="font-normal text-text-faint"> · was {formatEUR(item.amount)}</span>
+          </span>
+          {canEdit && (
+            <span className="flex items-center gap-2">
+              <Button
+                type="button"
+                onClick={onAcceptProposal}
+                className="min-h-[var(--tap)] rounded-md bg-accent-fill px-3 py-1 font-semibold text-accent-ink hover:opacity-90 md:min-h-0"
+              >
+                Update
+              </Button>
+              <Button
+                type="button"
+                onClick={onKeepAmount}
+                className="min-h-[var(--tap)] rounded-md border border-border-soft px-3 py-1 font-medium text-text-muted hover:text-text md:min-h-0"
+              >
+                Keep
+              </Button>
+            </span>
+          )}
+        </div>
+      )}
     </div>
     {sheetOpen && (
       <RecurringSheet
         item={item}
         canEdit={canEdit}
-        isOwn={isOwn}
         meta={
           (isTransfer ? `${side === "EXPENSE" ? `Transfer to ${accountName(item.toAccountId)}` : `Transfer from ${accountName(item.accountId)}`} · ` : "") +
           describeSchedule(item.intervalCount, item.intervalUnit) +
-          (item.nextDueDate ? ` · next ${formatDate(item.nextDueDate)}` : "")
+""
         }
-        onToggleVisibility={onToggleVisibility}
         onEdit={() => {
           setSheetOpen(false);
           setEditing(true);
@@ -1114,9 +1098,7 @@ function InlineRecurringRow({
 function RecurringSheet({
   item,
   canEdit,
-  isOwn,
   meta,
-  onToggleVisibility,
   onEdit,
   onHistory,
   onDelete,
@@ -1124,9 +1106,7 @@ function RecurringSheet({
 }: {
   item: Item;
   canEdit: boolean;
-  isOwn: boolean;
   meta: string;
-  onToggleVisibility: (visible: boolean) => void;
   onEdit: () => void;
   onHistory: () => void;
   onDelete: () => void;
@@ -1141,22 +1121,6 @@ function RecurringSheet({
           {item.amountVaries && <p className="mt-1 text-[14px] text-text-muted">The amount varies; this is the average of the last three payments.</p>}
           {item.drift !== null && <p className="mt-1 text-[14px] text-text-muted">Payments are now {formatEUR(item.drift)}</p>}
         </div>
-        {item.ownerId !== null &&
-          (isOwn ? (
-            <SheetField label="Visibility">
-              <ChoiceChips
-                label="Visibility"
-                value={item.visibleToHousehold ? "visible" : "private"}
-                onChange={(v) => onToggleVisibility(v === "visible")}
-                options={[
-                  { value: "private", label: "Private" },
-                  { value: "visible", label: "Visible to household" },
-                ]}
-              />
-            </SheetField>
-          ) : (
-            <VisibilityBadge />
-          ))}
       </div>
       <ModalFooter>
         {canEdit && (
