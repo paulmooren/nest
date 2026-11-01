@@ -1,9 +1,9 @@
 "use client";
 
-import { Field } from "@/components/ds/field";
-import { Input } from "@/components/ds/input";
-import { ChoiceChips } from "@/components/ds/choice-chips";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ds/select";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { ChoiceChips } from "@/components/ui/choice-chips";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SCHEDULE_UNITS, unitLabel, type ScheduleMode, type ScheduleUnit } from "@/lib/schedule";
 
 export type Schedule = { intervalCount: number; intervalUnit: ScheduleUnit; mode: ScheduleMode };

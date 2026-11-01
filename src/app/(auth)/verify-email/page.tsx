@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { AuthFrame, AuthHeader, AuthNotice } from "@/components/ds/auth-frame";
+import { AuthFrame, AuthHeader, AuthNotice } from "@/components/ui/auth-frame";
 
 export const metadata = { title: "Verify your email" };
 

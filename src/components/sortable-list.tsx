@@ -146,7 +146,7 @@ export function SortableSection({
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
     <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-      <div ref={setNodeRef} className={isOver && ids.length === 0 ? "bg-surface-2" : ""}>
+      <div ref={setNodeRef} className={isOver && ids.length === 0 ? "bg-muted" : ""}>
         {children}
         {ids.length === 0 && empty}
       </div>

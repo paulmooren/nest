@@ -6,7 +6,7 @@ import { Button } from "@base-ui/react/button";
 import { trpc } from "@/trpc/react";
 import { useOptimisticMutation } from "@/trpc/optimistic";
 import { Toast, toastPrimary, toastSecondary } from "@/components/toast";
-import type { Category } from "@/components/finance/category-cell";
+import type { Category } from "@/components/finance/types";
 
 /** Merchant text as the server compares it: ignoring case, surrounding spaces and repeated spaces. */
 const sameText = (merchant: string) => merchant.trim().replace(/\s+/g, " ").toLowerCase();

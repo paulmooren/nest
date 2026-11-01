@@ -36,7 +36,11 @@ const measure = () => {
     if (cs.visibility === "hidden" || cs.display === "none") continue;
     if (r.right > vw + 1 && !el.closest("[class*=overflow-x]")) out.overflowing.push(`${el.tagName.toLowerCase()}.${String(el.className).slice(0, 50)} →${Math.round(r.right)}`);
     if (el.matches("a,button,[role=button],[role=tab],[role=checkbox],[role=switch],input:not([type=hidden]),select,textarea")) {
-      if ((r.width < 44 || r.height < 44) && r.width > 2 && !el.classList.contains("tap-target")) out.smallTargets.push(`${label(el)} ${Math.round(r.width)}×${Math.round(r.height)}`);
+      // A checkbox or switch looks small but grows its hit area to 44px with ::after, and a link inside a sentence is
+      // exempt (WCAG 2.5.8 inline exception). From 768px up the layout is the desktop's, with its own sizes.
+      const growsHitArea = el.matches("[data-slot=checkbox],[data-slot=switch]");
+      const inline = el.matches("a") && !!el.closest("p");
+      if (vw < 768 && (r.width < 44 || r.height < 44) && r.width > 2 && !growsHitArea && !inline) out.smallTargets.push(`${label(el)} ${Math.round(r.width)}×${Math.round(r.height)}`);
     }
     if (el.matches("input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=hidden]):not([type=file]),select,textarea") && parseFloat(cs.fontSize) < 16) out.smallInputs.push(`${label(el)} ${cs.fontSize}`);
     if (el.childNodes.length && [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && parseFloat(cs.fontSize) < 12) out.tinyText++;

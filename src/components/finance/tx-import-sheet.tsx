@@ -10,10 +10,10 @@ import { formatDate, formatEUR } from "@/lib/format";
 import { parseStatementText, statementIban, type ImportResult } from "@/lib/statement-import";
 import { suggestCategoryId } from "@/lib/categorize";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ds/button";
-import { Field } from "@/components/ds/field";
-import { ResponsiveSheet } from "@/components/ds/responsive-sheet";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ds/select";
+import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AFTER_BULK_TRANSACTION_CHANGE } from "@/components/finance/use-transactions";
 
 type ParsedRow = Record<string, string>;

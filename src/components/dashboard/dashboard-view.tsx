@@ -4,8 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 
 import { trpc } from "@/trpc/react";
-import { EmptyState } from "@/components/ds/empty-state";
-import { PageBody, PageHeader } from "@/components/ds/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageBody, PageHeader } from "@/components/ui/page-header";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import { DashboardSummary } from "@/components/dashboard/dashboard-summary";
 import { MissingStatementsCard } from "@/components/dashboard/missing-statements-card";

@@ -1,5 +1,7 @@
 # Mobile strategy (draft for sign-off)
 
+> The UI was rebuilt from scratch after this was written (see `docs/rebuild/MASTER_BRIEF.md` and ADR 0009). The principles below still hold; the implementation notes refer to the old components.
+
 Status: **proposal, nothing implemented yet.** Based on [audit.md](./audit.md).
 
 ## 1. Diagnosis in one paragraph

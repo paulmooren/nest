@@ -9,9 +9,9 @@ import { parseMoney } from "@/lib/money";
 import { monthlyEquivalent } from "@/lib/recurring";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ds/button";
-import { Input } from "@/components/ds/input";
-import { ResponsiveSheet } from "@/components/ds/responsive-sheet";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { useRecurringActions } from "@/components/finance/use-recurring";
 
 const BASIS_LABELS: Record<BudgetBasis, { title: string; hint: string }> = {

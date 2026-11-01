@@ -6,11 +6,11 @@ import { trpc } from "@/trpc/react";
 import { useRefresh } from "@/trpc/optimistic";
 import { ACCOUNT_TYPE_LABELS, type AccountType } from "@/lib/constants";
 import { parseMoney } from "@/lib/money";
-import { Button } from "@/components/ds/button";
-import { ChoiceChips } from "@/components/ds/choice-chips";
-import { Field } from "@/components/ds/field";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ds/select";
-import { TextField } from "@/components/ds/text-field";
+import { Button } from "@/components/ui/button";
+import { ChoiceChips } from "@/components/ui/choice-chips";
+import { Field } from "@/components/ui/field";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TextField } from "@/components/ui/text-field";
 import { AFTER_ACCOUNT_CREATED } from "@/components/finance/use-accounts";
 import { AFTER_BULK_TRANSACTION_CHANGE } from "@/components/finance/use-transactions";
 

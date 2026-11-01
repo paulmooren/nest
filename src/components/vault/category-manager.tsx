@@ -4,10 +4,10 @@ import { useState } from "react";
 import { ArrowDownIcon, ArrowUpIcon, Trash2Icon } from "lucide-react";
 
 import { trpc } from "@/trpc/react";
-import { Button } from "@/components/ds/button";
-import { ConfirmDelete } from "@/components/ds/confirm-delete";
-import { Input } from "@/components/ds/input";
-import { ResponsiveSheet } from "@/components/ds/responsive-sheet";
+import { Button } from "@/components/ui/button";
+import { ConfirmDelete } from "@/components/ui/confirm-delete";
+import { Input } from "@/components/ui/input";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { showToast } from "@/components/toast";
 import { newId } from "@/lib/client-id";
 

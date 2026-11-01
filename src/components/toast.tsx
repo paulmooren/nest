@@ -36,10 +36,10 @@ function ToastList() {
     <BaseToast.Root
       key={toast.id}
       toast={toast}
-      className="flex flex-col gap-3 rounded-2xl bg-text p-4 text-bg shadow-2xl outline-none"
+      className="flex flex-col gap-3 rounded-2xl bg-foreground p-4 text-background shadow-2xl outline-none"
     >
       <BaseToast.Content>
-        <BaseToast.Description render={<div />} className="text-[13.5px]">
+        <BaseToast.Description render={<div />} className="text-sm">
           {toast.description}
         </BaseToast.Description>
       </BaseToast.Content>
@@ -125,6 +125,6 @@ export function showToast(message: string) {
 
 /** Primary (light) and secondary (outlined) buttons for a Toast's `actions`. */
 export const toastPrimary =
-  "flex-1 rounded-xl bg-bg px-4 py-2.5 text-center text-[13.5px] font-semibold text-text hover:opacity-90";
+  "flex min-h-11 flex-1 items-center justify-center rounded-xl bg-background px-4 py-2.5 text-center text-sm font-semibold text-foreground hover:opacity-90 hover:bg-background";
 export const toastSecondary =
-  "rounded-xl border border-white/25 px-4 py-2.5 text-center text-[13.5px] font-medium hover:bg-white/10";
+  "flex min-h-11 items-center justify-center rounded-xl border border-background/25 bg-transparent px-4 py-2.5 text-center text-sm font-medium text-background hover:bg-background/10 hover:text-background";

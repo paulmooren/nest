@@ -11,13 +11,13 @@ import {
   type VaultField,
   type VaultFieldKind,
 } from "@/lib/vault";
-import { Button } from "@/components/ds/button";
-import { ChoiceChips } from "@/components/ds/choice-chips";
-import { Field } from "@/components/ds/field";
-import { Input } from "@/components/ds/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ds/select";
-import { Textarea } from "@/components/ds/textarea";
-import { TextField } from "@/components/ds/text-field";
+import { Button } from "@/components/ui/button";
+import { ChoiceChips } from "@/components/ui/choice-chips";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { TextField } from "@/components/ui/text-field";
 import { prepareFiles } from "@/components/vault/uploads";
 
 export type VaultFormValues = {

@@ -1,8 +1,8 @@
 import Link from "next/link";
 
-import { AuthFrame, AuthHeader, AuthNotice } from "@/components/ds/auth-frame";
-import { Button } from "@/components/ds/button";
-import { Input } from "@/components/ds/input";
+import { AuthFrame, AuthHeader, AuthNotice } from "@/components/ui/auth-frame";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { DEMO_PERSONAS, isDemoServer } from "@/lib/demo";
 import { signInAsPersona, signInWithGoogle, signInWithPassword } from "./actions";
 

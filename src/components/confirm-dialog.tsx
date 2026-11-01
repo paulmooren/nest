@@ -1,103 +1,31 @@
 "use client";
 
 import { createContext, useCallback, useContext, useRef, useState } from "react";
-import { AlertDialog } from "@base-ui/react/alert-dialog";
-import { Button } from "@base-ui/react/button";
 
-import { returnFocusTo, useOpener } from "@/components/ui/focus";
-
-const BACKDROP = "fixed inset-0 bg-black/40 supports-[-webkit-touch-callout:none]:absolute";
-const VIEWPORT = "fixed inset-0 flex items-end justify-center p-4 sm:items-center";
-const POPUP = "relative w-full max-w-sm rounded-[20px] bg-surface p-5 shadow-2xl outline-none";
-const CONFIRM_BUTTON = "flex-1 rounded-xl bg-critical px-4 py-3 text-[14px] font-semibold text-white hover:opacity-90";
-const CANCEL_BUTTON = "flex-1 rounded-xl border border-border-soft px-4 py-3 text-[14px] font-medium text-text-muted hover:text-text";
-
-/**
- * Small centred overlay asking "are you sure?" — used instead of the browser's
- * confirm(). Focus starts on Cancel, so the destructive choice is never
- * pre-focused; Escape cancels, a click on the dimmed area does nothing.
- * Imperative call sites use useConfirm() instead.
- */
-export function ConfirmDialog({
-  title,
-  description,
-  confirmLabel,
-  onConfirm,
-  onCancel,
-}: {
-  title: string;
-  description?: string;
-  confirmLabel: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  const opener = useOpener(); // focus goes back to what opened this when it closes
-
-  return (
-    <AlertDialog.Root
-      open
-      onOpenChange={(open) => {
-        if (!open) onCancel();
-      }}
-    >
-      <ConfirmPopup
-        title={title}
-        description={description}
-        confirmLabel={confirmLabel}
-        onConfirm={onConfirm}
-        finalFocus={returnFocusTo(opener)}
-      />
-    </AlertDialog.Root>
-  );
-}
-
-/** The overlay, card and two buttons shared by ConfirmDialog and ConfirmProvider. Goes inside an AlertDialog.Root. */
-function ConfirmPopup({
-  title,
-  description,
-  confirmLabel,
-  onConfirm,
-  finalFocus,
-}: {
-  title?: string;
-  description?: string;
-  confirmLabel: string;
-  onConfirm: () => void;
-  finalFocus: () => HTMLElement | true;
-}) {
-  const cancelRef = useRef<HTMLButtonElement>(null);
-
-  return (
-    <AlertDialog.Portal>
-      <AlertDialog.Backdrop className={BACKDROP} />
-      <AlertDialog.Viewport className={VIEWPORT}>
-        <AlertDialog.Popup initialFocus={cancelRef} finalFocus={finalFocus} className={POPUP}>
-          <AlertDialog.Title className="text-[16px] font-semibold">{title}</AlertDialog.Title>
-          {description && (
-            <AlertDialog.Description className="mt-1 text-[13.5px] text-text-muted">{description}</AlertDialog.Description>
-          )}
-          <div className="mt-5 flex gap-2">
-            <Button type="button" onClick={onConfirm} className={CONFIRM_BUTTON}>
-              {confirmLabel}
-            </Button>
-            <AlertDialog.Close ref={cancelRef} className={CANCEL_BUTTON}>
-              Cancel
-            </AlertDialog.Close>
-          </div>
-        </AlertDialog.Popup>
-      </AlertDialog.Viewport>
-    </AlertDialog.Portal>
-  );
-}
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export type ConfirmOptions = { title: string; description?: string; confirmLabel?: string };
 type Pending = ConfirmOptions & { resolve: (ok: boolean) => void; opener: Element | null };
 
 const ConfirmContext = createContext<((options: ConfirmOptions) => Promise<boolean>) | null>(null);
 
+/** Where focus goes when the question closes: the button that asked it, if it is still on the page. */
+const returnFocusTo = (active: Element | null) => () =>
+  active instanceof HTMLElement && active !== document.body && active.isConnected ? active : true;
+
 /**
- * Mount once near the root. Gives useConfirm() — an awaitable replacement for
- * the browser's confirm(), rendered like ConfirmDialog.
+ * Mount once near the root. Gives useConfirm() — an awaitable replacement for the browser's confirm(), shown as the
+ * design system's alert dialog. Cancel is focused first, so the destructive choice never is. Screens that already
+ * hold their own state use `ConfirmDelete` instead.
  */
 export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -128,20 +56,25 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   return (
     <ConfirmContext.Provider value={confirm}>
       {children}
-      <AlertDialog.Root
+      <AlertDialog
         open={open}
         onOpenChange={(next) => {
           if (!next) settle(false);
         }}
       >
-        <ConfirmPopup
-          title={pending?.title}
-          description={pending?.description}
-          confirmLabel={pending?.confirmLabel ?? "Delete"}
-          onConfirm={() => settle(true)}
-          finalFocus={returnFocusTo(pending?.opener ?? null)}
-        />
-      </AlertDialog.Root>
+        <AlertDialogContent finalFocus={returnFocusTo(pending?.opener ?? null)}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pending?.title}</AlertDialogTitle>
+            {pending?.description && <AlertDialogDescription>{pending.description}</AlertDialogDescription>}
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={() => settle(true)}>
+              {pending?.confirmLabel ?? "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ConfirmContext.Provider>
   );
 }

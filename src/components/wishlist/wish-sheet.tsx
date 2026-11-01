@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { ExternalLinkIcon } from "lucide-react";
 
-import { Button } from "@/components/ds/button";
-import { Field } from "@/components/ds/field";
-import { ResponsiveSheet } from "@/components/ds/responsive-sheet";
-import { Textarea } from "@/components/ds/textarea";
-import { TextField } from "@/components/ds/text-field";
+import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { Textarea } from "@/components/ui/textarea";
+import { TextField } from "@/components/ui/text-field";
 import { parseMoney } from "@/lib/money";
-import type { WishData } from "@/components/wishlist/wish-row";
-import type { WishFormValues } from "@/components/wishlist/wish-form";
+import type { WishData } from "@/components/wishlist/types";
+import type { WishFormValues } from "@/components/wishlist/types";
 
 /** One wish, new or existing. Only the title is required. An existing wish can also be marked received or deleted. */
 export function WishSheet({

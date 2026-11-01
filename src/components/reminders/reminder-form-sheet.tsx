@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 
-import { Button } from "@/components/ds/button";
-import { ChoiceChips } from "@/components/ds/choice-chips";
-import { Field } from "@/components/ds/field";
-import { ResponsiveSheet } from "@/components/ds/responsive-sheet";
-import { TextField } from "@/components/ds/text-field";
+import { Button } from "@/components/ui/button";
+import { ChoiceChips } from "@/components/ui/choice-chips";
+import { Field } from "@/components/ui/field";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { TextField } from "@/components/ui/text-field";
 import { ScheduleFields, type Schedule } from "@/components/reminders/schedule-fields";
 import { assigneeOptions } from "@/components/tasks/members";
 import type { Member } from "@/components/tasks/types";
-import type { ReminderData, ReminderPatch } from "@/components/reminders/reminder-row";
+import type { ReminderData, ReminderPatch } from "@/components/reminders/types";
 
 export type NewReminder = Schedule & { title: string; ownerId: string | null; firstDueDate?: Date };
 

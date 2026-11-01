@@ -7,7 +7,7 @@ import { GripVerticalIcon } from "lucide-react";
 import { formatEUR } from "@/lib/format";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ds/button";
+import { Button } from "@/components/ui/button";
 import type { Item } from "@/components/finance/budget-types";
 import { useIsPhone } from "@/components/use-media-query";
 

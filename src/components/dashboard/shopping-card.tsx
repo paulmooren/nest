@@ -4,10 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 
 import { trpc } from "@/trpc/react";
-import { Button } from "@/components/ds/button";
-import { Input } from "@/components/ds/input";
-import { Row, RowList } from "@/components/ds/row";
-import { Section } from "@/components/ds/section";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Row, RowList } from "@/components/ui/row";
+import { Section } from "@/components/ui/section";
 import { TICK_GRACE_MS, useShoppingActions, useShoppingItems, useTickGrace } from "@/components/shopping/use-shopping";
 
 const MAX_ROWS = 6;

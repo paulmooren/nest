@@ -4,12 +4,12 @@ import { useState } from "react";
 
 import { ACCOUNT_TYPE_LABELS, type AccountType } from "@/lib/constants";
 import { parseMoney } from "@/lib/money";
-import { Button } from "@/components/ds/button";
-import { ChoiceChips } from "@/components/ds/choice-chips";
-import { Field } from "@/components/ds/field";
-import { ResponsiveSheet } from "@/components/ds/responsive-sheet";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ds/select";
-import { TextField } from "@/components/ds/text-field";
+import { Button } from "@/components/ui/button";
+import { ChoiceChips } from "@/components/ui/choice-chips";
+import { Field } from "@/components/ui/field";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TextField } from "@/components/ui/text-field";
 import type { Member } from "@/components/finance/ownership-groups";
 
 const ACCOUNT_TYPES = Object.keys(ACCOUNT_TYPE_LABELS) as AccountType[];

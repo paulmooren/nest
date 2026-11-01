@@ -1,6 +1,6 @@
 # Nest — master brief for a ground-up UI rebuild
 
-Status: **decisions taken 2026-11-01 (section 11); ready to build.** Written 2026-11-01 from the code, `CONTEXT.md`, the ADRs and `docs/mobile/strategy.md`.
+Status: **built 2026-11-01 (steps 1–7, section 12); decisions in section 11.** Written 2026-11-01 from the code, `CONTEXT.md`, the ADRs and `docs/mobile/strategy.md`.
 Items marked **[confirm]** were open questions; their resolution is in section 11.
 
 ## 0. How to use this brief
@@ -86,7 +86,7 @@ Everything belongs to exactly one **Household**. Details are in `CONTEXT.md`; th
 - Next.js (App Router) as today. **Read `node_modules/next/dist/docs/` first**: this Next version differs from what you remember (AGENTS.md).
 - Tailwind v4 + **shadcn/ui** as the component layer, **on top of Base UI primitives** (shadcn supports Base UI; ADR 0006 chose Base UI for behaviour). Decided: Base UI variant of shadcn, not Radix.
 - This supersedes ADR 0006's "the look stays in the app's own classes": the shadcn components become the look, and ADR 0006 gets a new ADR that replaces it.
-- Components are copied into `src/components/ds/` while the old screens exist (the old `src/components/ui/` has files of the same names) and owned by us; at cutover `ds` is renamed to `ui`.
+- Components are copied into `src/components/ui/` while the old screens exist and owned by us; at cutover `ds` is renamed to `ui`.
 - Tokens live in `src/app/ds.css` on `:root` beside the old ones. The old `--accent` (near-black) stays; the ds components never use `accent` (hover fills are `muted`), so nothing collides. Radii stay on Tailwind's defaults. At cutover the old tokens in `globals.css` are deleted. **Rule: pages never style a primitive from scratch.** If a page needs a new variant, it goes into the primitive.
 
 ### 5.2 Tokens (one source of truth)
@@ -263,3 +263,4 @@ Each step is a branch/PR that ships on its own and is checked at 320 / 390 / 768
 - **Step 6 (Dashboard + chart), 2026-11-01:** Dashboard moved to `(ds)/dashboard`; `(app)` now holds only its old layout. Greeting is the page title; then the summary line (counts as links), missing-statement banners (warning tone, Import statement keeps working in place), the main Shopping list (add field, ticks, fade-out) and "Tasks" (reminders due, vault expiries, my open todos) as sections of rows; ticking works in place and tapping a todo or reminder opens the same sheets as on the Tasks page. The first-run wizard is rebuilt (account, optional first transaction, done). `BalanceChart` is restyled: unboxed, ds buttons, chart colours from tokens; it opens the account page. Net worth is not on the Dashboard (decision 3). Checked on the Demo at 320 / 390 / 1280: one `h1`, no overflow, no small targets outside text.
   - Not checked: the wizard (needs an account-less household), a missing-statement import, ticking a reminder from the Dashboard.
   - **Left for the cutover (step 7):** delete `src/app/(app)`, the old shell (`app-shell`, `nav-drawer`, `nav-icons`, `page-actions`, `tab-bar`), old components no screen uses any more (old rows, sheets, `modal`, `popover-menu`, `inline-edit`, `choice-chips`, `checkbox`, `switch`, `confirm-dialog`/`toast` after porting them, `settings/form`, `ui/*`), the old tokens in `globals.css`, rename `components/ds` to `components/ui`; replace ADR 0006; run a production build and `tests/mobile/audit.mjs`; remove `/kit` or keep it dev-only.
+- **Step 7 (cutover), 2026-11-01:** `(app)` is the only route group again (the rebuilt screens); the old shell, rows, sheets, `modal`, `popover-menu`, `inline-edit`, `settings/form`, old `ui/*`, the old tokens and `tests/visual` are deleted; `components/ds` is now `components/ui`; tokens live in `globals.css` only; `useConfirm` and the toast use the new alert dialog and tokens; `/kit` is gone. ADR 0009 replaces 0006. `next build` passes (36 routes). Shared types that used to live in old components moved to `types.ts` files next to them.

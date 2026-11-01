@@ -5,9 +5,9 @@ export function DemoBadge({ className = "" }: { className?: string }) {
   if (!IS_DEMO_CLIENT) return null;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[12px] font-medium text-text-muted ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-[12px] font-medium text-muted-foreground ${className}`}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
+      <span className="h-1.5 w-1.5 rounded-full bg-foreground" aria-hidden />
       Demo — made-up data
     </span>
   );

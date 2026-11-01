@@ -4,10 +4,10 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { trpc } from "@/trpc/react";
-import { AuthHeader, AuthNotice } from "@/components/ds/auth-frame";
-import { Button } from "@/components/ds/button";
-import { Input } from "@/components/ds/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ds/tabs";
+import { AuthHeader, AuthNotice } from "@/components/ui/auth-frame";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Mode = "create" | "join";
 

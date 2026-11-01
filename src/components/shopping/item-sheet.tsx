@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { MinusIcon, PlusIcon, StarIcon } from "lucide-react";
 
-import { Button } from "@/components/ds/button";
-import { Field } from "@/components/ds/field";
-import { Input } from "@/components/ds/input";
-import { ResponsiveSheet } from "@/components/ds/responsive-sheet";
-import { TextField } from "@/components/ds/text-field";
+import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { TextField } from "@/components/ui/text-field";
 import { parseAmount, stepAmount } from "@/components/shopping/quantity-stepper";
 
 /** One item: its name, its amount (− / + / typed, "500 g" works), and the ways to keep or remove it. */

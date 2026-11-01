@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 
-import { Button } from "@/components/ds/button";
-import { ChoiceChips } from "@/components/ds/choice-chips";
-import { Field } from "@/components/ds/field";
-import { ResponsiveSheet } from "@/components/ds/responsive-sheet";
-import { TextField } from "@/components/ds/text-field";
+import { Button } from "@/components/ui/button";
+import { ChoiceChips } from "@/components/ui/choice-chips";
+import { Field } from "@/components/ui/field";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { TextField } from "@/components/ui/text-field";
 import { assigneeOptions } from "@/components/tasks/members";
 import { PRIORITIES } from "@/components/tasks/priority";
 import type { Member, Task, TaskPriority } from "@/components/tasks/types";

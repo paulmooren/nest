@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ds/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /** The dashboard: the summary line, then the two lists. */
 export function DashboardSkeleton() {

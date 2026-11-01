@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { AuthFrame, AuthHeader, AuthNotice } from "@/components/ds/auth-frame";
-import { Button } from "@/components/ds/button";
-import { Input } from "@/components/ds/input";
+import { AuthFrame, AuthHeader, AuthNotice } from "@/components/ui/auth-frame";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { isDemoServer } from "@/lib/demo";
 import { signUpWithPassword } from "./actions";
 

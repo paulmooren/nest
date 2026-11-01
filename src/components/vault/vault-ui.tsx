@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { ChevronLeftIcon } from "lucide-react";
 
-import { Badge } from "@/components/ds/badge";
-import { Skeleton } from "@/components/ds/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /** The way back from an entry or the new-entry screen to the Vault list. */
 export function VaultBackLink() {

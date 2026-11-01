@@ -7,12 +7,12 @@ import { cleanMerchant } from "@/lib/csv";
 import { formatEUR } from "@/lib/format";
 import { parseMoney } from "@/lib/money";
 import { SCHEDULE_UNITS, unitLabel, type ScheduleUnit } from "@/lib/schedule";
-import { Button } from "@/components/ds/button";
-import { Field } from "@/components/ds/field";
-import { Input } from "@/components/ds/input";
-import { ResponsiveSheet } from "@/components/ds/responsive-sheet";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ds/select";
-import { TextField } from "@/components/ds/text-field";
+import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TextField } from "@/components/ui/text-field";
 import { useRecurringActions } from "@/components/finance/use-recurring";
 
 export type RecurringSource = {

@@ -5,8 +5,8 @@ import Link from "next/link";
 import { trpc } from "@/trpc/react";
 import { useShoppingItems } from "@/components/shopping/use-shopping";
 import { useDelayed } from "@/components/use-delayed";
-import { Skeleton } from "@/components/ds/skeleton";
-import type { ReminderData } from "@/components/reminders/reminder-row";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { ReminderData } from "@/components/reminders/types";
 import type { Task } from "@/components/tasks/types";
 import { dueBucket, todayInHousehold } from "@/lib/schedule";
 

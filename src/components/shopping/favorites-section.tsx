@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { CheckIcon, PlusIcon, SettingsIcon, XIcon } from "lucide-react";
 
-import { Button } from "@/components/ds/button";
-import { Input } from "@/components/ds/input";
-import { ResponsiveSheet } from "@/components/ds/responsive-sheet";
-import { Section } from "@/components/ds/section";
-import type { ShoppingItemData } from "@/components/shopping/item-row";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { Section } from "@/components/ui/section";
+import type { ShoppingItemData } from "@/components/shopping/types";
 
 export type FavoriteData = { id: string; name: string };
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { PageBody, PageHeader } from "@/components/ds/page-header";
-import { SectionTabs } from "@/components/ds/section-tabs";
+import { PageBody, PageHeader } from "@/components/ui/page-header";
+import { SectionTabs } from "@/components/ui/section-tabs";
 
 const TABS = [
   { href: "/tasks/todos", label: "Todos" },

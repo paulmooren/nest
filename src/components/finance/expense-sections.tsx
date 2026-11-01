@@ -6,11 +6,11 @@ import { PencilIcon, PlusIcon } from "lucide-react";
 import { SECTION_PREFIX, SortableBoard, SortableList, SortableSection, type BoardDrop } from "@/components/sortable-list";
 import { monthlyOf, type BudgetItem, type Entry } from "@/lib/budget-scope";
 import { formatEUR } from "@/lib/format";
-import { Button } from "@/components/ds/button";
-import { ConfirmDelete } from "@/components/ds/confirm-delete";
-import { ResponsiveSheet } from "@/components/ds/responsive-sheet";
-import { RowList } from "@/components/ds/row";
-import { TextField } from "@/components/ds/text-field";
+import { Button } from "@/components/ui/button";
+import { ConfirmDelete } from "@/components/ui/confirm-delete";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { RowList } from "@/components/ui/row";
+import { TextField } from "@/components/ui/text-field";
 
 export type BudgetGroup = { id: string; name: string };
 

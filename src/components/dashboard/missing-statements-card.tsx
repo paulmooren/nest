@@ -5,7 +5,7 @@ import Link from "next/link";
 import { TRPCClientError } from "@trpc/client";
 import { AlertTriangleIcon } from "lucide-react";
 
-import { Button } from "@/components/ds/button";
+import { Button } from "@/components/ui/button";
 
 import { trpc } from "@/trpc/react";
 import { useRefresh } from "@/trpc/optimistic";
@@ -160,7 +160,7 @@ export function MissingStatementsCard() {
           }
         >
           <p className="font-semibold">✓ {describeImport(outcome.result).headline}</p>
-          <p className="mt-0.5 text-bg/75">
+          <p className="mt-0.5 text-background/75">
             {outcome.accountName}
             {describeImport(outcome.result).detail && ` · ${describeImport(outcome.result).detail}`}
             {outcome.skipped > 0 && ` · ${outcome.skipped} row${outcome.skipped === 1 ? "" : "s"} skipped (no date or amount)`}
@@ -187,7 +187,7 @@ export function MissingStatementsCard() {
           }
         >
           <p className="font-semibold">Couldn&apos;t import that file</p>
-          <p className="mt-0.5 text-bg/75">{outcome.message}</p>
+          <p className="mt-0.5 text-background/75">{outcome.message}</p>
         </Toast>
       )}
     </>

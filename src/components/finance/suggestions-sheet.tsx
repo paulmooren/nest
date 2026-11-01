@@ -6,9 +6,9 @@ import { trpc } from "@/trpc/react";
 import { useRefresh } from "@/trpc/optimistic";
 import { formatEUR } from "@/lib/format";
 import { describeSchedule } from "@/lib/schedule";
-import { Button } from "@/components/ds/button";
-import { Checkbox } from "@/components/ds/checkbox";
-import { ResponsiveSheet } from "@/components/ds/responsive-sheet";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import type { Suggestion, TxType } from "@/components/finance/budget-types";
 
 /**

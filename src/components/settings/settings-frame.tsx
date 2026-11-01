@@ -5,9 +5,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronLeftIcon } from "lucide-react";
 
-import { PageBody, PageHeader } from "@/components/ds/page-header";
-import { Row, RowList } from "@/components/ds/row";
-import { SectionTabs } from "@/components/ds/section-tabs";
+import { PageBody, PageHeader } from "@/components/ui/page-header";
+import { Row, RowList } from "@/components/ui/row";
+import { SectionTabs } from "@/components/ui/section-tabs";
 import type { SettingsSection } from "@/components/settings/sections";
 
 /**
