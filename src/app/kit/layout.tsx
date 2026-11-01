@@ -2,7 +2,6 @@ import { notFound } from "next/navigation"
 import { HomeIcon, ListChecksIcon, WalletIcon } from "lucide-react"
 
 import { AppShell } from "@/components/ds/app-shell"
-import { DsScope } from "@/components/ds/ds-scope"
 
 export const metadata = { title: "Kitchen sink" }
 
@@ -14,7 +13,7 @@ export default function KitLayout({ children }: { children: React.ReactNode }) {
   if (process.env.NODE_ENV === "production") notFound()
 
   return (
-    <DsScope>
+    <div className="font-sans text-foreground">
       <AppShell
         items={[
           { href: "/kit", label: "Dashboard", icon: <HomeIcon /> },
@@ -24,6 +23,6 @@ export default function KitLayout({ children }: { children: React.ReactNode }) {
       >
         {children}
       </AppShell>
-    </DsScope>
+    </div>
   )
 }

@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@base-ui/react/button";
-import { Input } from "@base-ui/react/input";
 
 import { trpc } from "@/trpc/react";
+import { AuthHeader, AuthNotice } from "@/components/ds/auth-frame";
+import { Button } from "@/components/ds/button";
+import { Input } from "@/components/ds/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ds/tabs";
 
 type Mode = "create" | "join";
 
@@ -16,60 +18,38 @@ export function HouseholdSetupForm() {
   const [mode, setMode] = useState<Mode>(prefillCode ? "join" : "create");
 
   const utils = trpc.useUtils();
-  const create = trpc.household.create.useMutation({
-    onSuccess: () => {
-      // Everything loaded so far belongs to a Member without a household.
-      void utils.invalidate();
-      router.refresh();
-      router.push("/dashboard");
-    },
-  });
-  const join = trpc.household.join.useMutation({
-    onSuccess: () => {
-      void utils.invalidate();
-      router.refresh();
-      router.push("/dashboard");
-    },
-  });
+  const done = () => {
+    // Everything loaded so far belongs to a Member without a household.
+    void utils.invalidate();
+    router.refresh();
+    router.push("/dashboard");
+  };
+  const create = trpc.household.create.useMutation({ onSuccess: done });
+  const join = trpc.household.join.useMutation({ onSuccess: done });
 
   const pending = create.isPending || join.isPending;
   const error = create.error?.message ?? join.error?.message;
 
   return (
     <div className="w-full">
-      <div className="mb-6 flex h-[38px] w-[38px] items-center justify-center rounded-[11px] bg-accent-fill md:hidden">
-        <span className="pl-[2px] font-display text-[21px] font-bold text-accent-ink">N</span>
-      </div>
+      <AuthHeader
+        eyebrow="Household setup"
+        title="Set up your household"
+        description="Every account belongs to a household — create a new one, or join one you've been invited to."
+      />
 
-      <p className="mb-2 text-[12px] font-semibold tracking-[0.11em] text-accent uppercase">
-        Household setup
-      </p>
-      <h1 className="mb-2 font-display font-bold tracking-tight text-[26px]">Set up your household</h1>
-      <p className="mb-6 text-[13.5px] leading-relaxed text-text-muted">
-        Every account belongs to a household — create a new one, or join one
-        you&apos;ve been invited to.
-      </p>
+      <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)} className="mb-5">
+        <TabsList className="h-12 w-full">
+          <TabsTrigger value="create" className="h-full">
+            Create household
+          </TabsTrigger>
+          <TabsTrigger value="join" className="h-full">
+            Join with code
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
-      <div className="mb-5 flex gap-1 rounded-xl border border-border-soft bg-surface-2 p-1">
-        <Button
-          type="button"
-          onClick={() => setMode("create")}
-          className={`min-h-[var(--tap)] flex-1 rounded-lg py-2 text-[13px] font-medium transition-colors ${
-            mode === "create" ? "bg-surface text-text" : "text-text-muted hover:text-text"
-          }`}
-        >
-          Create household
-        </Button>
-        <Button
-          type="button"
-          onClick={() => setMode("join")}
-          className={`min-h-[var(--tap)] flex-1 rounded-lg py-2 text-[13px] font-medium transition-colors ${
-            mode === "join" ? "bg-surface text-text" : "text-text-muted hover:text-text"
-          }`}
-        >
-          Join with code
-        </Button>
-      </div>
+      {error && <AuthNotice tone="error">{error}</AuthNotice>}
 
       {mode === "create" ? (
         <form
@@ -82,15 +62,12 @@ export function HouseholdSetupForm() {
         >
           <Input
             name="name"
+            aria-label="Household name"
             required
             placeholder="e.g. The Mooren Household"
-            className="w-full min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] text-text placeholder:text-text-faint outline-none focus:border-accent"
+            className="h-12 rounded-xl"
           />
-          <Button
-            type="submit"
-            disabled={pending}
-            className="w-full min-h-[var(--tap-primary)] rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
-          >
+          <Button type="submit" size="lg" disabled={pending} className="w-full rounded-xl font-semibold">
             {create.isPending ? "Creating…" : "Create household"}
           </Button>
         </form>
@@ -105,22 +82,19 @@ export function HouseholdSetupForm() {
         >
           <Input
             name="code"
+            aria-label="Invite code"
             required
             defaultValue={prefillCode}
             placeholder="Invite code"
-            className="w-full min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] tracking-[0.08em] text-text uppercase placeholder:text-text-faint placeholder:normal-case outline-none focus:border-accent"
+            autoCapitalize="characters"
+            autoComplete="off"
+            className="h-12 rounded-xl tracking-[0.08em] uppercase placeholder:tracking-normal placeholder:normal-case"
           />
-          <Button
-            type="submit"
-            disabled={pending}
-            className="w-full min-h-[var(--tap-primary)] rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
-          >
+          <Button type="submit" size="lg" disabled={pending} className="w-full rounded-xl font-semibold">
             {join.isPending ? "Joining…" : "Join household"}
           </Button>
         </form>
       )}
-
-      {error && <p className="mt-3 text-[13px] text-critical">{error}</p>}
     </div>
   );
 }

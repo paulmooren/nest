@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { getHouseholdIdForUser } from "@/server/api/household";
-import { AuthFrame } from "@/components/auth-frame";
+import { AuthFrame } from "@/components/ds/auth-frame";
 import { HouseholdSetupForm } from "@/components/household-setup-form";
 import { TRPCProvider } from "@/trpc/react";
 
