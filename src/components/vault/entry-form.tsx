@@ -1,10 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Button } from "@base-ui/react/button";
-import { Input } from "@base-ui/react/input";
-import { Radio } from "@base-ui/react/radio";
-import { RadioGroup } from "@base-ui/react/radio-group";
+import { PlusIcon, XIcon } from "lucide-react";
 
 import {
   ATTACHMENTS_PER_ENTRY,
@@ -14,7 +11,13 @@ import {
   type VaultField,
   type VaultFieldKind,
 } from "@/lib/vault";
-import { SelectField } from "@/components/ui/select";
+import { Button } from "@/components/ds/button";
+import { ChoiceChips } from "@/components/ds/choice-chips";
+import { Field } from "@/components/ds/field";
+import { Input } from "@/components/ds/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ds/select";
+import { Textarea } from "@/components/ds/textarea";
+import { TextField } from "@/components/ds/text-field";
 import { prepareFiles } from "@/components/vault/uploads";
 
 export type VaultFormValues = {
@@ -26,9 +29,6 @@ export type VaultFormValues = {
   note: string | null;
   shared: boolean;
 };
-
-const inputClass =
-  "min-w-0 rounded-xl border border-border-soft bg-surface px-3.5 py-2.5 text-[14px] outline-none transition-colors placeholder:text-text-faint focus:border-accent";
 
 export type EntryFormInitial = {
   title: string;
@@ -69,8 +69,11 @@ export function VaultEntryForm({
   const [files, setFiles] = useState<File[]>(initialFiles);
   const [problems, setProblems] = useState<string[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
-  const showDate = initial.hasDate || !!initial.expiresOn || !!initial.expiryLabel;
+  const showDate = initial.hasDate || !!initial.expiresOn || !!initial.expiryLabel || dateOpen;
+  const categoryItems = categories.map((c) => ({ value: c.id, label: c.name }));
+  const kindItems = VAULT_FIELD_KINDS.map((k) => ({ value: k, label: VAULT_FIELD_KIND_LABELS[k] }));
 
   const setField = (i: number, patch: Partial<VaultField>) =>
     setFields((prev) => prev.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
@@ -83,7 +86,7 @@ export function VaultEntryForm({
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex max-w-3xl flex-col gap-6"
       onSubmit={(e) => {
         e.preventDefault();
         const form = new FormData(e.currentTarget);
@@ -97,9 +100,7 @@ export function VaultEntryForm({
             categoryId,
             expiresOn: rawDate ? new Date(rawDate) : null,
             expiryLabel: String(form.get("expiryLabel") ?? "").trim() || null,
-            fields: fields
-              .map((f) => ({ ...f, label: f.label.trim() }))
-              .filter((f) => f.label && f.value),
+            fields: fields.map((f) => ({ ...f, label: f.label.trim() })).filter((f) => f.label && f.value),
             note: String(form.get("note") ?? "").trim() || null,
             shared,
           },
@@ -107,45 +108,64 @@ export function VaultEntryForm({
         );
       }}
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_200px]">
-        <Input
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_220px]">
+        <TextField
+          label="Title"
           name="title"
           defaultValue={initial.title}
           required
           autoFocus
           maxLength={100}
-          placeholder="Title, e.g. Passport — Alex"
-          aria-label="Title"
-          className={`${inputClass} text-[15px]`}
+          placeholder="e.g. Passport — Alex"
         />
-        <SelectField
-          value={categoryId}
-          onValueChange={setCategoryId}
-          aria-label="Category"
-          options={categories.map((c) => ({ value: c.id, label: c.name }))}
-          className={inputClass}
-        />
+        <Field id="entry-category" label="Category">
+          <Select items={categoryItems} value={categoryId} onValueChange={(v) => v && setCategoryId(v)}>
+            <SelectTrigger id="entry-category" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {categoryItems.map((c) => (
+                <SelectItem key={c.value} value={c.value}>
+                  {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <p className="text-[12.5px] text-text-muted">Fields — Secrets are encrypted and hidden until revealed</p>
+      <fieldset className="flex flex-col gap-3">
+        <legend className="mb-1 text-sm font-medium">Fields</legend>
+        <p className="-mt-1 text-sm text-muted-foreground">Secrets are encrypted and hidden until revealed.</p>
         {fields.map((field, i) => (
-          <div key={i} className="grid grid-cols-[1fr_auto] gap-2 sm:grid-cols-[170px_110px_1fr_auto]">
+          <div
+            key={i}
+            className="grid grid-cols-[1fr_auto] gap-2 rounded-xl border p-3 md:grid-cols-[180px_120px_1fr_auto] md:border-0 md:p-0"
+          >
             <Input
               value={field.label}
               onChange={(e) => setField(i, { label: e.target.value })}
               maxLength={60}
               placeholder="Label"
               aria-label={`Label ${i + 1}`}
-              className={`${inputClass} col-span-2 sm:col-span-1`}
+              className="col-span-2 md:col-span-1"
             />
-            <SelectField
+            <Select
+              items={kindItems}
               value={field.kind}
-              onValueChange={(kind) => setField(i, { kind: kind as VaultFieldKind, value: kind === "date" ? "" : field.value })}
-              aria-label={`Type ${i + 1}`}
-              options={VAULT_FIELD_KINDS.map((k) => ({ value: k, label: VAULT_FIELD_KIND_LABELS[k] }))}
-              className={`${inputClass} col-span-2 sm:col-span-1`}
-            />
+              onValueChange={(kind) => kind && setField(i, { kind: kind as VaultFieldKind, value: kind === "date" ? "" : field.value })}
+            >
+              <SelectTrigger aria-label={`Type ${i + 1}`} className="col-span-2 w-full md:col-span-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {kindItems.map((k) => (
+                  <SelectItem key={k.value} value={k.value}>
+                    {k.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Input
               type={field.kind === "date" ? "date" : "text"}
               value={field.value}
@@ -154,65 +174,63 @@ export function VaultEntryForm({
               placeholder="Value"
               aria-label={`Value ${i + 1}`}
               autoComplete="off"
-              className={inputClass}
             />
             <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => setFields((prev) => prev.filter((_, idx) => idx !== i))}
               aria-label={`Remove field ${i + 1}`}
-              className="px-2 text-[13px] text-text-faint hover:text-critical"
             >
-              ✕
+              <XIcon />
             </Button>
           </div>
         ))}
         {fields.length < 20 && (
           <Button
             type="button"
+            variant="ghost"
+            className="self-start"
             onClick={() => setFields((prev) => [...prev, { label: "", kind: "text", value: "" }])}
-            className="self-start text-[12.5px] font-medium text-accent hover:opacity-80"
           >
-            + Add field
+            <PlusIcon /> Add field
           </Button>
         )}
-      </div>
+      </fieldset>
 
-      {showDate && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <Input
+      {showDate ? (
+        <fieldset className="flex flex-wrap items-end gap-3">
+          <legend className="mb-2 text-sm font-medium">Date</legend>
+          <TextField
+            label="Label"
             name="expiryLabel"
             defaultValue={initial.expiryLabel ?? ""}
             maxLength={40}
-            placeholder="Date label, e.g. Valid until"
-            aria-label="Date label"
-            className={`${inputClass} w-52`}
+            placeholder="e.g. Valid until"
+            fieldClassName="w-52"
           />
-          <Input
+          <TextField
+            label="Date"
             type="date"
             name="expiresOn"
             defaultValue={initial.expiresOn ? new Date(initial.expiresOn).toISOString().slice(0, 10) : ""}
-            aria-label="Date"
-            className={inputClass}
+            autoFocus={dateOpen}
           />
-        </div>
-      )}
-      {!showDate && (
-        <DateToggle />
+        </fieldset>
+      ) : (
+        <Button type="button" variant="ghost" className="self-start" onClick={() => setDateOpen(true)}>
+          <PlusIcon /> Add a date (expiry, deadline…)
+        </Button>
       )}
 
-      <textarea
-        name="note"
-        defaultValue={initial.note ?? ""}
-        maxLength={2000}
-        rows={3}
-        placeholder="Note — also encrypted (optional)"
-        aria-label="Note"
-        className={inputClass}
-      />
+      <Field id="entry-note" label="Note" hint="Also encrypted. Optional.">
+        <Textarea id="entry-note" name="note" defaultValue={initial.note ?? ""} maxLength={2000} rows={3} />
+      </Field>
 
       {!editing && (
         <div className="flex flex-col gap-2">
-          <p className="text-[12.5px] text-text-muted">Files — PDF or photo, up to 4 MB each, encrypted</p>
+          <p className="text-sm font-medium">Files</p>
+          <p className="-mt-1 text-sm text-muted-foreground">PDF or photo, up to 4 MB each, encrypted.</p>
           <div
             onDragOver={(e) => {
               e.preventDefault();
@@ -224,8 +242,8 @@ export function VaultEntryForm({
               setDragOver(false);
               void addFiles(e.dataTransfer.files);
             }}
-            className={`flex flex-col items-start gap-2 rounded-xl border border-dashed px-4 py-4 transition-colors ${
-              dragOver ? "border-accent bg-surface-2" : "border-border"
+            className={`flex flex-col items-start gap-2 rounded-xl border border-dashed p-4 transition-colors ${
+              dragOver ? "border-foreground/50 bg-muted" : ""
             }`}
           >
             <input
@@ -241,33 +259,30 @@ export function VaultEntryForm({
                 e.target.value = "";
               }}
             />
-            <Button
-              type="button"
-              onClick={() => fileInput.current?.click()}
-              className="min-h-[var(--tap)] rounded-xl border border-border px-4 text-[14px] font-medium text-text hover:border-text md:min-h-0 md:py-2 md:text-[13px]"
-            >
+            <Button type="button" variant="outline" onClick={() => fileInput.current?.click()}>
               Choose files or take a photo
             </Button>
-            <span className="text-[12.5px] text-text-muted">or drop them here</span>
+            <span className="text-sm text-muted-foreground">or drop them here</span>
             {files.map((f, i) => (
-              <div key={`${f.name}-${i}`} className="flex w-full items-center justify-between gap-3 text-[13.5px]">
+              <div key={`${f.name}-${i}`} className="flex w-full items-center justify-between gap-3 text-sm">
                 <span className="min-w-0 truncate">{f.name}</span>
-                <span className="flex shrink-0 items-center gap-3 text-[12.5px] text-text-muted">
+                <span className="flex shrink-0 items-center gap-1 text-muted-foreground">
                   {formatFileSize(f.size)}
                   <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
                     aria-label={`Remove ${f.name}`}
-                    className="text-text-faint hover:text-critical"
                   >
-                    ✕
+                    <XIcon />
                   </Button>
                 </span>
               </div>
             ))}
           </div>
           {problems.map((p) => (
-            <p key={p} role="alert" className="text-[12.5px] text-critical">
+            <p key={p} role="alert" className="text-sm text-destructive">
               {p}
             </p>
           ))}
@@ -275,65 +290,27 @@ export function VaultEntryForm({
       )}
 
       {!editing && (
-        <RadioGroup
-          aria-label="Who owns this"
-          value={shared ? "shared" : "personal"}
-          onValueChange={(next) => setShared(next === "shared")}
-          className="flex w-fit overflow-hidden rounded-xl border border-border-soft text-[13px] font-medium"
-        >
-          {[
-            { value: "personal", label: "Personal" },
-            { value: "shared", label: "Shared" },
-          ].map((option) => (
-            <Radio.Root
-              key={option.value}
-              value={option.value}
-              className="cursor-pointer px-4 py-2.5 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent data-checked:bg-text data-checked:text-bg data-unchecked:text-text-muted data-unchecked:hover:text-text"
-            >
-              {option.label}
-            </Radio.Root>
-          ))}
-        </RadioGroup>
+        <Field id="entry-owner" label="Who owns this">
+          <ChoiceChips
+            label="Who owns this"
+            value={shared ? "shared" : "personal"}
+            onChange={(v) => setShared(v === "shared")}
+            options={[
+              { value: "personal", label: "Personal" },
+              { value: "shared", label: "Shared" },
+            ]}
+          />
+        </Field>
       )}
 
       <div className="flex gap-2">
-        <Button
-          type="submit"
-          disabled={pending}
-          className="min-h-[var(--tap-primary)] rounded-xl bg-accent-fill px-5 text-[15px] font-semibold text-accent-ink hover:opacity-90 disabled:opacity-60 md:min-h-0 md:py-2.5 md:text-[13.5px]"
-        >
+        <Button type="submit" size="lg" disabled={pending}>
           {pending ? "Saving…" : editing ? "Save" : "Add to Vault"}
         </Button>
-        <Button
-          type="button"
-          onClick={onCancel}
-          className="min-h-[var(--tap-primary)] rounded-xl border border-border-soft px-5 text-[15px] font-medium text-text-muted hover:text-text md:min-h-0 md:py-2.5 md:text-[13.5px]"
-        >
+        <Button type="button" variant="outline" size="lg" onClick={onCancel}>
           Cancel
         </Button>
       </div>
     </form>
-  );
-}
-
-/** A form without a date offers one on request, so a Blank entry stays short. */
-function DateToggle() {
-  const [open, setOpen] = useState(false);
-  if (!open) {
-    return (
-      <Button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="self-start text-[12.5px] font-medium text-accent hover:opacity-80"
-      >
-        + Add a date (expiry, deadline…)
-      </Button>
-    );
-  }
-  return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-      <Input name="expiryLabel" maxLength={40} placeholder="Date label, e.g. Valid until" aria-label="Date label" className={`${inputClass} w-52`} />
-      <Input type="date" name="expiresOn" aria-label="Date" autoFocus className={inputClass} />
-    </div>
   );
 }

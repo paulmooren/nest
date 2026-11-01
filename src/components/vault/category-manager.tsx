@@ -1,25 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@base-ui/react/button";
-import { Input } from "@base-ui/react/input";
+import { ArrowDownIcon, ArrowUpIcon, Trash2Icon } from "lucide-react";
 
-import { Modal } from "@/components/modal";
-import { useConfirm } from "@/components/confirm-dialog";
-import { showToast } from "@/components/toast";
 import { trpc } from "@/trpc/react";
+import { Button } from "@/components/ds/button";
+import { ConfirmDelete } from "@/components/ds/confirm-delete";
+import { Input } from "@/components/ds/input";
+import { ResponsiveSheet } from "@/components/ds/responsive-sheet";
+import { showToast } from "@/components/toast";
 import { newId } from "@/lib/client-id";
-import { TrashIcon } from "@/components/action-icons";
 
-const inputClass =
-  "min-w-0 flex-1 rounded-xl border border-border-soft bg-surface px-3.5 py-2.5 text-[14px] outline-none transition-colors placeholder:text-text-faint focus:border-accent";
-
-/** Rename, reorder, add and delete the Household's Vault categories. */
+/** Rename, reorder, add and delete the Household's Vault categories. "Other" is the fallback and stays. */
 export function CategoryManager({ onClose }: { onClose: () => void }) {
-  const confirm = useConfirm();
   const utils = trpc.useUtils();
   const { data: categories } = trpc.vault.listCategories.useQuery();
   const [name, setName] = useState("");
+  const [deleting, setDeleting] = useState<{ id: string; name: string } | null>(null);
 
   const refresh = () => Promise.all([utils.vault.listCategories.invalidate(), utils.vault.list.invalidate()]);
   const onError = (e: { message: string }) => showToast(e.message);
@@ -38,69 +35,10 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Modal title="Categories" onClose={onClose}>
-      <div className="flex flex-col gap-2">
-        {categories?.map((c, i) => (
-          <div key={c.id} className="flex items-center gap-2">
-            {c.isFallback ? (
-              <span className={`${inputClass} border-transparent bg-surface-2 text-text-muted`}>{c.name}</span>
-            ) : (
-              <Input
-                defaultValue={c.name}
-                maxLength={40}
-                aria-label={`Rename ${c.name}`}
-                className={inputClass}
-                onBlur={(e) => {
-                  const next = e.target.value.trim();
-                  if (next && next !== c.name) rename.mutate({ id: c.id, name: next });
-                  else e.target.value = c.name;
-                }}
-              />
-            )}
-            <Button
-              type="button"
-              aria-label={`Move ${c.name} up`}
-              disabled={i === 0}
-              onClick={() => move(i, -1)}
-              className="min-h-[var(--tap)] px-2 text-text-faint hover:text-text disabled:opacity-30"
-            >
-              ↑
-            </Button>
-            <Button
-              type="button"
-              aria-label={`Move ${c.name} down`}
-              disabled={i === categories.length - 1}
-              onClick={() => move(i, 1)}
-              className="min-h-[var(--tap)] px-2 text-text-faint hover:text-text disabled:opacity-30"
-            >
-              ↓
-            </Button>
-            {c.isFallback ? (
-              <span className="w-8" />
-            ) : (
-              <Button
-                type="button"
-                aria-label={`Delete ${c.name}`}
-                onClick={async () => {
-                  if (
-                    await confirm({
-                      title: `Delete "${c.name}"?`,
-                      description: "Its entries move to Other.",
-                    })
-                  )
-                    remove.mutate({ id: c.id });
-                }}
-                className="flex h-8 w-8 items-center justify-center text-text-faint hover:text-critical"
-              >
-                <span className="h-4 w-4">
-                  <TrashIcon />
-                </span>
-              </Button>
-            )}
-          </div>
-        ))}
+    <ResponsiveSheet open onOpenChange={(open) => !open && onClose()} title="Categories">
+      <div className="flex flex-col gap-3">
         <form
-          className="mt-2 flex gap-2"
+          className="flex gap-2"
           onSubmit={(e) => {
             e.preventDefault();
             const trimmed = name.trim();
@@ -109,22 +47,62 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
             setName("");
           }}
         >
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={40}
-            placeholder="New category"
-            aria-label="New category"
-            className={inputClass}
-          />
-          <Button
-            type="submit"
-            className="min-h-[var(--tap)] rounded-xl bg-accent-fill px-4 text-[14px] font-semibold text-accent-ink"
-          >
+          <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder="New category" aria-label="New category" />
+          <Button type="submit" disabled={!name.trim()}>
             Add
           </Button>
         </form>
+
+        <ul className="flex flex-col">
+          {categories?.map((c, i) => (
+            <li key={c.id} className="flex items-center gap-1">
+              {c.isFallback ? (
+                <span className="flex min-h-11 flex-1 items-center px-3 text-base text-muted-foreground md:text-sm">{c.name}</span>
+              ) : (
+                <Input
+                  defaultValue={c.name}
+                  maxLength={40}
+                  aria-label={`Rename ${c.name}`}
+                  className="border-transparent bg-transparent shadow-none hover:bg-muted focus-visible:bg-background"
+                  onBlur={(e) => {
+                    const next = e.target.value.trim();
+                    if (next && next !== c.name) rename.mutate({ id: c.id, name: next });
+                    else e.target.value = c.name;
+                  }}
+                />
+              )}
+              <Button type="button" variant="ghost" size="icon" aria-label={`Move ${c.name} up`} disabled={i === 0} onClick={() => move(i, -1)}>
+                <ArrowUpIcon />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={`Move ${c.name} down`}
+                disabled={i === categories.length - 1}
+                onClick={() => move(i, 1)}
+              >
+                <ArrowDownIcon />
+              </Button>
+              {c.isFallback ? (
+                <span className="w-11 shrink-0 md:w-9" />
+              ) : (
+                <Button type="button" variant="ghost" size="icon" aria-label={`Delete ${c.name}`} onClick={() => setDeleting({ id: c.id, name: c.name })}>
+                  <Trash2Icon />
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
       </div>
-    </Modal>
+
+      <ConfirmDelete
+        open={!!deleting}
+        onOpenChange={(o) => !o && setDeleting(null)}
+        title={`Delete "${deleting?.name ?? ""}"?`}
+        description="Its entries move to Other."
+        onConfirm={() => deleting && remove.mutate({ id: deleting.id })}
+      />
+    </ResponsiveSheet>
   );
 }

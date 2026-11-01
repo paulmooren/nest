@@ -2,13 +2,15 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@base-ui/react/button";
 
 import { ModuleGate } from "@/components/use-modules";
 import { trpc } from "@/trpc/react";
+import { PageBody, PageHeader } from "@/components/ds/page-header";
+import { Row, RowList } from "@/components/ds/row";
 import { VaultEntryForm, type EntryFormInitial } from "@/components/vault/entry-form";
 import { takeDroppedFiles, uploadAttachment } from "@/components/vault/uploads";
 import { useRefreshVault } from "@/components/vault/use-vault";
+import { VaultBackLink } from "@/components/vault/vault-ui";
 import { showToast } from "@/components/toast";
 import { newId } from "@/lib/client-id";
 import { BLANK_TEMPLATE, FALLBACK_VAULT_CATEGORY, VAULT_TEMPLATES, templateByKey } from "@/lib/vault";
@@ -57,38 +59,29 @@ function NewEntry() {
 
   if (!template || !initial) {
     return (
-      <div className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-[17px] font-semibold">What are you adding?</h2>
-          <p className="mt-1 text-[13px] text-text-muted">
-            A starting point only — you can change every field afterwards.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-          {[...VAULT_TEMPLATES, BLANK_TEMPLATE].map((t) => (
-            <Button
-              key={t.key}
-              type="button"
-              onClick={() => router.replace(`/vault/new?template=${t.key}`)}
-              className="flex min-h-[var(--tap-primary)] flex-col items-start justify-center gap-0.5 rounded-2xl border border-border-soft bg-surface px-4 py-3 text-left transition-colors hover:border-border"
-            >
-              <span className="text-[15px] font-semibold">{t.label}</span>
-              <span className="text-[12.5px] text-text-muted">{t.hint}</span>
-            </Button>
-          ))}
-        </div>
-        {dropped.length > 0 && (
-          <p className="text-[13px] text-text-muted">
-            {dropped.length} file{dropped.length === 1 ? "" : "s"} ready to attach.
-          </p>
-        )}
-      </div>
+      <>
+        <VaultBackLink />
+        <PageHeader title="What are you adding?" description="A starting point only — you can change every field afterwards." />
+        <PageBody>
+          <RowList>
+            {[...VAULT_TEMPLATES, BLANK_TEMPLATE].map((t) => (
+              <Row key={t.key} title={t.label} meta={t.hint} chevron onClick={() => router.replace(`/vault/new?template=${t.key}`)} />
+            ))}
+          </RowList>
+          {dropped.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {dropped.length} file{dropped.length === 1 ? "" : "s"} ready to attach.
+            </p>
+          )}
+        </PageBody>
+      </>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h2 className="text-[17px] font-semibold">New {template.key === "blank" ? "entry" : template.label.toLowerCase()}</h2>
+    <>
+      <VaultBackLink />
+      <PageHeader title={`New ${template.key === "blank" ? "entry" : template.label.toLowerCase()}`} />
       <VaultEntryForm
         initial={initial}
         categories={categories}
@@ -115,6 +108,6 @@ function NewEntry() {
           router.push(`/vault/${id}`);
         }}
       />
-    </div>
+    </>
   );
 }
