@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Dialog } from "@base-ui/react/dialog";
 
 import { Avatar } from "@/components/avatar";
-import { signOutAction } from "@/app/(app)/settings/actions";
+import { signOutAction } from "@/app/(ds)/settings/actions";
 
 export type DrawerItem = { href: string; label: string; Icon: (props: { active?: boolean }) => React.ReactElement };
 

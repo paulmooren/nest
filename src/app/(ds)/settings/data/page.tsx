@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Button } from "@base-ui/react/button";
 
 import { trpc } from "@/trpc/react";
-import { SettingsSection } from "@/components/settings/form";
+import { Button } from "@/components/ds/button";
+import { PageBody } from "@/components/ds/page-header";
+import { Section } from "@/components/ds/section";
 import { IS_DEMO_CLIENT } from "@/lib/demo";
 
 export default function DataSettingsPage() {
@@ -33,26 +34,19 @@ export default function DataSettingsPage() {
   }
 
   return (
-    <>
-    {IS_DEMO_CLIENT && <ResetDemo />}
-    <SettingsSection title="Export data">
-      <p className="-mt-2 text-[13px] text-text-muted">Your data belongs to you — download it anytime.</p>
-      <div className="flex flex-wrap gap-3">
-        <Button
-          onClick={exportCsv}
-          className="rounded-xl border border-border-soft min-h-[var(--tap)] px-5 py-2.5 text-[13.5px] font-medium hover:bg-surface-2"
-        >
-          Transactions (CSV)
-        </Button>
-        <Button
-          onClick={exportJson}
-          className="rounded-xl border border-border-soft min-h-[var(--tap)] px-5 py-2.5 text-[13.5px] font-medium hover:bg-surface-2"
-        >
-          All data (JSON)
-        </Button>
-      </div>
-    </SettingsSection>
-    </>
+    <PageBody className="gap-10">
+      {IS_DEMO_CLIENT && <ResetDemo />}
+      <Section title="Export data" description="Your data belongs to you — download it anytime.">
+        <div className="flex flex-wrap gap-3">
+          <Button variant="outline" onClick={exportCsv}>
+            Transactions (CSV)
+          </Button>
+          <Button variant="outline" onClick={exportJson}>
+            All data (JSON)
+          </Button>
+        </div>
+      </Section>
+    </PageBody>
   );
 }
 
@@ -67,22 +61,21 @@ function ResetDemo() {
     },
   });
   return (
-    <SettingsSection title="Reset demo">
-      <p className="-mt-2 text-[13px] text-text-muted">
-        Undoes every change made while showing the app and starts again from the made-up household, with dates
-        brought up to today.
-      </p>
+    <Section
+      title="Reset demo"
+      description="Undoes every change made while showing the app and starts again from the made-up household, with dates brought up to today."
+    >
       <div>
-        <Button
-          onClick={() => reset.mutate()}
-          disabled={reset.isPending}
-          className="rounded-xl bg-accent-fill min-h-[var(--tap)] px-5 py-2.5 text-[13.5px] font-semibold text-accent-ink hover:opacity-90 disabled:opacity-60"
-        >
+        <Button onClick={() => reset.mutate()} disabled={reset.isPending}>
           {reset.isPending ? "Resetting…" : "Reset demo"}
         </Button>
-        {reset.error && <p className="mt-2 text-[13px] text-critical">{reset.error.message}</p>}
+        {reset.error && (
+          <p role="alert" className="mt-2 text-sm text-destructive">
+            {reset.error.message}
+          </p>
+        )}
       </div>
-    </SettingsSection>
+    </Section>
   );
 }
 

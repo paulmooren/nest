@@ -67,12 +67,15 @@ export function AppShell({
   items,
   brand = "Nest",
   account,
+  badge,
   children,
 }: {
   items: NavItem[]
   brand?: string
   /** Footer slot of the sidebar/drawer: the profile link, sign-out. */
   account?: React.ReactNode
+  /** Beside the wordmark: the Demo marker. */
+  badge?: React.ReactNode
   children: React.ReactNode
 }) {
   const [open, setOpen] = React.useState(false)
@@ -80,7 +83,10 @@ export function AppShell({
   return (
     <div className="flex min-h-dvh bg-sidebar">
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col px-5 pt-7 pb-5 md:flex">
-        <div className="mb-9 px-2 font-heading text-lg font-bold tracking-tight">{brand}</div>
+        <div className="mb-9 flex flex-wrap items-center gap-2 px-2">
+          <span className="font-heading text-lg font-bold tracking-tight">{brand}</span>
+          {badge}
+        </div>
         <NavLinks items={items} />
         <div className="flex-1" />
         {account}
@@ -88,7 +94,10 @@ export function AppShell({
 
       <div className="w-full min-w-0 md:ml-60 md:py-3 md:pr-3">
         <header className="pt-safe sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background px-4 md:hidden">
-          <span className="font-heading text-lg font-bold tracking-tight">{brand}</span>
+          <span className="flex items-center gap-2">
+            <span className="font-heading text-lg font-bold tracking-tight">{brand}</span>
+            {badge}
+          </span>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger
               render={

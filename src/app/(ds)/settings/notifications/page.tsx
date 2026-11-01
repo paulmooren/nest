@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@base-ui/react/button";
 
 import { trpc } from "@/trpc/react";
-import { Switch } from "@/components/switch";
-import { SettingsSection } from "@/components/settings/form";
+import { Button } from "@/components/ds/button";
+import { PageBody } from "@/components/ds/page-header";
+import { Section } from "@/components/ds/section";
+import { Switch } from "@/components/ds/switch";
 
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 
@@ -97,39 +98,39 @@ export default function NotificationsSettingsPage() {
   }
 
   return (
-    <>
-      <SettingsSection title="Reminder notifications">
-        <p className="-mt-2 text-[13px] text-text-muted">
-          You get one message a day at 10:00 listing the reminders that are due for you, and one gentle nudge when
-          something is 2 days overdue. After that it stays red in the app, but doesn&apos;t notify again.
-        </p>
-
+    <PageBody>
+      <Section
+        title="Reminder notifications"
+        description="You get one message a day at 10:00 listing the reminders that are due for you, and one gentle nudge when something is 2 days overdue. After that it stays red in the app, but doesn't notify again."
+      >
         {status && !status.configured && (
-          <p className="rounded-xl border border-critical/30 bg-critical/10 px-3.5 py-2.5 text-[13px] text-critical">
+          <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive">
             Notifications aren&apos;t set up on this server yet.
           </p>
         )}
 
         {support === "needs-install" && (
-          <div className="rounded-2xl border border-border-soft p-4 text-[13.5px]">
+          <div className="rounded-2xl border p-4 text-sm">
             <p className="mb-2 font-semibold">First add Nest to your Home Screen</p>
-            <ol className="list-decimal space-y-1 pl-5 text-text-muted">
+            <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
               <li>Open Nest in Safari on your iPhone.</li>
-              <li>Tap the Share button, then <b className="text-text">Add to Home Screen</b>.</li>
+              <li>
+                Tap the Share button, then <b className="text-foreground">Add to Home Screen</b>.
+              </li>
               <li>Open Nest from the Home Screen icon, come back to this page and switch notifications on.</li>
             </ol>
           </div>
         )}
 
         {support === "unsupported" && (
-          <p className="text-[13.5px] text-text-muted">This browser can&apos;t receive notifications.</p>
+          <p className="text-sm text-muted-foreground">This browser can&apos;t receive notifications.</p>
         )}
 
         {support === "supported" && (
-          <div className="flex items-center gap-4 rounded-2xl border border-border-soft p-4">
+          <div className="flex items-center gap-4 rounded-2xl border p-4">
             <div className="min-w-0 flex-1">
-              <div className="text-[14px] font-medium">Notifications on this device</div>
-              <div className="text-[12.5px] text-text-muted">
+              <div className="text-base font-medium md:text-sm">Notifications on this device</div>
+              <div className="text-sm text-muted-foreground">
                 {permission === "denied"
                   ? "Blocked — allow notifications for Nest in your device settings."
                   : thisDevice
@@ -138,27 +139,32 @@ export default function NotificationsSettingsPage() {
               </div>
             </div>
             <Switch
-              label="Notifications on this device"
+              aria-label="Notifications on this device"
               checked={thisDevice}
               disabled={busy || !status?.configured || permission === "denied"}
-              onChange={(on) => (on ? turnOn() : turnOff())}
+              onCheckedChange={(on) => (on ? turnOn() : turnOff())}
             />
           </div>
         )}
 
-        {message && <p className="text-[13px] text-critical">{message}</p>}
+        {message && (
+          <p role="alert" className="text-sm text-destructive">
+            {message}
+          </p>
+        )}
 
         {status && (
           <div className="flex flex-col gap-2">
             <Button
               type="button"
+              variant="outline"
               onClick={() => sendTest.mutate()}
               disabled={sendTest.isPending || status.devices === 0}
-              className="self-start rounded-xl border border-border min-h-[var(--tap)] px-5 py-2.5 text-[13.5px] font-medium hover:bg-surface-hover disabled:text-text-faint disabled:hover:bg-transparent"
+              className="self-start"
             >
               {sendTest.isPending ? "Sending…" : "Send me a test notification"}
             </Button>
-            <p className="text-[12.5px] text-text-muted">
+            <p className="text-sm text-muted-foreground">
               {status.devices === 0
                 ? "No device has notifications on yet."
                 : `${status.devices} device${status.devices === 1 ? "" : "s"} will get your reminders.`}
@@ -166,7 +172,7 @@ export default function NotificationsSettingsPage() {
             </p>
           </div>
         )}
-      </SettingsSection>
-    </>
+      </Section>
+    </PageBody>
   );
 }

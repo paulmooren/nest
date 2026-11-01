@@ -33,6 +33,8 @@ type RowProps = {
   href?: string
   /** A chevron after the trailing value, for rows that open something. */
   chevron?: boolean
+  /** Let the meta line wrap instead of cutting it off, when it is a sentence the person needs to read. */
+  wrapMeta?: boolean
   className?: string
 }
 
@@ -40,13 +42,15 @@ type RowProps = {
  * The one row of the app: leading control, content (title + one meta line), trailing value. The whole row is the
  * tap target. The title and trailing value never truncate against secondary chrome; only the meta line may.
  */
-export function Row({ leading, title, meta, trailing, onClick, href, chevron, className }: RowProps) {
+export function Row({ leading, title, meta, trailing, onClick, href, chevron, wrapMeta, className }: RowProps) {
   const inner = (
     <>
       {leading && <span className="flex shrink-0 items-center">{leading}</span>}
       <span className="min-w-0 flex-1">
         <span className="block text-base font-medium md:text-sm">{title}</span>
-        {meta && <span className="block truncate text-sm text-muted-foreground md:text-xs">{meta}</span>}
+        {meta && (
+          <span className={cn("block text-sm text-muted-foreground md:text-xs", !wrapMeta && "truncate")}>{meta}</span>
+        )}
       </span>
       {trailing && <span className="shrink-0 text-base tabular-nums md:text-sm">{trailing}</span>}
       {chevron && <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />}
