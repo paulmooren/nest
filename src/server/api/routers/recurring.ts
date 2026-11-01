@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { createTRPCRouter, householdProcedure } from "@/server/api/trpc";
 import { clientIdSchema, rejectDuplicateId } from "@/server/api/client-id";
@@ -193,17 +193,27 @@ function uniqueName(base: string, amount: number, taken: Set<string>) {
   return `${candidates[1]} (${n})`;
 }
 
+/**
+ * Which Recurring items a Member can see: Shared ones, their own, and a partner's Personal items whose account is
+ * visible to the household. Visibility is set on the account only, so an item follows its account; an item with no
+ * account has nothing to hide it behind and stays visible.
+ */
+function visibleItemsFilter(userId: string): Prisma.RecurringItemWhereInput[] {
+  return [
+    { ownerId: null },
+    { ownerId: userId },
+    { ownerId: { not: null }, accountId: null },
+    { ownerId: { not: null }, account: { visibleToHousehold: true } },
+  ];
+}
+
 export const recurringRouter = createTRPCRouter({
   list: householdProcedure.query(async ({ ctx }) => {
     const items = await ctx.prisma.recurringItem.findMany({
       where: {
         householdId: ctx.householdId,
         status: "ACTIVE",
-        OR: [
-          { ownerId: null },
-          { ownerId: ctx.userId },
-          { ownerId: { not: null }, visibleToHousehold: true },
-        ],
+        OR: visibleItemsFilter(ctx.userId),
       },
       include: { category: true },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -230,7 +240,7 @@ export const recurringRouter = createTRPCRouter({
       where: {
         id: input.id,
         householdId: ctx.householdId,
-        OR: [{ ownerId: null }, { ownerId: ctx.userId }, { ownerId: { not: null }, visibleToHousehold: true }],
+        OR: visibleItemsFilter(ctx.userId),
       },
     });
     if (!item) throw new TRPCError({ code: "NOT_FOUND" });
