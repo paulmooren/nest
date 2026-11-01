@@ -9,7 +9,10 @@ export default function proxy(req: NextRequest) {
   const isAuthPage =
     pathname.startsWith("/signin") || pathname.startsWith("/signup");
   // Reachable signed out, but unlike sign-in and sign-up they stay reachable when signed in too.
-  const isOpenPage = ["/verify-email", "/forgot-password", "/reset-password"].some((p) => pathname.startsWith(p));
+  const isOpenPage =
+    ["/verify-email", "/forgot-password", "/reset-password"].some((p) => pathname.startsWith(p)) ||
+    // The design-system kitchen sink needs no sign-in; its layout returns 404 in production.
+    (process.env.NODE_ENV !== "production" && pathname.startsWith("/kit"));
 
   if (!isLoggedIn && !isAuthPage && !isOpenPage) {
     return NextResponse.redirect(new URL("/signin", req.nextUrl.origin));

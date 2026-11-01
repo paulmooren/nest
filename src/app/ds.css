@@ -1,0 +1,84 @@
+/*
+ * Design system layer (shadcn on Base UI). See docs/rebuild/MASTER_BRIEF.md section 5.
+ *
+ * The shadcn tokens are scoped to `.ds` while the old screens still exist: `--accent` means "near-black" in
+ * globals.css but "quiet hover fill" in shadcn, so both cannot live on :root yet. Wrap a rebuilt page in
+ * `<DsScope>`, which also covers portalled pop-ups. At cutover, move the `.ds` block onto :root and delete the old tokens.
+ */
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-success: var(--good);
+  --color-warning: var(--warn);
+
+  --font-heading: var(--font-display);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+.ds {
+  /* The white content panel; the grey shell is --sidebar. */
+  --background: #ffffff;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --primary: #18181b;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f6;
+  --secondary-foreground: #18181b;
+  --muted: #f5f5f6;
+  --muted-foreground: #5c5c66;
+  --accent: #f5f5f6;
+  --accent-foreground: #18181b;
+  --destructive: #dc2626;
+  --border: #e0e0e3;
+  --input: #e0e0e3;
+  --ring: #18181b;
+  --radius: 0.75rem;
+
+  --sidebar: #f4f4f5;
+  --sidebar-foreground: #18181b;
+  --sidebar-border: #ececee;
+  --sidebar-accent: #ececee;
+  --sidebar-accent-foreground: #18181b;
+
+}
+
+/* Tailwind v4 borders default to currentColor; inside the design system they are the hairline token unless a utility says otherwise. */
+@layer base {
+  .ds *,
+  .ds ::before,
+  .ds ::after {
+    border-color: var(--border);
+  }
+}

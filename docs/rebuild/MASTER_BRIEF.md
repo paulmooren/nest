@@ -86,7 +86,8 @@ Everything belongs to exactly one **Household**. Details are in `CONTEXT.md`; th
 - Next.js (App Router) as today. **Read `node_modules/next/dist/docs/` first**: this Next version differs from what you remember (AGENTS.md).
 - Tailwind v4 + **shadcn/ui** as the component layer, **on top of Base UI primitives** (shadcn supports Base UI; ADR 0006 chose Base UI for behaviour). Decided: Base UI variant of shadcn, not Radix.
 - This supersedes ADR 0006's "the look stays in the app's own classes": the shadcn components become the look, and ADR 0006 gets a new ADR that replaces it.
-- Components are copied into `src/components/ui/` and owned by us. **Rule: pages never style a primitive from scratch.** If a page needs a new variant, it goes into the primitive.
+- Components are copied into `src/components/ds/` while the old screens exist (the old `src/components/ui/` has files of the same names) and owned by us; at cutover `ds` is renamed to `ui`.
+- Tokens live in `src/app/ds.css`, scoped to `.ds` (applied by `DsScope`, also on `<body>` so portalled pop-ups get them), because the old `--accent` token means "near-black" while shadcn's means "hover fill". At cutover the block moves to `:root`. **Rule: pages never style a primitive from scratch.** If a page needs a new variant, it goes into the primitive.
 
 ### 5.2 Tokens (one source of truth)
 
@@ -242,3 +243,8 @@ Each step is a branch/PR that ships on its own and is checked at 320 / 390 / 768
 6. Brand (Nest mark, display font): unchanged.
 7. Dark mode: out of scope; tokens stay dark-ready.
 8. Rebuild on a branch of this repo, sharing the backend.
+
+## 12. Progress log
+
+- **Step 1 (foundations), 2026-11-01:** shadcn (base-nova, Base UI) added with Nest tokens; primitives in `src/components/ds`: `AppShell`, `PageHeader`/`PageBody`, `SectionTabs`, `Row`/`RowList`, `Field`, `ResponsiveSheet`, `EmptyState`, `AmountText`, `DsScope`, plus the shadcn set (button, input, select, dialog, sheet, alert-dialog, tabs, checkbox, switch, badge, skeleton, tooltip, dropdown-menu). Kitchen sink at `/kit` (dev only). Checked at 320 / 390 / 768 / 1280: no overflow, inputs 16px, controls 44px on phone.
+  - Open: a bottom sheet opened by touch focuses its first field and so opens the keyboard (brief 5.7 wants focus on the sheet); toast and date picker not yet ported; Tabs from shadcn unused so far.

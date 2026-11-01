@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./ds.css";
 
 :root {
   /* Shell = the grey frame and sidebar; surface = the white content panel. */
