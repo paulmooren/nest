@@ -1,18 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@base-ui/react/button";
-import { Input } from "@base-ui/react/input";
 
 import { trpc } from "@/trpc/react";
 import { useRefresh } from "@/trpc/optimistic";
+import { ACCOUNT_TYPE_LABELS, type AccountType } from "@/lib/constants";
+import { parseMoney } from "@/lib/money";
+import { Button } from "@/components/ds/button";
+import { ChoiceChips } from "@/components/ds/choice-chips";
+import { Field } from "@/components/ds/field";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ds/select";
+import { TextField } from "@/components/ds/text-field";
 import { AFTER_ACCOUNT_CREATED } from "@/components/finance/use-accounts";
 import { AFTER_BULK_TRANSACTION_CHANGE } from "@/components/finance/use-transactions";
-import { ACCOUNT_TYPE_LABELS, type AccountType } from "@/lib/constants";
-import { SelectField } from "@/components/ui/select";
 
 const ACCOUNT_TYPES = Object.keys(ACCOUNT_TYPE_LABELS) as AccountType[];
+const typeItems = ACCOUNT_TYPES.map((t) => ({ value: t, label: ACCOUNT_TYPE_LABELS[t] }));
 
+/** First run with Finance on and no accounts: a first account, then (optionally) a first transaction. */
 export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(1);
   const [accountId, setAccountId] = useState<string | null>(null);
@@ -21,9 +26,8 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
   const { data: categories } = trpc.category.list.useQuery();
   const { data: me } = trpc.user.me.useQuery();
 
-  // Everything the wizard creates is the signing-up member's own (personal),
-  // not shared: with no owner it silently became a joint account, which then
-  // counted toward household totals and nagged every member about it.
+  // Everything the wizard creates is the signing-up member's own (personal), not shared: with no owner it silently
+  // became a joint account, which then counted toward household totals and nagged every member about it.
   const createAccount = trpc.account.create.useMutation({
     onSuccess: (account) => {
       setAccountId(account.id);
@@ -37,63 +41,74 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
       setStep(4);
     },
   });
+
+  // Step 1
+  const [name, setName] = useState("");
+  const [institution, setInstitution] = useState("");
+  const [type, setType] = useState<AccountType>("CHECKING");
+  const [balance, setBalance] = useState("");
+  const parsedBalance = balance.trim() === "" ? null : parseMoney(balance);
+
+  // Step 2
+  const [kind, setKind] = useState<"EXPENSE" | "INCOME">("EXPENSE");
+  const [merchant, setMerchant] = useState("");
+  const [amount, setAmount] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const parsedAmount = parseMoney(amount);
+  const categoryItems = [{ value: "", label: "No category" }, ...(categories ?? []).map((c) => ({ value: c.id, label: c.name }))];
+
   return (
-    <div className="mx-auto max-w-[440px] rounded-[20px] border border-border-soft bg-surface p-7">
-      <p className="mb-1 text-[12px] font-semibold tracking-[0.11em] text-accent uppercase">
-        Step {Math.min(step, 2)} of 2
-      </p>
+    <div className="flex max-w-md flex-col gap-5">
+      {step < 4 && (
+        <p className="text-xs font-semibold tracking-[0.11em] text-muted-foreground uppercase">Step {Math.min(step, 2)} of 2</p>
+      )}
 
       {step === 1 && (
         <>
-          <h2 className="mb-2 font-display font-bold tracking-tight text-[22px]">Your first account</h2>
-          <p className="mb-5 text-[13.5px] text-text-muted">
-            Checking, savings, credit card — what would you like to start with?
-          </p>
+          <div>
+            <h2 className="font-heading text-2xl font-bold tracking-tight">Your first account</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Checking, savings, credit card — what would you like to start with?</p>
+          </div>
           <form
-            className="flex flex-col gap-3"
+            className="flex flex-col gap-4"
             onSubmit={(e) => {
               e.preventDefault();
-              const form = new FormData(e.currentTarget);
+              if (!name.trim() || parsedBalance === null) return;
               createAccount.mutate({
-                name: String(form.get("name")),
-                institution: String(form.get("institution") || "") || undefined,
-                type: String(form.get("type")) as (typeof ACCOUNT_TYPES)[number],
-                startingBalance: Number(form.get("startingBalance") || 0),
+                name: name.trim(),
+                institution: institution.trim() || undefined,
+                type,
+                startingBalance: parsedBalance,
                 ownerId: me?.id ?? null,
               });
             }}
           >
-            <Input
-              name="name"
-              required
-              placeholder="Account name, e.g. Checking"
-              className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
-            />
-            <Input
-              name="institution"
-              placeholder="Bank (optional)"
-              className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
-            />
-            <SelectField
-              name="type"
-              defaultValue="CHECKING"
-              options={ACCOUNT_TYPES.map((t) => ({ value: t, label: ACCOUNT_TYPE_LABELS[t] }))}
-              className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
-            />
-            <Input
-              name="startingBalance"
-              type="number"
-              step="0.01"
+            <TextField label="Account name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Checking" autoFocus />
+            <TextField label="Bank (optional)" value={institution} onChange={(e) => setInstitution(e.target.value)} />
+            <Field id="wizard-type" label="Type">
+              <Select items={typeItems} value={type} onValueChange={(v) => v && setType(v as AccountType)}>
+                <SelectTrigger id="wizard-type" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {typeItems.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <TextField
+              label="Starting balance (€)"
+              value={balance}
+              onChange={(e) => setBalance(e.target.value)}
               inputMode="decimal"
-              required
-              placeholder="Starting balance (€)"
-              className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
+              placeholder="0,00"
+              hint="What is on the account today."
             />
-            <Button
-              type="submit"
-              disabled={createAccount.isPending || !me}
-              className="mt-1 min-h-[var(--tap-primary)] rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink hover:opacity-90 disabled:opacity-60"
-            >
+            <Button type="submit" size="lg" disabled={createAccount.isPending || !me || !name.trim() || parsedBalance === null}>
               Continue
             </Button>
           </form>
@@ -102,79 +117,60 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
 
       {step === 2 && accountId && (
         <>
-          <h2 className="mb-2 font-display font-bold tracking-tight text-[22px]">Your first transaction</h2>
-          <p className="mb-5 text-[13.5px] text-text-muted">
-            Add an expense or income — or skip this step.
-          </p>
+          <div>
+            <h2 className="font-heading text-2xl font-bold tracking-tight">Your first transaction</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Add an expense or income — or skip this step.</p>
+          </div>
           <form
-            className="flex flex-col gap-3"
+            className="flex flex-col gap-4"
             onSubmit={(e) => {
               e.preventDefault();
-              const form = new FormData(e.currentTarget);
+              if (!merchant.trim() || parsedAmount === null || parsedAmount <= 0) return;
               createTransaction.mutate({
                 accountId,
-                type: String(form.get("type")) as "EXPENSE" | "INCOME",
-                amount: Math.abs(Number(form.get("amount") || 0)),
-                date: new Date(String(form.get("date"))),
-                merchant: String(form.get("merchant")),
-                categoryId: String(form.get("categoryId") || "") || undefined,
+                type: kind,
+                amount: Math.abs(parsedAmount),
+                date: new Date(date),
+                merchant: merchant.trim(),
+                categoryId: categoryId || undefined,
               });
             }}
           >
-            <Input
-              name="merchant"
-              required
-              placeholder="Description, e.g. Supermarket"
-              className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
-            />
-            <div className="flex gap-3">
-              <SelectField
-                name="type"
-                defaultValue="EXPENSE"
-                options={[
-                  { value: "EXPENSE", label: "Expense" },
-                  { value: "INCOME", label: "Income" },
-                ]}
-                wrapperClassName="flex-1"
-                className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
-              />
-              <Input
-                name="amount"
-                type="number"
-                step="0.01"
-              inputMode="decimal"
-                required
-                placeholder="Amount (€)"
-                className="flex-1 min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
-              />
-            </div>
-            <SelectField
-              name="categoryId"
-              defaultValue=""
+            <ChoiceChips
+              label="Type"
+              value={kind}
+              onChange={setKind}
               options={[
-                { value: "", label: "Category (optional)" },
-                ...(categories ?? []).map((c) => ({ value: c.id, label: c.name })),
+                { value: "EXPENSE", label: "Expense" },
+                { value: "INCOME", label: "Income" },
               ]}
-              className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
             />
-            <Input
-              name="date"
-              type="date"
-              defaultValue={new Date().toISOString().slice(0, 10)}
-              className="min-h-[var(--tap-primary)] rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] outline-none focus:border-accent"
-            />
-            <div className="mt-1 flex gap-3">
-              <Button
-                type="button"
-                onClick={() => setStep(4)}
-                className="flex-1 min-h-[var(--tap-primary)] rounded-xl border border-border-soft py-2.5 text-[14px] font-medium text-text-muted hover:text-text"
-              >
+            <TextField label="Amount (€)" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder="0,00" autoFocus />
+            <TextField label="Description" value={merchant} onChange={(e) => setMerchant(e.target.value)} placeholder="e.g. Supermarket" />
+            <Field id="wizard-category" label="Category (optional)">
+              <Select items={categoryItems} value={categoryId} onValueChange={(v) => v !== null && setCategoryId(v)}>
+                <SelectTrigger id="wizard-category" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryItems.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <TextField label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="lg" className="flex-1" onClick={() => setStep(4)}>
                 Skip
               </Button>
               <Button
                 type="submit"
-                disabled={createTransaction.isPending}
-                className="flex-1 min-h-[var(--tap-primary)] rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink hover:opacity-90 disabled:opacity-60"
+                size="lg"
+                className="flex-1"
+                disabled={createTransaction.isPending || !merchant.trim() || parsedAmount === null || parsedAmount <= 0}
               >
                 Continue
               </Button>
@@ -184,15 +180,12 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
       )}
 
       {step === 4 && (
-        <div className="py-4 text-center">
-          <p className="mb-1 font-display font-bold tracking-tight text-[22px]">You&apos;re all set</p>
-          <p className="mb-5 text-[13.5px] text-text-muted">
-            Your dashboard is ready.
-          </p>
-          <Button
-            onClick={onComplete}
-            className="w-full min-h-[var(--tap-primary)] rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink hover:opacity-90"
-          >
+        <div className="flex flex-col gap-4">
+          <div>
+            <h2 className="font-heading text-2xl font-bold tracking-tight">You&apos;re all set</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Your dashboard is ready.</p>
+          </div>
+          <Button size="lg" onClick={onComplete}>
             Go to dashboard
           </Button>
         </div>

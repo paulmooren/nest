@@ -3,7 +3,9 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { TRPCClientError } from "@trpc/client";
-import { Button } from "@base-ui/react/button";
+import { AlertTriangleIcon } from "lucide-react";
+
+import { Button } from "@/components/ds/button";
 
 import { trpc } from "@/trpc/react";
 import { useRefresh } from "@/trpc/optimistic";
@@ -11,16 +13,6 @@ import { AFTER_BULK_TRANSACTION_CHANGE } from "@/components/finance/use-transact
 import { Toast, toastPrimary, toastSecondary } from "@/components/toast";
 import { suggestCategoryId } from "@/lib/categorize";
 import { describeImport, readStatement, type ImportResult } from "@/lib/statement-import";
-
-function WarningIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="9" />
-      <line x1="12" y1="7.5" x2="12" y2="13" />
-      <circle cx="12" cy="16.3" r="0.9" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -125,14 +117,12 @@ export function MissingStatementsCard() {
           {missingStatements.map((r) => (
             <div
               key={r.accountId}
-              className="flex flex-wrap items-center gap-3 rounded-[14px] border border-warn/30 bg-warn/10 px-5 py-3.5"
+              className="flex flex-wrap items-center gap-3 rounded-2xl border border-warning/30 bg-warning/10 px-4 py-3"
             >
-              <span className="block h-5 w-5 shrink-0 text-warn">
-                <WarningIcon />
-              </span>
-              <p className="min-w-0 flex-1 text-[13.5px] leading-snug">
+              <AlertTriangleIcon className="size-5 shrink-0 text-warning" aria-hidden />
+              <p className="min-w-0 flex-1 text-sm leading-snug">
                 <span className="font-semibold">Missing {month}&apos;s statement</span>{" "}
-                <span className="text-text-muted">
+                <span className="text-muted-foreground">
                   — {r.accountName} has no transactions recorded for {month}.
                 </span>
               </p>
@@ -143,7 +133,6 @@ export function MissingStatementsCard() {
                   targetAccount.current = { id: r.accountId, name: r.accountName };
                   fileInput.current?.click();
                 }}
-                className="shrink-0 rounded-lg bg-accent-fill px-4 py-2 text-[12.5px] font-semibold text-accent-ink hover:opacity-90 disabled:opacity-60"
               >
                 {busyAccount === r.accountId ? "Importing…" : "Import statement"}
               </Button>
@@ -164,7 +153,7 @@ export function MissingStatementsCard() {
               >
                 View transactions
               </Link>
-              <Button type="button" onClick={() => setOutcome(null)} className={toastSecondary}>
+              <Button type="button" variant="ghost" onClick={() => setOutcome(null)} className={toastSecondary}>
                 Close
               </Button>
             </>
@@ -191,7 +180,7 @@ export function MissingStatementsCard() {
               >
                 Open the importer
               </Link>
-              <Button type="button" onClick={() => setOutcome(null)} className={toastSecondary}>
+              <Button type="button" variant="ghost" onClick={() => setOutcome(null)} className={toastSecondary}>
                 Close
               </Button>
             </>

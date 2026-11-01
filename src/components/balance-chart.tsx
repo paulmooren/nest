@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@base-ui/react/button";
-import { Input } from "@base-ui/react/input";
+import { Button } from "@/components/ds/button";
+import { Input } from "@/components/ds/input";
 
 import { buildPoints, smoothPath, areaPath, CHART_HEIGHT, PAD_X } from "@/lib/chart";
 import { formatEUR, formatSignedEUR } from "@/lib/format";
@@ -169,20 +169,20 @@ export function BalanceChart({
   }
 
   return (
-    <section className="mb-5 rounded-[20px] border border-border-soft bg-surface p-6">
-      <div className="mb-1.5 flex flex-wrap items-start justify-between gap-5">
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-5">
         <div>
-          <p className="mb-2.5 text-[11px] font-semibold tracking-[0.11em] text-text-muted uppercase">
+          <p className="mb-2 text-xs font-semibold tracking-[0.11em] text-muted-foreground uppercase">
             {label}
           </p>
-          <p className="font-display font-bold tracking-tight text-[clamp(40px,6vw,60px)] leading-none tabular-nums">
+          <p className="font-heading text-4xl leading-none font-bold tracking-tight tabular-nums md:text-5xl">
             {formatEUR(currentValue)}
           </p>
-          <div className="mt-3 flex items-center gap-2 text-[13.5px] text-text-muted">
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             {delta && (
               <span
                 className={`flex items-center gap-1 font-semibold tabular-nums ${
-                  delta.negative ? "text-critical" : "text-good"
+                  delta.negative ? "text-destructive" : "text-success"
                 }`}
               >
                 {delta.negative ? "↓" : "↑"} {formatSignedEUR(delta.diff)} (
@@ -196,27 +196,27 @@ export function BalanceChart({
         </div>
 
         <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:items-end">
-          <div className="flex h-fit flex-wrap gap-0.5 rounded-[11px] border border-border-soft bg-surface-2 p-[3px]">
+          <div role="group" aria-label="Period" className="flex flex-wrap gap-1.5">
             {PRESETS.map((p) => (
               <Button
                 key={p.key}
+                type="button"
+                size="sm"
+                variant={p.key === presetKey ? "default" : "secondary"}
+                aria-pressed={p.key === presetKey}
+                className="rounded-full"
                 onClick={() => setPresetKey(p.key)}
-                className={`rounded-lg px-3 py-1.5 text-[12.5px] font-medium transition-colors ${
-                  p.key === presetKey
-                    ? "bg-accent-fill font-semibold text-accent-ink"
-                    : "text-text-muted hover:text-text"
-                }`}
               >
                 {p.label}
               </Button>
             ))}
             <Button
+              type="button"
+              size="sm"
+              variant={presetKey === "custom" ? "default" : "secondary"}
+              aria-pressed={presetKey === "custom"}
+              className="rounded-full"
               onClick={() => setPresetKey("custom")}
-              className={`rounded-lg px-3 py-1.5 text-[12.5px] font-medium transition-colors ${
-                presetKey === "custom"
-                  ? "bg-accent-fill font-semibold text-accent-ink"
-                  : "text-text-muted hover:text-text"
-              }`}
             >
               Custom
             </Button>
@@ -230,28 +230,30 @@ export function BalanceChart({
                   value={customFrom || isoDate(from)}
                   max={isoDate(to)}
                   onChange={(e) => setCustomFrom(e.target.value)}
-                  className="rounded-lg border border-border bg-surface px-2 py-1 text-[12px] text-text outline-none focus:border-accent"
+                  aria-label="From"
+                  className="w-auto"
                 />
-                <span className="text-text-faint">–</span>
+                <span className="text-muted-foreground">–</span>
                 <Input
                   type="date"
                   value={customTo || isoDate(to)}
                   max={isoDate(today)}
                   onChange={(e) => setCustomTo(e.target.value)}
-                  className="rounded-lg border border-border bg-surface px-2 py-1 text-[12px] text-text outline-none focus:border-accent"
+                  aria-label="To"
+                  className="w-auto"
                 />
               </div>
             )}
-            <div className="flex h-fit gap-0.5 rounded-[9px] border border-border-soft bg-surface-2 p-[2px]">
+            <div role="group" aria-label="Group by" className="flex gap-1.5">
               {GRANULARITIES.map((g) => (
                 <Button
                   key={g.key}
+                  type="button"
+                  size="sm"
+                  variant={g.key === granularity ? "outline" : "ghost"}
+                  aria-pressed={g.key === granularity}
+                  className={g.key === granularity ? "rounded-full border-foreground" : "rounded-full"}
                   onClick={() => setGranularity(g.key)}
-                  className={`rounded-md px-2.5 py-1 text-[11.5px] font-medium transition-colors ${
-                    g.key === granularity
-                      ? "bg-surface font-semibold text-text shadow-sm"
-                      : "text-text-muted hover:text-text"
-                  }`}
                 >
                   {g.label}
                 </Button>
@@ -261,7 +263,7 @@ export function BalanceChart({
         </div>
       </div>
 
-      <div className="relative mt-4" ref={containerRef}>
+      <div className="relative" ref={containerRef}>
         <div
           className="touch-none"
           onPointerMove={handlePointer}
@@ -275,8 +277,8 @@ export function BalanceChart({
           >
             <defs>
               <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#18181b" stopOpacity="0.14" />
-                <stop offset="100%" stopColor="#18181b" stopOpacity="0" />
+                <stop offset="0%" style={{ stopColor: "var(--foreground)" }} stopOpacity="0.14" />
+                <stop offset="100%" style={{ stopColor: "var(--foreground)" }} stopOpacity="0" />
               </linearGradient>
               <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
                 <feGaussianBlur stdDeviation="3.2" result="b" />
@@ -286,16 +288,16 @@ export function BalanceChart({
                 </feMerge>
               </filter>
             </defs>
-            <line x1={PAD_X} y1="45" x2={width - PAD_X} y2="45" stroke="#e4e4e7" strokeWidth="1" />
-            <line x1={PAD_X} y1="100" x2={width - PAD_X} y2="100" stroke="#e4e4e7" strokeWidth="1" />
-            <line x1={PAD_X} y1="155" x2={width - PAD_X} y2="155" stroke="#e4e4e7" strokeWidth="1" />
+            <line x1={PAD_X} y1="45" x2={width - PAD_X} y2="45" stroke="var(--border)" strokeWidth="1" />
+            <line x1={PAD_X} y1="100" x2={width - PAD_X} y2="100" stroke="var(--border)" strokeWidth="1" />
+            <line x1={PAD_X} y1="155" x2={width - PAD_X} y2="155" stroke="var(--border)" strokeWidth="1" />
             {points.length > 0 && (
               <>
                 <path d={fillPath} fill="url(#areaGrad)" stroke="none" />
                 <path
                   d={linePath}
                   fill="none"
-                  stroke="#18181b"
+                  stroke="var(--foreground)"
                   strokeWidth="2.25"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -307,14 +309,14 @@ export function BalanceChart({
                       y1="0"
                       x2={hoveredPoint.x}
                       y2={CHART_HEIGHT - 20}
-                      stroke="#a1a1aa"
+                      stroke="var(--muted-foreground)"
                       strokeWidth="1"
                       strokeDasharray="3 3"
                     />
-                    <circle cx={hoveredPoint.x} cy={hoveredPoint.y} r="4.2" fill="#18181b" filter="url(#glow)" />
+                    <circle cx={hoveredPoint.x} cy={hoveredPoint.y} r="4.2" fill="var(--foreground)" filter="url(#glow)" />
                   </>
                 ) : (
-                  <circle cx={lastPoint.x} cy={lastPoint.y} r="4.2" fill="#18181b" filter="url(#glow)" />
+                  <circle cx={lastPoint.x} cy={lastPoint.y} r="4.2" fill="var(--foreground)" filter="url(#glow)" />
                 )}
               </>
             )}
@@ -324,7 +326,7 @@ export function BalanceChart({
                 x={PAD_X + t.frac * (width - PAD_X * 2)}
                 y={190}
                 textAnchor={i === 0 ? "start" : i === ticks.length - 1 ? "end" : "middle"}
-                className="fill-text-faint text-[11px]"
+                className="fill-muted-foreground text-[11px]"
               >
                 {t.label}
               </text>
@@ -334,16 +336,16 @@ export function BalanceChart({
 
         {hoveredRow && hoveredPoint && (
           <div
-            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg border border-border-soft bg-surface px-2.5 py-1.5 text-[11.5px] whitespace-nowrap shadow-md"
+            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-lg border bg-popover px-2.5 py-1.5 text-xs whitespace-nowrap text-popover-foreground shadow-md"
             style={{ left: clamp(hoveredPoint.x, 55, width - 55), top: Math.max(hoveredPoint.y - 12, 0) }}
           >
-            <div className="text-text-muted">{formatTooltipDate(hoveredRow.date, granularity)}</div>
+            <div className="text-muted-foreground">{formatTooltipDate(hoveredRow.date, granularity)}</div>
             <div className="font-semibold tabular-nums">{formatEUR(Number(hoveredRow.value))}</div>
           </div>
         )}
 
         {points.length === 0 && (
-          <p className="mt-[-140px] text-center text-[13px] text-text-faint">
+          <p className="mt-[-140px] text-center text-sm text-muted-foreground">
             No history yet — check back in a few days.
           </p>
         )}

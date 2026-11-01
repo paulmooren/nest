@@ -1,15 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 
 import { trpc } from "@/trpc/react";
-import { AddItemRow } from "@/components/shopping/add-item-row";
-import { ShoppingItemRow } from "@/components/shopping/item-row";
-import {
-  useShoppingActions,
-  useShoppingItems,
-  useTickGrace,
-} from "@/components/shopping/use-shopping";
+import { Button } from "@/components/ds/button";
+import { Input } from "@/components/ds/input";
+import { Row, RowList } from "@/components/ds/row";
+import { Section } from "@/components/ds/section";
+import { TICK_GRACE_MS, useShoppingActions, useShoppingItems, useTickGrace } from "@/components/shopping/use-shopping";
 
 const MAX_ROWS = 6;
 
@@ -21,6 +20,7 @@ export function ShoppingCard() {
   const { data: items } = useShoppingItems(main?.id);
   const actions = useShoppingActions(main?.id);
   const ticks = useTickGrace();
+  const [name, setName] = useState("");
 
   if (!main || !me) return null;
 
@@ -28,43 +28,53 @@ export function ShoppingCard() {
   const shown = open.slice(0, MAX_ROWS);
 
   return (
-    <section className="-mx-4 md:mx-0 md:overflow-hidden md:rounded-[20px] md:border md:border-border-soft md:bg-surface">
-      <div className="mb-3 flex items-center justify-between px-4 pt-4 md:items-baseline md:px-6 md:pt-6">
-        <h2 className="text-[15px] font-semibold">{main.name}</h2>
-        <Link href="/lists/shopping" className="flex min-h-[var(--tap)] items-center px-2 -mr-2 text-[14px] font-medium text-accent hover:opacity-80 md:min-h-0 md:text-[12.5px]">
-          Open list
-        </Link>
-      </div>
-      <div className="border-t border-border-soft">
-        {shown.map((item) => (
-          <ShoppingItemRow
-            key={item.id}
-            item={item}
-            currentUserId={me.id}
-            showAddedBy={false}
-            leaving={ticks.leaving.has(item.id)}
-            onToggle={(checked) => {
-              if (checked) ticks.start(item.id);
-              else ticks.cancel(item.id);
-              actions.setChecked.mutate({ id: item.id, checked });
-            }}
-            onUpdate={(values) => actions.updateItem.mutate({ id: item.id, ...values })}
-            onDelete={() => actions.deleteItem.mutate({ id: item.id })}
-          />
-        ))}
-        {open.length > shown.length && (
-          <Link
-            href="/lists/shopping"
-            className="block border-b border-border-soft px-6 py-3 text-[12.5px] font-medium text-text-muted hover:text-text"
-          >
-            + {open.length - shown.length} more
-          </Link>
-        )}
-        <AddItemRow
-          listId={main.id}
-          onAdd={({ name }) => actions.addItem.mutate({ listId: main.id, name })}
-        />
-      </div>
-    </section>
+    <Section title={main.name}>
+      <form
+        className="flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!name.trim()) return;
+          actions.addItem.mutate({ listId: main.id, name: name.trim() });
+          setName("");
+        }}
+      >
+        <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} placeholder="Add an item" aria-label="New item" autoComplete="off" enterKeyHint="done" />
+        <Button type="submit" disabled={!name.trim()}>
+          Add
+        </Button>
+      </form>
+      {shown.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nothing on this list.</p>
+      ) : (
+        <RowList>
+          {shown.map((item) => {
+            const checked = !!item.checkedAt;
+            const leaving = ticks.leaving.has(item.id);
+            return (
+              <Row
+                key={item.id}
+                check={{
+                  checked,
+                  onChange: () => {
+                    if (!checked) ticks.start(item.id);
+                    else ticks.cancel(item.id);
+                    actions.setChecked.mutate({ id: item.id, checked: !checked });
+                  },
+                  label: checked ? `Put ${item.name} back on the list` : `Tick off ${item.name}`,
+                }}
+                title={item.name}
+                done={checked}
+                trailing={item.quantity ?? undefined}
+                rowClassName={leaving && checked ? "shopping-leave" : undefined}
+                rowStyle={leaving && checked ? { animationDuration: `${TICK_GRACE_MS}ms` } : undefined}
+              />
+            );
+          })}
+        </RowList>
+      )}
+      <Link href="/lists/shopping" className="inline-flex min-h-11 items-center self-start text-sm font-medium text-muted-foreground hover:text-foreground">
+        {open.length > shown.length ? `+ ${open.length - shown.length} more · ` : ""}Open list
+      </Link>
+    </Section>
   );
 }
