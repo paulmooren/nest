@@ -1,3 +1,4 @@
+import { LegacyFinance } from "@/components/finance/legacy-finance";
 import { Prefetched } from "@/trpc/prefetched";
 import { caller, loadQuery } from "@/trpc/server";
 
@@ -14,7 +15,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ])
       }
     >
-      {children}
+      <LegacyFinance>{children}</LegacyFinance>
     </Prefetched>
   );
 }
