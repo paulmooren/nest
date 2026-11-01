@@ -20,6 +20,15 @@ import {
 } from "@/components/ds/sheet"
 
 /**
+ * Opened by touch, focus goes to the sheet itself, not its first field: a field would raise the phone keyboard over
+ * the content the person came to read. Keyboard and mouse still land on the first field.
+ */
+const initialFocus = (openType: string) =>
+  openType === "touch"
+    ? (document.querySelector<HTMLElement>('[data-slot="sheet-content"], [data-slot="dialog-content"]') ?? true)
+    : true
+
+/**
  * One detail/form container, two presentations: a bottom sheet on a phone, a centred dialog on desktop. The
  * content is written once. Controlled: the caller owns `open`.
  */
@@ -41,7 +50,7 @@ export function ResponsiveSheet({
   if (phone) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className={cn("max-h-[90dvh] overflow-y-auto rounded-t-3xl pb-safe")}>
+        <SheetContent side="bottom" initialFocus={initialFocus} className={cn("max-h-[90dvh] overflow-y-auto rounded-t-3xl pb-safe")}>
           <SheetHeader>
             <SheetTitle>{title}</SheetTitle>
             {description && <SheetDescription>{description}</SheetDescription>}
@@ -54,7 +63,7 @@ export function ResponsiveSheet({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent initialFocus={initialFocus}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
