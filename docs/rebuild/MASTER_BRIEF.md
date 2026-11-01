@@ -44,7 +44,7 @@ Audit step before building: confirm which `src/components/*/use-*.ts` hooks are 
 
 Everything belongs to exactly one **Household**. Details are in `CONTEXT.md`; this is the minimum a designer needs.
 
-- **Ownership.** Each item is **Shared** (owner null: any Member edits, counts toward combined totals) or **Personal** (one owner edits; never in combined totals). **Visibility** lets the household see a Personal item read-only; it never grants edit. Shopping lists are Shared or Private (no read-only middle). Wishes follow their own claim rules.
+- **Ownership.** Each item is **Shared** (owner null: any Member edits, counts toward combined totals) or **Personal** (one owner edits; never in combined totals). **Visibility** lets the household see a Personal item read-only; it never grants edit. **For Finance, Visibility is set on the Personal Financial account only** (Private / Visible to household). Recurring items, transactions and balances inherit it from their account; there is no per-item visibility on the Budgets page. Other modules (Vault, Wishlist, Shopping) keep their own per-item rules. Shopping lists are Shared or Private (no read-only middle). Wishes follow their own claim rules.
 - **Modules** (switchable per household, data kept when off): Finance, Tasks, Shopping list, Wishlist, Vault. Navigation and Dashboard must re-flow when modules are off.
 - **Finance**
   - Financial accounts (checking, savings, credit card, cash, investment, loan, mortgage); balance is derived from `startingBalance` + transactions. Liabilities store a positive "amount owed".
@@ -168,9 +168,9 @@ Job: "how much is left each month, and what are our fixed items?".
 - **Account cards** strip (balances, Shared vs Personal clearly marked).
 - **Suggestions**: detected recurring items awaiting confirmation (owner-only). One entry point ("Review suggestions") opening a sheet; add / dismiss, never reappear once decided.
 - **Recurring items** in two parts, Income and Expenses; expenses grouped by **Budget group** (Rent, Insurances, Savings…, "Other"), groups collapsible, creatable, renamable, reorderable; items reorderable inside and across groups (reorder mode). With more than one Member, items are also grouped by owner (Shared / each Member); a solo household sees the flat layout.
-- **Row**: name, monthly-equivalent amount, meta (account · schedule). Varying amounts shown as such. A proposed new Budgeted amount shows **Update / Keep** on the row (ADR 0004; changes <3% or €1 ignored). Detail sheet: Payments history (set a one-off Payment aside), Basis (Latest / Lowest / Highest / Average of last 6 / Fixed), schedule (every N units), account, destination account for transfers, category, group, Visibility.
+- **Row**: desktop: name left and amount right on the first line (`varies` pill beside the amount), meta below; phone: name, amount, meta (account · schedule). No next-due or "not seen yet" text on the row. Varying amounts shown as such. A proposed new Budgeted amount shows **Update / Keep** on its own full-width line under the row, so it never competes with name and controls (ADR 0004; changes <3% or €1 ignored). Detail sheet: Payments history (set a one-off Payment aside), Basis (Latest / Lowest / Highest / Average of last 6 / Fixed), schedule (every N units), account, destination account for transfers, category, group. **No Visibility control** (inherited from the account).
 - **Category budgets** (monthly limits with status bars, "Budgets · {month}") get their own Finance tab, not a section on this page (decided).
-- Edge cases: yearly items cannot be detected (<2 years of data), added by hand; mutate only Shared or own items (404 otherwise); Personal items of a partner are visible only if they allow it (Settings → Privacy toggle `shareRecurringItems`). The toggle was not found in the current settings pages; verify before building, and add it to Settings → Profile if missing.
+- Edge cases: yearly items cannot be detected (<2 years of data), added by hand; mutate only Shared or own items (404 otherwise); a partner's Personal items are visible only when the account they run through is set to "Visible to household". The old per-user `shareRecurringItems` setting was dropped in migration `20260929200537_finance_privacy_model`; do not bring it back. **Backend gap to close first:** `recurring.list` still filters on the item's own `visibleToHousehold` (default true), and toggling an account does not update its items, so an item on a private account would leak once the per-item toggle is gone. Fix by filtering through the account (`account.visibleToHousehold`) at read time, treating items with no account by `ownerId`. Same check for `budget.list`. Then the item columns can be dropped in a later migration (apply to the Demo DB too).
 
 ### 7.4 Finance → Transactions
 Job: what did we spend, and is it categorised.
@@ -181,7 +181,7 @@ Job: what did we spend, and is it categorised.
 - Uncategorised queue for bulk work after import.
 
 ### 7.5 Finance → Accounts and account detail
-Account cards grouped Shared / Personal (owner picker only when >1 Member); type, balance, starting balance editable. Account detail: balance, `BalanceChart` (presets 1M/3M/6M/1Y + custom range + Day/Week/Month granularity, touch-scrub tooltip, text summary for screen readers), that account's transactions (a transfer reads "to X" / "from Y" from this account's side). Net worth chart (Shared only) uses the same component. "Today" in the chart is computed from UTC components.
+Account cards grouped Shared / Personal (owner picker only when >1 Member); Personal accounts carry the **Visibility** control (Private / Visible to household), the only place Finance visibility is set, with a line saying it covers the account's transactions and recurring items; Shared accounts are always visible; type, balance, starting balance editable. Account detail: balance, `BalanceChart` (presets 1M/3M/6M/1Y + custom range + Day/Week/Month granularity, touch-scrub tooltip, text summary for screen readers), that account's transactions (a transfer reads "to X" / "from Y" from this account's side). Net worth chart (Shared only) uses the same component. "Today" in the chart is computed from UTC components.
 
 ### 7.6 Tasks
 - **Todos**: checklist, open sorted by Priority (High first), assignee, add inline, edit in sheet, done list.
@@ -238,7 +238,7 @@ Each step is a branch/PR that ships on its own and is checked at 320 / 390 / 768
 2. Settings on phone: drill-down list; tabs on desktop.
 3. Net worth: stays in Finance, not on the Dashboard.
 4. Category budgets: own tab under Finance.
-5. `shareRecurringItems` toggle: unverified in the UI. Check code in step 5; add to Settings → Profile if missing.
+5. Visibility is per Personal account only, not per recurring item. `shareRecurringItems` is gone (dropped 2026-09-29). Backend must derive item visibility from the account (see 7.3).
 6. Brand (Nest mark, display font): unchanged.
 7. Dark mode: out of scope; tokens stay dark-ready.
 8. Rebuild on a branch of this repo, sharing the backend.
