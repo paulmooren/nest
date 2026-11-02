@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+import { SettingsIndex } from "@/components/settings/settings-frame";
+import { settingsSections } from "@/components/settings/sections";
+import { isDemoServer } from "@/lib/demo";
 
-export default function SettingsIndex() {
-  redirect("/settings/profile");
+export default function SettingsPage() {
+  return <SettingsIndex sections={settingsSections(isDemoServer())} />;
 }

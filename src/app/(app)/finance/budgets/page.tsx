@@ -1,18 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { NumberField } from "@base-ui/react/number-field";
-import { Button } from "@base-ui/react/button";
-import { Input } from "@base-ui/react/input";
-import { useDelayed } from "@/components/use-delayed";
-import { BudgetsSkeleton } from "@/components/finance/finance-skeletons";
-import { DatePicker } from "@/components/ui/date-picker";
+import { ChevronRightIcon, PlusIcon } from "lucide-react";
 
 import { trpc } from "@/trpc/react";
-import { useRefresh } from "@/trpc/optimistic";
-import { formatEUR, formatSignedEUR, formatDate } from "@/lib/format";
+import { formatEUR, formatSignedEUR } from "@/lib/format";
 import {
   HOUSEHOLD,
   YOU,
@@ -24,88 +16,25 @@ import {
   type Entry,
   type ScopeKey,
 } from "@/lib/budget-scope";
-import { describeSchedule, todayInHousehold, SCHEDULE_UNITS, unitLabel, type ScheduleUnit } from "@/lib/schedule";
-import { PencilIcon, TrashIcon, PlusIcon, CloseIcon, CheckIcon, ChartIcon, GripIcon } from "@/components/action-icons";
-import { PaymentHistoryModal } from "@/components/finance/payment-history-modal";
-import { SortableList } from "@/components/sortable-list";
-import { useBudgetGroupActions, useRecurringActions } from "@/components/finance/use-recurring";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ChoiceChips } from "@/components/ui/choice-chips";
+import { ConfirmDelete } from "@/components/ui/confirm-delete";
+import { EmptyState } from "@/components/ui/empty-state";
+import { RowList } from "@/components/ui/row";
+import { Section } from "@/components/ui/section";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BudgetRow } from "@/components/finance/budget-row";
+import { NO_ACCOUNT, type AccountOption, type FormValues, type Item, type Suggestion, type TxType } from "@/components/finance/budget-types";
 import { AddGroup, ExpenseSections, type BudgetGroup } from "@/components/finance/expense-sections";
-import { Avatar } from "@/components/avatar";
-import { Checkbox } from "@/components/checkbox";
-import { groupLabel, type Member } from "@/components/finance/ownership-groups";
-import { InlineEdit } from "@/components/inline-edit";
-import { parseMoney } from "@/lib/money";
-import { VisibilityToggle, VisibilityBadge } from "@/components/finance/visibility-toggle";
-import { InlineSelect } from "@/components/ui/select";
-import { ChoiceChips, SheetField } from "@/components/choice-chips";
-import { useIsPhone } from "@/components/use-media-query";
-import { Modal, ModalFooter } from "@/components/modal";
-
-type TxType = "EXPENSE" | "INCOME" | "TRANSFER";
-
-const NEW_GROUP = "__new__";
-
-type Suggestion = {
-  matchKey: string;
-  name: string;
-  type: TxType;
-  amount: number;
-  amountVaries: boolean;
-  intervalCount: number;
-  intervalUnit: "WEEK" | "MONTH";
-  occurrences: number;
-  lastDate: string | Date;
-  confident: boolean;
-  ownerId: string | null;
-  accountId: string | null;
-};
-
-type Item = {
-  id: string;
-  name: string;
-  type: TxType;
-  amount: number;
-  amountVaries: boolean;
-  intervalCount: number;
-  intervalUnit: ScheduleUnit;
-  paymentCount: number;
-  /** The Budget group of an expense; null is "Other". */
-  budgetGroupId: string | null;
-  /** A different amount the payments suggest, waiting for the Member to approve it. */
-  proposal: number | null;
-  /** For a Fixed item: what its latest payment was, when that has drifted from the typed amount. */
-  drift: number | null;
-  source: "MANUAL" | "DETECTED";
-  nextDueDate: string | Date | null;
-  lastSeenAt: string | Date | null;
-  categoryId: string | null;
-  category: { color: string; name: string } | null;
-  ownerId: string | null;
-  accountId: string | null;
-  toAccountId: string | null;
-  visibleToHousehold: boolean;
-};
-
-type FormValues = {
-  name: string;
-  amount: number;
-  intervalCount: number;
-  intervalUnit: ScheduleUnit;
-  categoryId: string | null;
-  ownerId: string | null;
-  accountId: string | null;
-  /** An existing group, or null for "Other" (left out: unchanged). */
-  budgetGroupId?: string | null;
-  /** A group to create on the spot and use. */
-  newGroupName?: string;
-  /** The date (YYYY-MM-DD) the next payment is due; left out when unchanged. */
-  nextDate?: string;
-};
-
-type AccountOption = { id: string; name: string; institution: string | null; ownerId: string | null };
-
-/** Stands for "no account" in the account selection. */
-const NO_ACCOUNT = "none";
+import { FinancePage } from "@/components/finance/finance-page";
+import type { Member } from "@/components/finance/ownership-groups";
+import { PaymentHistorySheet } from "@/components/finance/payment-history-sheet";
+import { RecurringFormSheet } from "@/components/finance/recurring-form-sheet";
+import { SuggestionsSheet } from "@/components/finance/suggestions-sheet";
+import { useBudgetGroupActions, useRecurringActions } from "@/components/finance/use-recurring";
+import { SortableList } from "@/components/sortable-list";
+import { useDelayed } from "@/components/use-delayed";
 
 export default function BudgetsPage() {
   const { data: household } = trpc.household.current.useQuery();
@@ -144,7 +73,7 @@ export default function BudgetsPage() {
 
   const scopeEntries = entries.filter((e) => e.scope === activeScope);
   const scopeAccounts = (accounts ?? []).filter((a) => scopeOfOwner(a.ownerId, currentUserId) === activeScope);
-  // Items that run through no account get their own pill, so one selection always covers every item.
+  // Items that run through no account get their own chip, so one selection always covers every item.
   const hasUnlinked = scopeEntries.some((e) => !e.accountId);
   const accountFilter =
     pickedAccount === NO_ACCOUNT && hasUnlinked
@@ -152,256 +81,86 @@ export default function BudgetsPage() {
       : (scopeAccounts.find((a) => a.id === pickedAccount)?.id ?? scopeAccounts[0]?.id ?? (hasUnlinked ? NO_ACCOUNT : ""));
 
   const showSkeleton = useDelayed(accounts === undefined || items === undefined);
-  if (accounts === undefined || items === undefined) return showSkeleton ? <BudgetsSkeleton /> : null;
 
-  return (
-    <div className="flex flex-col gap-5">
-      <LeftEachMonth
-        entries={scopeEntries}
-        scopes={scopes}
-        showScopes={showScopes}
-        scope={activeScope}
-        onScope={(key) => {
-          setScope(key);
-          setPickedAccount("");
-        }}
-        hasItems={(items ?? []).length > 0}
-        changed={new Set(scopeEntries.filter((e) => (e.item as Item).proposal !== null).map((e) => e.item.id)).size}
-      />
-      <AccountCards
-        accounts={scopeAccounts}
-        hasUnlinked={hasUnlinked}
-        selected={accountFilter}
-        onSelect={setPickedAccount}
-        members={members}
-        currentUserId={currentUserId}
-      />
-      <RecurringItems
-        members={members}
-        currentUserId={currentUserId}
-        accounts={accounts ?? []}
-        accountFilter={accountFilter}
-        scopeEntries={scopeEntries}
-        scope={activeScope}
-      />
-    </div>
-  );
-}
-
-/** The headline: what is left of the recurring income once every recurring cost is paid. */
-function LeftEachMonth({
-  entries,
-  scopes,
-  showScopes,
-  scope,
-  onScope,
-  hasItems,
-  changed,
-}: {
-  entries: Entry[];
-  scopes: { key: ScopeKey; label: string }[];
-  showScopes: boolean;
-  scope: ScopeKey;
-  onScope: (key: ScopeKey) => void;
-  hasItems: boolean;
-  /** How many items have a proposed new amount waiting. */
-  changed: number;
-}) {
-  const { left } = totalsOf(entries);
-
-  return (
-    <section className="mb-1 md:mb-3">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-      <p
-        className={`font-display text-[40px] leading-none font-bold tracking-tight tabular-nums ${
-          left < 0 ? "text-critical" : "text-good"
-        }`}
-      >
-        {hasItems ? formatSignedEUR(left).replace(/^\+/, "") : formatEUR(0)}
-      </p>
-      {showScopes && (
-          <div role="tablist" aria-label="Whose budget" className="flex w-fit shrink-0 gap-1 rounded-xl bg-surface-2 p-1">
-            {scopes.map((s) => (
-              <Button
-                key={s.key}
-                role="tab"
-                aria-selected={scope === s.key}
-                onClick={() => onScope(s.key)}
-                className={`min-h-[var(--tap)] rounded-lg px-4 py-1 text-[14px] font-medium transition-colors md:min-h-0 md:px-3 md:text-[12.5px] ${
-                  scope === s.key ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text"
-                }`}
-              >
-                {s.label}
-              </Button>
+  if (accounts === undefined || items === undefined) {
+    return (
+      <FinancePage>
+        {showSkeleton && (
+          <div role="status" aria-busy="true" className="flex flex-col gap-3">
+            <span className="sr-only">Loading…</span>
+            <Skeleton className="h-12 w-48" />
+            <Skeleton className="h-11 w-full" />
+            {Array.from({ length: 5 }, (_, i) => (
+              <Skeleton key={i} className="h-14 w-full" />
             ))}
           </div>
         )}
-      </div>
-      <p className="mt-2 text-[13.5px] text-text-muted">
-        {hasItems
-          ? "left each month after fixed costs"
-          : "Add your recurring income and expenses below, or confirm the suggestions, to see what is left each month."}
-      </p>
-      {changed > 0 && (
-        <Button
-          type="button"
-          onClick={() => document.querySelector("[data-proposal]")?.scrollIntoView({ behavior: "smooth", block: "center" })}
-          className="mt-3 min-h-[var(--tap)] rounded-lg bg-surface-2 px-4 py-1.5 text-[14px] font-medium text-text hover:bg-surface-hover md:min-h-0 md:px-3 md:text-[12.5px]"
-        >
-          {changed} amount{changed === 1 ? "" : "s"} changed — review
-        </Button>
-      )}
-    </section>
-  );
-}
+      </FinancePage>
+    );
+  }
 
-/**
- * One pill per account in the chosen scope. Exactly one is selected at a time and the lists below show what
- * runs through it.
- */
-function AccountCards({
-  accounts,
-  hasUnlinked,
-  selected,
-  onSelect,
-  members,
-  currentUserId,
-}: {
-  accounts: AccountOption[];
-  hasUnlinked: boolean;
-  selected: string;
-  onSelect: (id: string) => void;
-  members: Member[];
-  currentUserId: string;
-}) {
-  if (accounts.length === 0 && !hasUnlinked) return null;
-  const multiMember = members.length > 1;
+  const { left } = totalsOf(scopeEntries);
+  const changed = new Set(scopeEntries.filter((e) => (e.item as Item).proposal !== null).map((e) => e.item.id)).size;
+  const hasItems = items.length > 0;
 
   return (
-    <div role="radiogroup" aria-label="Account" className="flex flex-wrap gap-2">
-      {accounts.map((a) => {
-        const active = selected === a.id;
-        return (
-          <Button
-            key={a.id}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onSelect(a.id)}
-            className={`inline-flex min-h-[var(--tap)] items-center gap-2 rounded-full border py-1 pr-4 text-[14px] font-medium transition-colors md:min-h-9 md:text-[13px] ${
-              multiMember ? "pl-1.5" : "pl-4"
-            } ${
-              active
-                ? "border-text bg-text text-bg"
-                : "border-border-soft bg-surface text-text-muted hover:bg-surface-hover hover:text-text"
-            }`}
-          >
-            {multiMember && (
-              <Avatar
-                name={members.find((m) => m.user.id === a.ownerId)?.user.name || groupLabel(a.ownerId, members, currentUserId)}
-                image={members.find((m) => m.user.id === a.ownerId)?.user.image}
-                size={24}
-              />
-            )}
-            {a.name}
-          </Button>
-        );
-      })}
-      {hasUnlinked && (
-        <Button
-          type="button"
-          role="radio"
-          aria-checked={selected === NO_ACCOUNT}
-          onClick={() => onSelect(NO_ACCOUNT)}
-          className={`inline-flex min-h-[var(--tap)] items-center rounded-full border px-4 py-1 text-[14px] font-medium transition-colors md:min-h-9 md:text-[13px] ${
-            selected === NO_ACCOUNT
-              ? "border-text bg-text text-bg"
-              : "border-border-soft bg-surface text-text-muted hover:bg-surface-hover hover:text-text"
-          }`}
-        >
-          No account
-        </Button>
-      )}
-    </div>
-  );
-}
-
-/**
- * What the app found in your transactions, to review in one go: the
- * confident ones are ticked, one click adds them all.
- */
-function SuggestionsPanel({ suggestions, onDismiss }: { suggestions: Suggestion[]; onDismiss: (matchKey: string) => void }) {
-  // Finding and adding suggestions is worked out by the server, so these wait (the buttons show it).
-  const refresh = useRefresh();
-  const [override, setOverride] = useState<Record<string, boolean>>({});
-  const done = () => refresh("recurring.list", "recurring.suggestions", "transaction.list");
-  const add = trpc.recurring.addSuggestions.useMutation({ onSuccess: done });
-
-  const isTicked = (c: Suggestion) => override[c.matchKey] ?? c.confident;
-  const ticked = suggestions.filter(isTicked);
-  const order: Record<TxType, number> = { INCOME: 0, TRANSFER: 1, EXPENSE: 2 };
-  const sorted = [...suggestions].sort((a, b) => order[a.type] - order[b.type] || b.amount - a.amount);
-
-  return (
-    <section className="rounded-[20px] border border-border-soft bg-surface p-6">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="mb-1 text-[15px] font-semibold">
-            {suggestions.length} recurring item{suggestions.length === 1 ? "" : "s"} found
-          </h2>
-          <p className="text-[13px] text-text-muted">
-            Found in your transactions by who they were with, so a changing description doesn&apos;t matter. The
-            confident ones are ticked — nothing is added until you say so.
-          </p>
-        </div>
-        <Button
-          onClick={() => add.mutate({ matchKeys: ticked.map((c) => c.matchKey) })}
-          disabled={ticked.length === 0 || add.isPending}
-          className="min-h-[var(--tap)] rounded-xl bg-accent-fill px-4 py-2 text-[14px] font-semibold text-accent-ink hover:opacity-90 disabled:bg-surface-2 disabled:text-text-faint md:min-h-0 md:text-[13px]"
-        >
-          {add.isPending ? "Adding…" : `Add selected (${ticked.length})`}
-        </Button>
-      </div>
-      {sorted.map((c) => (
-        <label
-          key={c.matchKey}
-          className="flex cursor-pointer flex-wrap items-center gap-3 border-b border-border-soft py-3 last:border-none"
-        >
-          <Checkbox
-            checked={isTicked(c)}
-            onChange={(next) => setOverride((prev) => ({ ...prev, [c.matchKey]: next }))}
-          />
-          <div className="min-w-0 flex-1">
-            <div className="text-[13.5px] font-medium">
-              {c.name}{" "}
-              <span className="text-[12px] font-normal text-text-faint">
-                ({c.type === "INCOME" ? "income" : c.type === "TRANSFER" ? "transfer" : "expense"})
-              </span>
-            </div>
-            <div className="text-[12px] text-text-muted">
-              {c.amountVaries ? "about " : ""}
-              {formatEUR(c.amount)}
-              {c.amountVaries && " · varies"} · {describeSchedule(c.intervalCount, c.intervalUnit)} · seen {c.occurrences}
-              &times;
-            </div>
-          </div>
-          <Button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              onDismiss(c.matchKey);
+    <FinancePage>
+      <section aria-label="Left each month" className="flex flex-col gap-3">
+        <p className={cn("font-heading text-5xl leading-none font-bold tracking-tight tabular-nums", left < 0 ? "text-destructive" : "text-success")}>
+          {hasItems ? formatSignedEUR(left).replace(/^\+/, "") : formatEUR(0)}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {hasItems
+            ? "left each month after fixed costs"
+            : "Add your recurring income and expenses below, or confirm the suggestions, to see what is left each month."}
+        </p>
+        {showScopes && (
+          <ChoiceChips
+            label="Whose budget"
+            value={activeScope}
+            onChange={(key) => {
+              setScope(key);
+              setPickedAccount("");
             }}
-            className="min-h-[var(--tap)] rounded-lg border border-border-soft px-4 py-1.5 text-[14px] font-medium text-text-muted hover:text-text md:min-h-0 md:px-3 md:text-[12.5px]"
+            options={scopes.map((s) => ({ value: s.key, label: s.label }))}
+          />
+        )}
+        {changed > 0 && (
+          <Button
+            type="button"
+            variant="secondary"
+            className="self-start"
+            onClick={() => document.querySelector("[data-proposal]")?.scrollIntoView({ behavior: "smooth", block: "center" })}
           >
-            Not recurring
+            {changed} amount{changed === 1 ? "" : "s"} changed — review
           </Button>
-        </label>
-      ))}
-    </section>
+        )}
+      </section>
+
+      {(scopeAccounts.length > 0 || hasUnlinked) && (
+        <ChoiceChips
+          label="Account"
+          value={accountFilter}
+          onChange={setPickedAccount}
+          options={[
+            ...scopeAccounts.map((a) => ({ value: a.id, label: a.name })),
+            ...(hasUnlinked ? [{ value: NO_ACCOUNT, label: "No account" }] : []),
+          ]}
+        />
+      )}
+
+      <RecurringItems
+        members={members}
+        currentUserId={currentUserId}
+        accounts={accounts as AccountOption[]}
+        accountFilter={accountFilter}
+        scopeEntries={scopeEntries as Entry<Item>[]}
+        scope={activeScope}
+      />
+    </FinancePage>
   );
 }
 
-/** "You" first, then other household members in join order, "Shared" last. */
 function RecurringItems({
   members,
   currentUserId,
@@ -414,7 +173,7 @@ function RecurringItems({
   currentUserId: string;
   accounts: AccountOption[];
   accountFilter: string;
-  scopeEntries: Entry<Item>[] | Entry[];
+  scopeEntries: Entry<Item>[];
   scope: ScopeKey;
 }) {
   const { data: suggestions } = trpc.recurring.suggestions.useQuery();
@@ -430,9 +189,15 @@ function RecurringItems({
   const recurring = useRecurringActions();
   const groupActions = useBudgetGroupActions();
 
+  const [reviewing, setReviewing] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [adding, setAdding] = useState<"INCOME" | "EXPENSE" | null>(null);
+  const [history, setHistory] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<Item | null>(null);
+
   const accountName = (id: string | null) => accounts.find((a) => a.id === id)?.name ?? "another account";
 
-  const shown = (scopeEntries as Entry<Item>[]).filter((e) => !accountFilter || e.accountId === accountFilter);
+  const shown = scopeEntries.filter((e) => !accountFilter || e.accountId === accountFilter);
   const income = shown.filter((e) => e.side === "INCOME");
   const expenses = shown.filter((e) => e.side === "EXPENSE");
   const monthlyIncome = income.reduce((sum, e) => sum + monthlyOf(e.item), 0);
@@ -442,748 +207,153 @@ function RecurringItems({
     (c) => scopeOfOwner(c.ownerId, currentUserId) === scope && (!accountFilter || (accountFilter !== NO_ACCOUNT && c.accountId === accountFilter)),
   ) as Suggestion[];
 
+  const editingItem = (allItems as Item[] | undefined)?.find((i) => i.id === editing);
+  const canEditItem = (i: Item) => i.ownerId === null || i.ownerId === currentUserId;
+
+  const renderRow = (entry: Entry<Item>) => {
+    const item = entry.item;
+    const transferText =
+      item.type === "TRANSFER"
+        ? entry.side === "EXPENSE"
+          ? `Transfer to ${accountName(item.toAccountId)}`
+          : `Transfer from ${accountName(item.accountId)}`
+        : null;
+    return (
+      <BudgetRow
+        key={`${item.id}-${entry.side}`}
+        item={item}
+        transferText={transferText}
+        canEdit={canEditItem(item)}
+        onOpen={() => setEditing(item.id)}
+        onAcceptProposal={() => recurring.acceptProposal({ id: item.id })}
+        onKeepAmount={() => recurring.keepAmount({ id: item.id })}
+      />
+    );
+  };
+
+  const column = (type: "INCOME" | "EXPENSE", title: string, total: number, list: Entry<Item>[]) => (
+    <Section
+      key={type}
+      title={title}
+      description={undefined}
+      className="gap-3"
+    >
+      <p className="-mt-3 text-sm text-muted-foreground tabular-nums">
+        <span className={cn("font-heading text-2xl font-bold tracking-tight", type === "INCOME" ? "text-success" : "text-foreground")}>
+          {formatEUR(total)}
+        </span>{" "}
+        / month
+      </p>
+      {list.length === 0 && <EmptyState title={`Nothing here yet — add ${type === "INCOME" ? "income" : "an expense"} below.`} />}
+      {type === "EXPENSE" ? (
+        <ExpenseSections
+          entries={list}
+          groups={groups}
+          usedGroupIds={usedGroupIds}
+          hostsFresh
+          renderRow={renderRow}
+          onReorder={(ids) => recurring.reorder({ ids })}
+          onMove={({ id, groupId, ids }) => recurring.reorder({ ids, move: { id, groupId } })}
+          onRename={groupActions.rename}
+          onDelete={groupActions.remove}
+        />
+      ) : (
+        list.length > 0 && (
+          <SortableList ids={list.map((e) => e.item.id)} onReorder={(ids) => recurring.reorder({ ids })}>
+            <RowList>{list.map(renderRow)}</RowList>
+          </SortableList>
+        )
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" onClick={() => setAdding(type)}>
+          <PlusIcon /> Add {type === "INCOME" ? "income" : "expense"}
+        </Button>
+        {type === "EXPENSE" && <AddGroup onAdd={groupActions.create} />}
+      </div>
+    </Section>
+  );
+
   return (
     <>
-      {mine.length > 0 && <SuggestionsPanel suggestions={mine} onDismiss={(matchKey) => recurring.dismissSuggestions({ matchKeys: [matchKey] })} />}
-
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <RecurringColumn
-          type="INCOME"
-          title="Income"
-          total={monthlyIncome}
-          totalClass="text-good"
-          entries={income}
-          categories={categories ?? []}
-          members={members}
-          currentUserId={currentUserId}
-          accounts={accounts}
-          accountFilter={accountFilter}
-          accountName={accountName}
-          onAdd={(values) => recurring.create({ ...values, type: "INCOME" })}
-          onUpdate={(id, values) => recurring.update({ id, ...values })}
-          onDelete={(id) => recurring.remove({ id })}
-          onReorder={(ids) => recurring.reorder({ ids })}
-          onToggleVisibility={(id, visible) => recurring.update({ id, visibleToHousehold: visible })}
-          onAcceptProposal={(id) => recurring.acceptProposal({ id })}
-          onKeepAmount={(id) => recurring.keepAmount({ id })}
-          groups={groups}
-          usedGroupIds={usedGroupIds}
-          onMove={({ id, groupId, ids }) => recurring.reorder({ ids, move: { id, groupId } })}
-          onAddGroup={groupActions.create}
-          onRenameGroup={groupActions.rename}
-          onDeleteGroup={groupActions.remove}
-        />
-        <RecurringColumn
-          type="EXPENSE"
-          title="Expenses"
-          total={monthlyExpenses}
-          totalClass="text-text"
-          entries={expenses}
-          categories={categories ?? []}
-          members={members}
-          currentUserId={currentUserId}
-          accounts={accounts}
-          accountFilter={accountFilter}
-          accountName={accountName}
-          onAdd={(values) => recurring.create({ ...values, type: "EXPENSE" })}
-          onUpdate={(id, values) => recurring.update({ id, ...values })}
-          onDelete={(id) => recurring.remove({ id })}
-          onReorder={(ids) => recurring.reorder({ ids })}
-          onToggleVisibility={(id, visible) => recurring.update({ id, visibleToHousehold: visible })}
-          onAcceptProposal={(id) => recurring.acceptProposal({ id })}
-          onKeepAmount={(id) => recurring.keepAmount({ id })}
-          groups={groups}
-          usedGroupIds={usedGroupIds}
-          onMove={({ id, groupId, ids }) => recurring.reorder({ ids, move: { id, groupId } })}
-          onAddGroup={groupActions.create}
-          onRenameGroup={groupActions.rename}
-          onDeleteGroup={groupActions.remove}
-        />
-      </div>
-    </>
-  );
-}
-
-function RecurringColumn({
-  type,
-  title,
-  total,
-  totalClass,
-  entries,
-  categories,
-  members,
-  currentUserId,
-  accounts,
-  accountFilter,
-  accountName,
-  onAdd,
-  onUpdate,
-  onDelete,
-  onReorder,
-  onToggleVisibility,
-  onAcceptProposal,
-  onKeepAmount,
-  groups: budgetGroups,
-  usedGroupIds,
-  onMove,
-  onAddGroup,
-  onRenameGroup,
-  onDeleteGroup,
-}: {
-  type: TxType;
-  title: string;
-  total: number;
-  totalClass: string;
-  entries: Entry<Item>[];
-  categories: { id: string; name: string; color: string }[];
-  members: Member[];
-  currentUserId: string;
-  accounts: AccountOption[];
-  accountFilter: string;
-  accountName: (id: string | null) => string;
-  onAdd: (values: FormValues) => void;
-  onUpdate: (id: string, values: Partial<FormValues>) => void;
-  onDelete: (id: string) => void;
-  /** The new order of these items, after one was dragged. */
-  onReorder: (ids: string[]) => void;
-  onToggleVisibility: (id: string, visible: boolean) => void;
-  onAcceptProposal: (id: string) => void;
-  onKeepAmount: (id: string) => void;
-  groups: BudgetGroup[];
-  usedGroupIds: Set<string>;
-  /** An item was dragged into another group; `ids` is the new order of the group it landed in. */
-  onMove: (move: { id: string; groupId: string | null; ids: string[] }) => void;
-  onAddGroup: (name: string) => void;
-  onRenameGroup: (id: string, name: string) => void;
-  onDeleteGroup: (id: string) => void;
-}) {
-  const [adding, setAdding] = useState(false);
-
-  const items = entries.map((e) => e.item);
-  const renderRow = (entry: Entry<Item>) => (
-    <RecurringRow
-      key={`${entry.item.id}-${entry.side}`}
-      item={entry.item}
-      side={entry.side}
-      accountName={accountName}
-      categories={categories}
-      members={members}
-      currentUserId={currentUserId}
-      accounts={accounts}
-      groups={budgetGroups}
-      onUpdate={(values) => onUpdate(entry.item.id, values)}
-      onDelete={() => onDelete(entry.item.id)}
-      onToggleVisibility={(visible) => onToggleVisibility(entry.item.id, visible)}
-      onAcceptProposal={() => onAcceptProposal(entry.item.id)}
-      onKeepAmount={() => onKeepAmount(entry.item.id)}
-    />
-  );
-  // Expenses are split into Budget groups; income stays one flat, reorderable list.
-  const renderList = (list: Entry<Item>[], hostsFresh: boolean) =>
-    type === "EXPENSE" ? (
-      <ExpenseSections
-        entries={list}
-        groups={budgetGroups}
-        usedGroupIds={usedGroupIds}
-        hostsFresh={hostsFresh}
-        renderRow={renderRow}
-        onReorder={onReorder}
-        onMove={onMove}
-        onRename={onRenameGroup}
-        onDelete={onDeleteGroup}
-      />
-    ) : (
-      <SortableList ids={list.map((e) => e.item.id)} onReorder={onReorder}>
-        {list.map(renderRow)}
-      </SortableList>
-    );
-
-  return (
-    <section className="md:overflow-hidden md:rounded-[20px] md:border md:border-border-soft md:bg-surface">
-      <div className="px-4 pt-6 pb-4 md:px-6">
-        <h2 className="mb-1 text-[15px] font-semibold">{title}</h2>
-        <p className={`font-display font-bold tracking-tight text-[22px] tabular-nums ${totalClass}`}>
-          {formatEUR(total)} <span className="text-[13px] font-sans text-text-muted">/ month</span>
-        </p>
-      </div>
-
-      {items.length === 0 && !adding && (
-        <p className="border-b border-border-soft px-6 py-4 text-[13px] text-text-muted">
-          Nothing here yet — add one below, or add a suggestion above once one
-          turns up.
-        </p>
+      {mine.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setReviewing(true)}
+          className="flex min-h-14 w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors hover:bg-muted"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="block text-base font-medium md:text-sm">
+              {mine.length} recurring item{mine.length === 1 ? "" : "s"} found
+            </span>
+            <span className="block text-sm text-muted-foreground md:text-xs">Review suggestions from your transactions</span>
+          </span>
+          <ChevronRightIcon className="size-4 text-muted-foreground" aria-hidden />
+        </button>
       )}
 
-      {renderList(entries, true)}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        {column("INCOME", "Income", monthlyIncome, income)}
+        {column("EXPENSE", "Expenses", monthlyExpenses, expenses)}
+      </div>
 
-      {adding ? (
-        <InlineRecurringRow
-          type={type}
-          groups={budgetGroups}
-          categories={categories}
+      {reviewing && (
+        <SuggestionsSheet
+          suggestions={mine}
+          onDismiss={(matchKey) => recurring.dismissSuggestions({ matchKeys: [matchKey] })}
+          onClose={() => setReviewing(false)}
+        />
+      )}
+
+      {adding && (
+        <RecurringFormSheet
+          type={adding}
+          groups={groups}
+          categories={categories ?? []}
           members={members}
           currentUserId={currentUserId}
           accounts={accounts}
           defaultAccountId={accountFilter === NO_ACCOUNT ? "" : accountFilter}
+          onSubmit={(values: FormValues) => recurring.create({ ...values, type: adding as TxType })}
+          onClose={() => setAdding(null)}
+        />
+      )}
+
+      {editingItem && (
+        <RecurringFormSheet
+          initial={editingItem}
+          type={editingItem.type}
+          groups={groups}
+          categories={categories ?? []}
+          members={members}
+          currentUserId={currentUserId}
+          accounts={accounts}
+          canEdit={canEditItem(editingItem)}
           onSubmit={(values) => {
-            onAdd(values);
-            setAdding(false);
+            // Only a changed amount counts as typing one (which makes the item Fixed); a rename or new schedule must not.
+            const { amount, ...rest } = values;
+            recurring.update({ id: editingItem.id, ...(amount === editingItem.amount ? rest : values) });
           }}
-          onCancel={() => setAdding(false)}
+          onHistory={editingItem.paymentCount > 0 ? () => {
+            setEditing(null);
+            setHistory(editingItem.id);
+          } : undefined}
+          onDelete={() => {
+            setEditing(null);
+            setDeleting(editingItem);
+          }}
+          onClose={() => setEditing(null)}
         />
-      ) : (
-        <Button
-          onClick={() => setAdding(true)}
-          className="flex w-full items-center gap-3 border-b border-border-soft px-6 py-3 text-left text-text-faint transition-colors last:border-b-0 hover:text-text"
-        >
-          <span className="block h-2.5 w-2.5 shrink-0">
-            <PlusIcon />
-          </span>
-          <span className="text-[13.5px]">Add {type === "INCOME" ? "income" : "expense"}</span>
-        </Button>
       )}
-      {type === "EXPENSE" && <AddGroup onAdd={onAddGroup} />}
-    </section>
-  );
-}
 
-function RecurringRow({
-  item,
-  side,
-  accountName,
-  categories,
-  members,
-  currentUserId,
-  accounts,
-  groups,
-  onUpdate,
-  onDelete,
-  onToggleVisibility,
-  onAcceptProposal,
-  onKeepAmount,
-}: {
-  item: Item;
-  /** Which side of the budget this row sits on; a transfer has one row on each. */
-  side: "INCOME" | "EXPENSE";
-  accountName: (id: string | null) => string;
-  categories: { id: string; name: string; color: string }[];
-  members: Member[];
-  currentUserId: string;
-  accounts: AccountOption[];
-  groups: BudgetGroup[];
-  onUpdate: (values: Partial<FormValues>) => void;
-  onDelete: () => void;
-  onToggleVisibility: (visible: boolean) => void;
-  onAcceptProposal: () => void;
-  onKeepAmount: () => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  // On a phone the name opens a sheet with the row's other controls; the pill, icons and inline edits are desktop controls.
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const isTransfer = item.type === "TRANSFER";
-  // Due, but not in the transactions yet: say so quietly — it still counts.
-  const notSeen = item.nextDueDate !== null && new Date(item.nextDueDate).getTime() < todayInHousehold().getTime();
-  const isOwn = item.ownerId === currentUserId;
-  const canEdit = item.ownerId === null || isOwn;
-  // On a phone there is no handle: press and hold anywhere on the row, then drag.
-  const phone = useIsPhone();
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
-    id: item.id,
-    disabled: !canEdit || editing,
-  });
+      {history && <PaymentHistorySheet itemId={history} onClose={() => setHistory(null)} />}
 
-  if (editing) {
-    return (
-      <InlineRecurringRow
-        initial={item}
-        type={item.type}
-        groups={groups}
-        categories={categories}
-        members={members}
-        currentUserId={currentUserId}
-        accounts={accounts}
-        onSubmit={(values) => {
-          // Only a changed amount counts as typing one (which makes the item Fixed); a rename or new schedule must not.
-          const { amount, ...rest } = values;
-          onUpdate(amount === item.amount ? rest : values);
-          setEditing(false);
-        }}
-        onCancel={() => setEditing(false)}
+      <ConfirmDelete
+        open={!!deleting}
+        onOpenChange={(o) => !o && setDeleting(null)}
+        title={`Delete “${deleting?.name ?? ""}”?`}
+        description="Its payments stay as transactions."
+        onConfirm={() => deleting && recurring.remove({ id: deleting.id })}
       />
-    );
-  }
-
-  return (
-    <>
-    <div
-      ref={setNodeRef}
-      {...(phone && canEdit ? listeners : {})}
-      // Up and down only: the row follows the pointer vertically.
-      style={{ transform: CSS.Transform.toString(transform ? { ...transform, x: 0 } : null), transition }}
-      className={`relative flex items-center gap-3 border-b border-border-soft px-4 py-3.5 transition-colors last:border-b-0 hover:bg-surface-hover max-md:select-none max-md:[-webkit-touch-callout:none] md:px-6 ${
-        isDragging ? "z-10 bg-surface shadow-lg" : ""
-      }`}
-    >
-      {/* The grip: the only part that drags, so scrolling and clicking the name or amount work as usual. */}
-      {canEdit ? (
-        <Button
-          type="button"
-          ref={setActivatorNodeRef}
-          {...attributes}
-          {...listeners}
-          aria-label={`Reorder ${item.name}`}
-          title="Drag to reorder"
-          className={`-ml-3 hidden h-6 w-5 shrink-0 cursor-grab touch-none items-center justify-center rounded text-text-faint hover:text-text active:cursor-grabbing md:flex`}
-        >
-          <GripIcon />
-        </Button>
-      ) : (
-        <span className="hidden shrink-0 md:-ml-3 md:block md:w-5" aria-hidden />
-      )}
-      <span
-        className="block w-[3px] shrink-0 self-stretch rounded-full"
-        style={{ background: item.category?.color ?? "#5c5f66" }}
-      />
-      <div className="min-w-0 flex-1">
-        <div className="hidden items-center gap-2 text-[13.5px] font-medium md:flex">
-          {canEdit ? (
-            <InlineEdit
-              value={item.name}
-              ariaLabel="Name"
-              onCommit={(name) => onUpdate({ name })}
-              className="text-[13.5px] font-medium"
-            />
-          ) : (
-            item.name
-          )}
-        </div>
-        {/* Phone: name and amount share the first line, the schedule sits under them at full width. */}
-        <div className="flex items-start justify-between gap-3 md:hidden">
-          <Button
-            type="button"
-            onClick={() => setSheetOpen(true)}
-            aria-label={`${item.name}: open details`}
-            className="flex min-h-[var(--tap)] min-w-0 flex-1 items-center text-left text-[16px] leading-snug font-medium"
-          >
-            {item.name}
-          </Button>
-          <span className="flex min-h-[var(--tap)] shrink-0 items-center text-[16px] font-semibold tabular-nums">{formatEUR(item.amount)}</span>
-        </div>
-        <div className="mt-0.5 text-[13px] leading-snug text-text-muted md:mt-1 md:text-[12px]">
-          {isTransfer && (
-            <>
-              {side === "EXPENSE"
-                ? `Transfer to ${accountName(item.toAccountId)}`
-                : `Transfer from ${accountName(item.accountId)}`}{" "}
-              ·{" "}
-            </>
-          )}
-          {describeSchedule(item.intervalCount, item.intervalUnit)}
-          {item.nextDueDate &&
-            (notSeen ? (
-              <span className="text-text-faint"> · expected {formatDate(item.nextDueDate)} — not seen yet</span>
-            ) : (
-              <> · next {formatDate(item.nextDueDate)}</>
-            ))}
-        </div>
-        {item.proposal !== null && (
-          <div data-proposal className="mt-1.5 flex flex-wrap items-center gap-2 text-[12px]">
-            <span className="font-medium text-text">
-              New amount {formatEUR(item.proposal)}
-              <span className="font-normal text-text-faint"> · was {formatEUR(item.amount)}</span>
-            </span>
-            {canEdit && (
-              <>
-                <Button
-                  type="button"
-                  onClick={onAcceptProposal}
-                  className="min-h-[var(--tap)] rounded-md bg-accent-fill px-3 py-0.5 font-semibold text-accent-ink hover:opacity-90 md:min-h-0 md:px-2"
-                >
-                  Update
-                </Button>
-                <Button
-                  type="button"
-                  onClick={onKeepAmount}
-                  className="min-h-[var(--tap)] rounded-md border border-border-soft px-3 py-0.5 font-medium text-text-muted hover:text-text md:min-h-0 md:px-2"
-                >
-                  Keep
-                </Button>
-              </>
-            )}
-          </div>
-        )}
-        {item.drift !== null && (
-          <p className="mt-1 text-[12px] text-text-faint">Payments are now {formatEUR(item.drift)}</p>
-        )}
-      </div>
-      {item.amountVaries && (
-        <span
-          title="The amount changes from payment to payment; this is the average of the last three"
-          className="hidden rounded-md bg-surface-2 px-1.5 py-0.5 text-[12px] font-medium text-text-muted md:inline"
-        >
-          varies
-        </span>
-      )}
-      {canEdit ? (
-        <span className="hidden md:block">
-          <InlineEdit
-            value={String(item.amount)}
-            editValue={formatEUR(item.amount)}
-            display={formatEUR(item.amount)}
-            ariaLabel="Amount"
-            maxLength={14}
-            onCommit={(text) => {
-              // Accepts what was on screen ("€1,250.00") or a plain number ("1250,50").
-              const parsed = parseMoney(text);
-              if (parsed !== null && parsed > 0) onUpdate({ amount: parsed });
-            }}
-            className="text-right text-[14px] font-semibold tabular-nums"
-            buttonClassName="block"
-          />
-        </span>
-      ) : (
-        <div className="hidden text-[14px] font-semibold tabular-nums md:block">{formatEUR(item.amount)}</div>
-      )}
-      <div className="hidden items-center gap-3 md:flex">
-        {item.ownerId !== null &&
-          (isOwn ? (
-            <VisibilityToggle visible={item.visibleToHousehold} onChange={onToggleVisibility} />
-          ) : (
-            <VisibilityBadge />
-          ))}
-        {item.paymentCount > 0 && (
-          <Button
-            onClick={() => setShowHistory(true)}
-            aria-label={`Payment history of ${item.name}`}
-            title="Payment history"
-            className="h-4 w-4 shrink-0 text-text-muted hover:text-text"
-          >
-            <ChartIcon />
-          </Button>
-        )}
-        {canEdit && (
-          <>
-            <Button
-              onClick={() => setEditing(true)}
-              aria-label={`Edit ${item.name}`}
-              className="h-4 w-4 shrink-0 text-text-muted hover:text-text"
-            >
-              <PencilIcon />
-            </Button>
-            <Button
-              onClick={onDelete}
-              aria-label={`Delete ${item.name}`}
-              className="h-4 w-4 shrink-0 text-text-muted hover:text-critical"
-            >
-              <TrashIcon />
-            </Button>
-          </>
-        )}
-      </div>
-    </div>
-    {sheetOpen && (
-      <RecurringSheet
-        item={item}
-        canEdit={canEdit}
-        isOwn={isOwn}
-        meta={
-          (isTransfer ? `${side === "EXPENSE" ? `Transfer to ${accountName(item.toAccountId)}` : `Transfer from ${accountName(item.accountId)}`} · ` : "") +
-          describeSchedule(item.intervalCount, item.intervalUnit) +
-          (item.nextDueDate ? ` · next ${formatDate(item.nextDueDate)}` : "")
-        }
-        onToggleVisibility={onToggleVisibility}
-        onEdit={() => {
-          setSheetOpen(false);
-          setEditing(true);
-        }}
-        onHistory={() => {
-          setSheetOpen(false);
-          setShowHistory(true);
-        }}
-        onDelete={() => {
-          setSheetOpen(false);
-          onDelete();
-        }}
-        onClose={() => setSheetOpen(false)}
-      />
-    )}
-    {showHistory && <PaymentHistoryModal itemId={item.id} onClose={() => setShowHistory(false)} />}
     </>
-  );
-}
-
-/**
- * One row, editable in place — used both to create a new item (blank, prepended
- * to the list) and to edit an existing one (swapped in for its display row),
- * so adding/editing never leaves the list for a separate modal-like form.
- */
-function InlineRecurringRow({
-  initial,
-  type,
-  groups,
-  categories,
-  members,
-  currentUserId,
-  accounts,
-  defaultAccountId,
-  onSubmit,
-  onCancel,
-}: {
-  initial?: Item;
-  /** What kind of item this is (known from the column when adding). Income has no Budget group. */
-  type: TxType;
-  groups: BudgetGroup[];
-  categories: { id: string; name: string; color: string }[];
-  members: Member[];
-  currentUserId: string;
-  accounts: AccountOption[];
-  defaultAccountId?: string;
-  onSubmit: (values: FormValues) => void;
-  onCancel: () => void;
-}) {
-  const [intervalCount, setIntervalCount] = useState(String(initial?.intervalCount ?? 1));
-  const [intervalUnit, setIntervalUnit] = useState<ScheduleUnit>(initial?.intervalUnit ?? "MONTH");
-  const initialNext = (initial?.nextDueDate ? new Date(initial.nextDueDate) : todayInHousehold()).toISOString().slice(0, 10);
-  const [nextDate, setNextDate] = useState(initialNext);
-  const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
-  // "" = Other, a group id, or NEW_GROUP to type the name of a new one.
-  const [groupChoice, setGroupChoice] = useState(initial?.budgetGroupId ?? "");
-  const [newGroupName, setNewGroupName] = useState("");
-  // Only accounts you can edit (yours or shared) can carry a recurring item.
-  const writable = accounts.filter((a) => a.ownerId === null || a.ownerId === currentUserId);
-  const [accountId, setAccountId] = useState(
-    initial
-      ? (initial.accountId ?? "")
-      : writable.some((a) => a.id === defaultAccountId)
-        ? (defaultAccountId as string)
-        : (writable.find((a) => a.ownerId === currentUserId)?.id ?? writable[0]?.id ?? ""),
-  );
-  const [ownerId, setOwnerId] = useState(initial ? (initial.ownerId ?? "") : currentUserId);
-  const selectedColor = categories.find((c) => c.id === categoryId)?.color ?? "#5c5f66";
-  const multiMember = members.length > 1;
-
-  return (
-    <form
-      className="flex items-center gap-3 border-b border-border-soft bg-surface-2 px-6 py-2.5 last:border-b-0"
-      onSubmit={(e) => {
-        e.preventDefault();
-        const form = new FormData(e.currentTarget);
-        onSubmit({
-          name: String(form.get("name")),
-          amount: Number(form.get("amount") || 0),
-          intervalCount: Math.max(1, Math.min(365, Math.round(Number(intervalCount) || 1))),
-          intervalUnit,
-          ...(nextDate && (!initial || nextDate !== initialNext) ? { nextDate } : {}),
-          categoryId: categoryId || null,
-          ...(type === "INCOME"
-            ? {}
-            : groupChoice === NEW_GROUP
-              ? newGroupName.trim()
-                ? { newGroupName: newGroupName.trim() }
-                : {}
-              : { budgetGroupId: groupChoice || null }),
-          // With no partner yet, default to personal (not shared) — same
-          // privacy-conserving default used by the account owner picker.
-          ownerId: multiMember ? ownerId || null : currentUserId,
-          accountId: accountId || null,
-        });
-      }}
-    >
-      <span className="block w-[3px] shrink-0 self-stretch rounded-full" style={{ background: selectedColor }} />
-      <div className="min-w-0 flex-1">
-        <Input
-          name="name"
-          required
-          autoFocus
-          defaultValue={initial?.name}
-          placeholder="Name"
-          className="w-full bg-transparent text-[13.5px] font-medium outline-none placeholder:text-text-faint"
-        />
-        <div className="mt-1 flex flex-wrap items-center gap-2.5 text-[12px]">
-          <span className="inline-flex items-center gap-1 text-text-muted">
-            Every
-            <NumberField.Root
-              min={1}
-              max={365}
-              step={1}
-              locale="en-US"
-              format={{ maximumFractionDigits: 0, useGrouping: false }}
-              value={intervalCount === "" ? null : Number(intervalCount)}
-              onValueChange={(next) => setIntervalCount(next === null ? "" : String(next))}
-            >
-              <NumberField.Input
-                aria-label="Every how many"
-                className="w-10 rounded-md border border-border-soft bg-surface px-1.5 py-0.5 text-center text-[12px] text-text tabular-nums outline-none focus:border-text-faint"
-              />
-            </NumberField.Root>
-            <InlineSelect
-              value={intervalUnit}
-              onChange={(v) => setIntervalUnit(v as ScheduleUnit)}
-              options={SCHEDULE_UNITS.map((u) => ({ value: u, label: unitLabel(u, Number(intervalCount) || 1) }))}
-            />
-          </span>
-          <span className="inline-flex items-center gap-1 text-text-muted">
-            Next
-            <DatePicker value={nextDate} onChange={setNextDate} aria-label="Next payment on" />
-          </span>
-          <InlineSelect
-            value={categoryId}
-            onChange={setCategoryId}
-            options={[
-              { value: "", label: "No category" },
-              ...categories.map((c) => ({ value: c.id, label: c.name })),
-            ]}
-          />
-          {type !== "INCOME" && (
-            <>
-              <InlineSelect
-                value={groupChoice}
-                onChange={setGroupChoice}
-                options={[
-                  { value: "", label: "No group" },
-                  ...groups.map((g) => ({ value: g.id, label: g.name })),
-                  { value: NEW_GROUP, label: "New group…" },
-                ]}
-              />
-              {groupChoice === NEW_GROUP && (
-                <Input
-                  value={newGroupName}
-                  onChange={(e) => setNewGroupName(e.target.value)}
-                  maxLength={60}
-                  placeholder="Group name"
-                  aria-label="New group name"
-                  className="w-32 rounded-md border border-border-soft bg-surface px-2 py-0.5 text-[12px] outline-none focus:border-text-faint"
-                />
-              )}
-            </>
-          )}
-          {writable.length > 0 && (
-            <InlineSelect
-              value={accountId}
-              onChange={setAccountId}
-              options={[
-                { value: "", label: "No account" },
-                ...writable.map((a) => ({ value: a.id, label: a.name })),
-              ]}
-            />
-          )}
-          {multiMember && !accountId && (
-            <InlineSelect
-              value={ownerId}
-              onChange={setOwnerId}
-              options={[
-                { value: "", label: "Shared" },
-                ...members.map((m) => ({
-                  value: m.user.id,
-                  label: m.user.id === currentUserId ? "You" : m.user.name || m.user.email,
-                })),
-              ]}
-            />
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-1 text-[14px] font-semibold">
-        <span className="text-text-faint">€</span>
-        <Input
-          name="amount"
-          type="number"
-          step="0.01"
-          required
-          defaultValue={initial?.amount}
-          placeholder="0.00"
-          className="w-20 bg-transparent text-right tabular-nums outline-none placeholder:text-text-faint placeholder:font-normal"
-        />
-      </div>
-      <Button type="submit" aria-label="Save" className="h-4 w-4 shrink-0 text-good hover:opacity-80">
-        <CheckIcon />
-      </Button>
-      <Button
-        type="button"
-        onClick={onCancel}
-        aria-label="Cancel"
-        className="h-4 w-4 shrink-0 text-text-muted hover:text-critical"
-      >
-        <CloseIcon />
-      </Button>
-    </form>
-  );
-}
-
-/** A recurring item in full, as a bottom sheet: the phone's stand-in for the row's pill and icon buttons. */
-function RecurringSheet({
-  item,
-  canEdit,
-  isOwn,
-  meta,
-  onToggleVisibility,
-  onEdit,
-  onHistory,
-  onDelete,
-  onClose,
-}: {
-  item: Item;
-  canEdit: boolean;
-  isOwn: boolean;
-  meta: string;
-  onToggleVisibility: (visible: boolean) => void;
-  onEdit: () => void;
-  onHistory: () => void;
-  onDelete: () => void;
-  onClose: () => void;
-}) {
-  return (
-    <Modal title={item.name} onClose={onClose}>
-      <div className="flex flex-col gap-5">
-        <div>
-          <p className="font-display text-[32px] font-bold tracking-tight tabular-nums">{formatEUR(item.amount)}</p>
-          <p className="mt-1 text-[14px] text-text-muted">{meta}</p>
-          {item.amountVaries && <p className="mt-1 text-[14px] text-text-muted">The amount varies; this is the average of the last three payments.</p>}
-          {item.drift !== null && <p className="mt-1 text-[14px] text-text-muted">Payments are now {formatEUR(item.drift)}</p>}
-        </div>
-        {item.ownerId !== null &&
-          (isOwn ? (
-            <SheetField label="Visibility">
-              <ChoiceChips
-                label="Visibility"
-                value={item.visibleToHousehold ? "visible" : "private"}
-                onChange={(v) => onToggleVisibility(v === "visible")}
-                options={[
-                  { value: "private", label: "Private" },
-                  { value: "visible", label: "Visible to household" },
-                ]}
-              />
-            </SheetField>
-          ) : (
-            <VisibilityBadge />
-          ))}
-      </div>
-      <ModalFooter>
-        {canEdit && (
-          <Button
-            type="button"
-            onClick={onEdit}
-            className="min-h-[var(--tap-primary)] flex-1 rounded-xl bg-accent-fill px-5 text-[15px] font-semibold text-accent-ink"
-          >
-            Edit
-          </Button>
-        )}
-        {item.paymentCount > 0 && (
-          <Button type="button" onClick={onHistory} className="min-h-[var(--tap-primary)] rounded-xl border border-border-soft px-4 text-[15px] font-medium">
-            History
-          </Button>
-        )}
-        {canEdit && (
-          <Button type="button" onClick={onDelete} className="min-h-[var(--tap-primary)] rounded-xl border border-border-soft px-4 text-[15px] font-medium text-critical">
-            Delete
-          </Button>
-        )}
-        {!canEdit && (
-          <Button type="button" onClick={onClose} className="min-h-[var(--tap-primary)] flex-1 rounded-xl bg-accent-fill px-5 text-[15px] font-semibold text-accent-ink">
-            Done
-          </Button>
-        )}
-      </ModalFooter>
-    </Modal>
   );
 }

@@ -164,7 +164,7 @@ export function useReminderActions() {
       }
     >
       <p className="font-semibold">✓ {undo.title} done</p>
-      <p className="mt-0.5 text-bg/75">Next due {undo.next}</p>
+      <p className="mt-0.5 text-background/75">Next due {undo.next}</p>
     </Toast>
   );
 

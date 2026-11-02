@@ -1,3 +1,5 @@
+> Superseded by [0009](./0009-shadcn-on-base-ui-is-the-component-layer.md): Base UI is still the behaviour layer, but the look now lives in the shadcn components.
+
 # Base UI is the component layer; the look stays in the app's own classes
 
 The app hand-built the behaviour of every interactive control: pop-ups, the confirm pop-up, row menus, the colour picker, the switch, tooltips, toast messages, and a hidden-`<select>` trick for inline dropdowns, next to a handful of native selects. Each was written separately, so keyboard and screen-reader support was uneven (focus trapping, Escape, labels, announcements), and deleting still asked through the browser's own `confirm()` box. All interactive controls now sit on Base UI (the stable v1 library): it supplies the behaviour and accessibility, while appearance stays exactly as before, because Base UI is unstyled and the app's Tailwind classes and design tokens carry over to its parts (state is styled through its data attributes). The app's existing control names (`Modal`, `ConfirmDialog`, `Switch`, …) are kept as thin wrappers so most screens barely change.

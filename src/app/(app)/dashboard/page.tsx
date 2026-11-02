@@ -3,6 +3,8 @@ import { isModuleEnabled } from "@/lib/modules";
 import { loadShoppingList } from "@/trpc/prefetch-shopping";
 import { HydrateClient, caller, loadHousehold, loadQuery } from "@/trpc/server";
 
+export const metadata = { title: "Dashboard" };
+
 export default async function DashboardPage() {
   const household = await loadHousehold();
   const on = (key: Parameters<typeof isModuleEnabled>[1]) => isModuleEnabled(household?.disabledModules ?? [], key);

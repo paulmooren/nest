@@ -131,6 +131,39 @@ _Avoid_: Check-in, log entry
 The one daily message a Member gets on their phone listing what is due for them today, with a single nudge once something is 2 days overdue. Overdue Reminders after that stay red in the app but do not notify again.
 _Avoid_: Alert, ping
 
+### Vault
+
+**Vault**:
+The Household's place for everything worth keeping for now or later: ID numbers, policy numbers, and documents such as invoices, tax returns and warranties.
+
+**Entry**:
+One thing kept in the Vault — a passport, a car insurance, a washing-machine warranty. It has a title, a Vault category, optional Fields and optional Attachments; it can hold either or both. Shared or Personal like anything else. There is no separate "number" and "document" kind.
+_Avoid_: Item, record, document (a document is an Attachment on an Entry), secret
+
+**Field**:
+A labelled piece of information on an Entry. Text (shown plainly), Date (shown plainly; an Entry's main expiry is a Date), or Secret (hidden until revealed). Any Entry may have extra Fields beyond its Template's.
+_Avoid_: Property, attribute
+
+**Secret**:
+A Field whose value stays hidden until the Member reveals it, e.g. a passport number.
+_Avoid_: Password, private field
+
+**Attachment**:
+A file (PDF or image) stored on an Entry — the scan of a passport, the PDF of an invoice.
+_Avoid_: Document, upload, file (alone)
+
+**Vault category**:
+A Household-owned label that groups Entries (ID, Insurance, Taxes, …). Members can rename, reorder and delete them. Distinct from a Finance Category.
+_Avoid_: Folder, tag, type
+
+**Template**:
+A built-in starting shape for a new Entry (Passport, Driver's licence, Insurance policy, Warranty, Invoice, Tax return, Bank account, …) that prefills its Vault category and Fields.
+_Avoid_: Preset, form
+
+**Pinned**:
+An Entry marked for quick access at the top of the Vault.
+_Avoid_: Favorite (that is a Shopping term), starred
+
 ### Showing the app
 
 **Demo**:

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Button } from "@base-ui/react/button";
-import { Input } from "@base-ui/react/input";
 
-import { AuthFrame } from "@/components/auth-frame";
+import { AuthFrame, AuthHeader, AuthNotice } from "@/components/ui/auth-frame";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { isDemoServer } from "@/lib/demo";
 import { signUpWithPassword } from "./actions";
+
+export const metadata = { title: "Create account" };
 
 const ERROR_MESSAGES: Record<string, string> = {
   "weak-password": "Password must be at least 8 characters.",
@@ -24,69 +26,53 @@ export default async function SignUpPage({
 
   return (
     <AuthFrame>
-      <div>
-        <div className="mb-6 flex h-[38px] w-[38px] items-center justify-center rounded-[11px] bg-accent-fill md:hidden">
-          <span className="pl-[2px] font-display text-[21px] font-bold text-accent-ink">
-            N
-          </span>
-        </div>
+      <AuthHeader eyebrow="Create account" title="Join Nest" />
+      {errorMessage && <AuthNotice tone="error">{errorMessage}</AuthNotice>}
 
-        <p className="mb-2 text-[12px] font-semibold tracking-[0.11em] text-accent uppercase">
+      <form action={signUpWithPassword} className="flex flex-col gap-3">
+        <Input
+          type="text"
+          name="name"
+          aria-label="Your name (optional)"
+          autoComplete="name"
+          enterKeyHint="next"
+          placeholder="Your name (optional)"
+          className="h-12 rounded-xl"
+        />
+        <Input
+          type="email"
+          name="email"
+          aria-label="Email"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          enterKeyHint="next"
+          required
+          placeholder="you@example.com"
+          className="h-12 rounded-xl"
+        />
+        <Input
+          type="password"
+          name="password"
+          aria-label="Password"
+          autoComplete="new-password"
+          enterKeyHint="go"
+          required
+          minLength={8}
+          placeholder="Password (min. 8 characters)"
+          className="h-12 rounded-xl"
+        />
+        <Button type="submit" size="lg" className="w-full rounded-xl font-semibold">
           Create account
-        </p>
-        <h1 className="mb-6 font-display font-bold tracking-tight text-[26px]">Join Nest</h1>
+        </Button>
+      </form>
 
-        {errorMessage && (
-          <p className="mb-4 rounded-lg border border-critical/30 bg-critical/10 px-3.5 py-2.5 text-[13px] text-critical">
-            {errorMessage}
-          </p>
-        )}
-
-        <form action={signUpWithPassword} className="flex flex-col gap-3">
-          <Input
-            type="text"
-            name="name"
-            autoComplete="name"
-            enterKeyHint="next"
-            placeholder="Your name (optional)"
-            className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] text-text placeholder:text-text-faint outline-none focus:border-accent"
-          />
-          <Input
-            type="email"
-            name="email"
-            autoComplete="username"
-            autoCapitalize="none"
-            spellCheck={false}
-            enterKeyHint="next"
-            required
-            placeholder="you@example.com"
-            className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] text-text placeholder:text-text-faint outline-none focus:border-accent"
-          />
-          <Input
-            type="password"
-            name="password"
-            autoComplete="new-password"
-            enterKeyHint="go"
-            required
-            minLength={8}
-            placeholder="Password (min. 8 characters)"
-            className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[14px] text-text placeholder:text-text-faint outline-none focus:border-accent"
-          />
-          <Button
-            type="submit"
-            className="w-full rounded-xl bg-accent-fill py-2.5 text-[14px] font-semibold text-accent-ink transition-opacity hover:opacity-90"
-          >
-            Create account
-          </Button>
-        </form>
-
-        <p className="mt-5 text-center text-[13px] text-text-muted">
-          Already have an account?{" "}
-          <Link href="/signin" className="font-semibold text-accent hover:underline">
-            Sign in
-          </Link>
-        </p>
-      </div>
+      <p className="mt-3 text-center text-sm text-muted-foreground">
+        Already have an account?{" "}
+        <Link href="/signin" className="inline-flex min-h-11 items-center font-semibold text-foreground hover:underline">
+          Sign in
+        </Link>
+      </p>
     </AuthFrame>
   );
 }

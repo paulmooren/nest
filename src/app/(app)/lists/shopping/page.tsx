@@ -1,4 +1,4 @@
-import { ShoppingView } from "@/components/shopping/shopping-view";
+import { ShoppingListsView } from "@/components/shopping/lists-view";
 import { isModuleEnabled } from "@/lib/modules";
 import { loadShoppingList } from "@/trpc/prefetch-shopping";
 import { HydrateClient, loadHousehold } from "@/trpc/server";
@@ -10,7 +10,7 @@ export default async function ShoppingPage() {
 
   return (
     <HydrateClient>
-      <ShoppingView />
+      <ShoppingListsView />
     </HydrateClient>
   );
 }

@@ -9,7 +9,7 @@
    "tinyText": 0
   },
   "dashboard": {
-   "smallTargets": 1,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "budgets": {
@@ -21,7 +21,7 @@
    "tinyText": 0
   },
   "accounts": {
-   "smallTargets": 7,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "tasks": {
@@ -29,16 +29,16 @@
    "tinyText": 0
   },
   "shopping": {
-   "smallTargets": 4,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "wishlist": {
-   "smallTargets": 3,
-   "tinyText": 2
+   "smallTargets": 0,
+   "tinyText": 0
   },
   "vault": {
    "smallTargets": 0,
-   "tinyText": 1
+   "tinyText": 0
   },
   "settings": {
    "smallTargets": 0,
@@ -75,7 +75,7 @@
    "tinyText": 0
   },
   "dashboard": {
-   "smallTargets": 1,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "budgets": {
@@ -87,7 +87,7 @@
    "tinyText": 0
   },
   "accounts": {
-   "smallTargets": 7,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "tasks": {
@@ -95,16 +95,16 @@
    "tinyText": 0
   },
   "shopping": {
-   "smallTargets": 1,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "wishlist": {
-   "smallTargets": 3,
-   "tinyText": 2
+   "smallTargets": 0,
+   "tinyText": 0
   },
   "vault": {
    "smallTargets": 0,
-   "tinyText": 1
+   "tinyText": 0
   },
   "settings": {
    "smallTargets": 0,
@@ -141,7 +141,7 @@
    "tinyText": 0
   },
   "dashboard": {
-   "smallTargets": 1,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "budgets": {
@@ -153,7 +153,7 @@
    "tinyText": 0
   },
   "accounts": {
-   "smallTargets": 7,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "tasks": {
@@ -161,16 +161,16 @@
    "tinyText": 0
   },
   "shopping": {
-   "smallTargets": 1,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "wishlist": {
-   "smallTargets": 3,
-   "tinyText": 2
+   "smallTargets": 0,
+   "tinyText": 0
   },
   "vault": {
    "smallTargets": 0,
-   "tinyText": 1
+   "tinyText": 0
   },
   "settings": {
    "smallTargets": 0,
@@ -207,7 +207,7 @@
    "tinyText": 0
   },
   "dashboard": {
-   "smallTargets": 1,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "budgets": {
@@ -219,7 +219,7 @@
    "tinyText": 0
   },
   "accounts": {
-   "smallTargets": 7,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "tasks": {
@@ -227,16 +227,16 @@
    "tinyText": 0
   },
   "shopping": {
-   "smallTargets": 1,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "wishlist": {
-   "smallTargets": 3,
-   "tinyText": 2
+   "smallTargets": 0,
+   "tinyText": 0
   },
   "vault": {
    "smallTargets": 0,
-   "tinyText": 1
+   "tinyText": 0
   },
   "settings": {
    "smallTargets": 0,
@@ -273,59 +273,59 @@
    "tinyText": 0
   },
   "dashboard": {
-   "smallTargets": 35,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "budgets": {
-   "smallTargets": 48,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "transactions": {
-   "smallTargets": 431,
-   "tinyText": 7
+   "smallTargets": 0,
+   "tinyText": 0
   },
   "accounts": {
-   "smallTargets": 30,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "tasks": {
-   "smallTargets": 49,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "shopping": {
-   "smallTargets": 33,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "wishlist": {
-   "smallTargets": 23,
-   "tinyText": 2
+   "smallTargets": 0,
+   "tinyText": 0
   },
   "vault": {
-   "smallTargets": 19,
-   "tinyText": 1
+   "smallTargets": 0,
+   "tinyText": 0
   },
   "settings": {
-   "smallTargets": 9,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "settings-profile": {
-   "smallTargets": 9,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "settings-categories": {
-   "smallTargets": 43,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "settings-household": {
-   "smallTargets": 9,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "settings-data": {
-   "smallTargets": 9,
+   "smallTargets": 0,
    "tinyText": 0
   },
   "settings-notifications": {
-   "smallTargets": 9,
+   "smallTargets": 0,
    "tinyText": 0
   }
  },

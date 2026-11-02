@@ -1,78 +1,40 @@
 "use client";
 
-import { newId } from "@/lib/client-id";
 import { trpc } from "@/trpc/react";
-import { asDate, useOptimisticMutation } from "@/trpc/optimistic";
-import type { VaultFormValues } from "@/components/vault/entry-form";
+import { useOptimisticMutation } from "@/trpc/optimistic";
 
 /**
- * Vault mutations. Creating, editing, deleting and changing Visibility show at once; what the screen shows of an
- * entry is only its title, labels and dates, so there is nothing secret to predict. Revealing a secret is not here:
- * it waits for the server, which decrypts it.
+ * Vault mutations that can be predicted show at once: pinning, Visibility and deleting. Creating and editing wait
+ * for the server because they encrypt, and Attachments are uploaded separately (see uploads.ts). Revealing a
+ * secret is not here: it waits for the server, which decrypts it.
  */
 export function useVaultActions() {
-  const utils = trpc.useUtils();
-  const lists = ["vault.list", "vault.expiringSoon"] as const;
   const scope = (v: { id?: string }) => (v.id ? `vault:${v.id}` : undefined);
-  const byTitle = (a: { title: string }, b: { title: string }) => a.title.localeCompare(b.title);
 
-  const create = useOptimisticMutation("vault.create", {
-    lists,
-    scope,
-    update: (v, cache) =>
-      cache.update("vault.list", (rows) =>
-        [
-          ...rows,
-          {
-            id: v.id ?? newId(),
-            title: v.title,
-            category: v.category,
-            expiresOn: v.expiresOn ? asDate(v.expiresOn) : null,
-            ownerId: v.shared ? null : (utils.user.me.getData()?.id ?? null),
-            visibleToHousehold: true,
-            fieldLabels: v.fields.map((f) => f.label),
-            hasNote: !!v.note,
-          },
-        ].sort(byTitle),
-      ),
-  });
-  const update = useOptimisticMutation("vault.update", {
-    lists,
-    scope,
-    update: (v, cache) =>
-      cache.update("vault.list", (rows) =>
-        rows
-          .map((e) =>
-            e.id === v.id
-              ? {
-                  ...e,
-                  title: v.title,
-                  category: v.category,
-                  expiresOn: v.expiresOn ? asDate(v.expiresOn) : null,
-                  fieldLabels: v.fields.map((f) => f.label),
-                  hasNote: !!v.note,
-                }
-              : e,
-          )
-          .sort(byTitle),
-      ),
-  });
   const remove = useOptimisticMutation("vault.delete", {
-    lists,
+    lists: ["vault.list", "vault.expiringSoon"],
     scope,
     update: (v, cache) => cache.update("vault.list", (rows) => rows.filter((e) => e.id !== v.id)),
   });
   const setVisibility = useOptimisticMutation("vault.setVisibility", {
-    lists: ["vault.list"],
+    lists: ["vault.list", "vault.get"],
     scope,
     update: (v, cache) =>
       cache.update("vault.list", (rows) => rows.map((e) => (e.id === v.id ? { ...e, visibleToHousehold: v.visible } : e))),
   });
+  const setPinned = useOptimisticMutation("vault.setPinned", {
+    lists: ["vault.list", "vault.get"],
+    scope,
+    update: (v, cache) =>
+      cache.update("vault.list", (rows) => rows.map((e) => (e.id === v.id ? { ...e, pinned: v.pinned } : e))),
+  });
 
-  return {
-    create: (values: VaultFormValues) => create.mutate({ id: newId(), ...values }),
-    update: (id: string, values: VaultFormValues) => update.mutate({ id, ...values }),
-    remove: remove.mutate,
-    setVisibility: setVisibility.mutate,
-  };
+  return { remove: remove.mutate, setVisibility: setVisibility.mutate, setPinned: setPinned.mutate };
+}
+
+/** Refreshes everything that shows an Entry after a create, edit or file change. */
+export function useRefreshVault() {
+  const utils = trpc.useUtils();
+  return () =>
+    Promise.all([utils.vault.list.invalidate(), utils.vault.get.invalidate(), utils.vault.expiringSoon.invalidate()]);
 }

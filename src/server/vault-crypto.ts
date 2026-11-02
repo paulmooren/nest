@@ -50,3 +50,28 @@ export function decryptValue(stored: string, householdId: string): string {
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Couldn't decrypt this Vault value." });
   }
 }
+
+/**
+ * Attachments use the same key and associated data as values (ADR 0008). Stored layout:
+ * 12-byte IV, 16-byte tag, then the ciphertext.
+ */
+export function encryptBytes(plain: Buffer, householdId: string): Buffer {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", getKey(), iv);
+  cipher.setAAD(Buffer.from(householdId));
+  const ciphertext = Buffer.concat([cipher.update(plain), cipher.final()]);
+  return Buffer.concat([iv, cipher.getAuthTag(), ciphertext]);
+}
+
+export function decryptBytes(stored: Buffer, householdId: string): Buffer {
+  if (stored.length < 28) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Unreadable Vault file." });
+  try {
+    const decipher = createDecipheriv("aes-256-gcm", getKey(), stored.subarray(0, 12));
+    decipher.setAAD(Buffer.from(householdId));
+    decipher.setAuthTag(stored.subarray(12, 28));
+    return Buffer.concat([decipher.update(stored.subarray(28)), decipher.final()]);
+  } catch (err) {
+    if (err instanceof TRPCError) throw err;
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Couldn't decrypt this Vault file." });
+  }
+}

@@ -1,7 +1,8 @@
 import Link from "next/link";
 
-import { AuthFrame } from "@/components/auth-frame";
-import { AuthHeader, AuthNote } from "@/components/auth-ui";
+import { AuthFrame, AuthHeader, AuthNotice } from "@/components/ui/auth-frame";
+
+export const metadata = { title: "Verify your email" };
 
 const NOTES: Record<string, string> = {
   invalid: "That confirmation link is invalid or has expired. Sign in and we'll send you a new one.",
@@ -14,22 +15,20 @@ export default async function VerifyEmailPage({ searchParams }: { searchParams: 
 
   return (
     <AuthFrame>
-      <div>
-        <AuthHeader eyebrow="One more step" title="Check your email" />
-        {note && <AuthNote>{note}</AuthNote>}
-        <p className="text-[14px] leading-relaxed text-text-muted">
-          We sent you a link to confirm your email address. Open it and you&apos;re in. It can take a minute, and it&apos;s
-          worth a look in your spam folder.
-        </p>
-        <p className="mt-3 text-[14px] leading-relaxed text-text-muted">
-          Lost it? Try signing in and we&apos;ll send a new one.
-        </p>
-        <p className="mt-5 text-center text-[13px] text-text-muted">
-          <Link href="/signin" className="font-semibold text-accent hover:underline">
-            Back to sign in
-          </Link>
-        </p>
-      </div>
+      <AuthHeader eyebrow="One more step" title="Check your email" />
+      {note && <AuthNotice>{note}</AuthNotice>}
+      <p className="text-sm leading-relaxed text-muted-foreground">
+        We sent you a link to confirm your email address. Open it and you&apos;re in. It can take a minute, and it&apos;s
+        worth a look in your spam folder.
+      </p>
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+        Lost it? Try signing in and we&apos;ll send a new one.
+      </p>
+      <p className="mt-3 text-center text-sm">
+        <Link href="/signin" className="inline-flex min-h-11 items-center font-semibold text-foreground hover:underline">
+          Back to sign in
+        </Link>
+      </p>
     </AuthFrame>
   );
 }

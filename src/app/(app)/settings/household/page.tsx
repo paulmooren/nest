@@ -1,18 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@base-ui/react/button";
-import { Input } from "@base-ui/react/input";
 
 import { useDelayed } from "@/components/use-delayed";
-import { FormSkeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/react";
 import { useRefresh } from "@/trpc/optimistic";
 import { useHouseholdSettingsActions } from "@/components/settings/use-settings";
 import { Avatar } from "@/components/avatar";
-import { Switch } from "@/components/switch";
+import { Button } from "@/components/ui/button";
+import { PageBody } from "@/components/ui/page-header";
+import { Row, RowList } from "@/components/ui/row";
+import { Section } from "@/components/ui/section";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { TextField } from "@/components/ui/text-field";
 import { MODULES, isModuleEnabled } from "@/lib/modules";
-import { Field, SettingsSection, UpdateButton, inputClass } from "@/components/settings/form";
 import { useConfirm } from "@/components/confirm-dialog";
 
 export default function HouseholdSettingsPage() {
@@ -33,20 +35,28 @@ export default function HouseholdSettingsPage() {
 
   async function copyInviteLink() {
     if (!household?.inviteCode) return;
-    await navigator.clipboard.writeText(
-      `${window.location.origin}/household-setup?join=${household.inviteCode}`,
-    );
+    await navigator.clipboard.writeText(`${window.location.origin}/household-setup?join=${household.inviteCode}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }
 
-  if (household === undefined) return showSkeleton ? <FormSkeleton /> : null;
+  if (household === undefined) {
+    return showSkeleton ? (
+      <div role="status" aria-busy="true" className="flex flex-col gap-4">
+        <span className="sr-only">Loading…</span>
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-14 w-full" />
+        <Skeleton className="h-14 w-full" />
+      </div>
+    ) : null;
+  }
+  if (!household) return null;
 
   return (
-    <>
-      <SettingsSection title="Household">
+    <PageBody className="gap-10">
+      <Section label="Household name">
         <form
-          className="flex flex-col gap-5"
+          className="flex flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault();
             if (dirty) {
@@ -55,71 +65,60 @@ export default function HouseholdSettingsPage() {
             }
           }}
         >
-          <Field label="Household name">
-            <Input
-              value={value}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Household name"
-              className={inputClass}
-            />
-          </Field>
-          <UpdateButton disabled={!dirty} />
+          <TextField label="Household name" value={value} onChange={(e) => setName(e.target.value)} />
+          <Button type="submit" disabled={!dirty} className="self-start">
+            Update
+          </Button>
         </form>
-      </SettingsSection>
+      </Section>
 
-      <SettingsSection title="Modules">
-        <p className="-mt-2 text-[13px] text-text-muted">
-          Choose what your household uses. Switching something off only hides it — nothing is deleted.
-        </p>
-        <div>
+      <Section
+        title="Modules"
+        description="Choose what your household uses. Switching something off only hides it — nothing is deleted."
+      >
+        <RowList>
           {MODULES.map((m) => (
-            <div
+            <Row
               key={m.key}
-              className="flex items-center gap-4 border-b border-border-soft py-3 last:border-none"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-medium">{m.label}</div>
-                <div className="text-[12.5px] text-text-muted">{m.description}</div>
-              </div>
-              <Switch
-                label={m.label}
-                checked={isModuleEnabled(household?.disabledModules ?? [], m.key)}
-                disabled={!household}
-                onChange={(enabled) => settings.setModuleEnabled({ key: m.key, enabled })}
-              />
-            </div>
+              title={m.label}
+              meta={m.description}
+              wrapMeta
+              trailing={
+                <Switch
+                  aria-label={m.label}
+                  checked={isModuleEnabled(household.disabledModules ?? [], m.key)}
+                  onCheckedChange={(enabled) => settings.setModuleEnabled({ key: m.key, enabled })}
+                />
+              }
+            />
           ))}
-        </div>
-      </SettingsSection>
+        </RowList>
+      </Section>
 
-      <SettingsSection title="Members">
-        <div>
-          {household?.members.map((m) => (
-            <div
+      <Section title="Members">
+        <RowList>
+          {household.members.map((m) => (
+            <Row
               key={m.user.id}
-              className="flex items-center gap-3 border-b border-border-soft py-3 text-[13.5px] last:border-none"
-            >
-              <Avatar name={m.user.name || m.user.email} image={m.user.image} size={32} />
-              <span className="flex-1">{m.user.name || m.user.email}</span>
-              {m.user.id === me?.id && <span className="text-[12px] text-text-faint">You</span>}
-            </div>
+              leading={<Avatar name={m.user.name || m.user.email} image={m.user.image} size={32} />}
+              title={m.user.name || m.user.email}
+              trailing={m.user.id === me?.id ? <span className="text-sm text-muted-foreground">You</span> : undefined}
+            />
           ))}
-        </div>
-      </SettingsSection>
+        </RowList>
+      </Section>
 
-      <SettingsSection title="Invite link">
-        {household?.inviteCode && (
+      {household.inviteCode && (
+        <Section title="Invite link" description="Share it with someone you want in your household. A new link replaces the old one.">
           <div className="flex flex-wrap items-center gap-2">
-            <code className="flex-1 rounded-xl border border-border-soft bg-surface-2 px-3.5 py-3 text-[13px] tracking-[0.06em]">
+            <code className="min-h-11 flex-1 rounded-xl border bg-muted px-3.5 py-3 text-sm tracking-[0.06em]">
               {household.inviteCode}
             </code>
-            <Button
-              onClick={copyInviteLink}
-              className="rounded-xl border border-border-soft px-4 py-2.5 text-[13.5px] font-medium hover:bg-surface-2"
-            >
+            <Button variant="outline" onClick={copyInviteLink}>
               {copied ? "Copied!" : "Copy link"}
             </Button>
             <Button
+              variant="ghost"
               onClick={async () => {
                 if (
                   await confirm({
@@ -130,13 +129,12 @@ export default function HouseholdSettingsPage() {
                 )
                   regenerateInvite.mutate();
               }}
-              className="rounded-xl border border-border-soft px-4 py-2.5 text-[13.5px] font-medium text-text-muted hover:bg-surface-2 hover:text-text"
             >
               Regenerate
             </Button>
           </div>
-        )}
-      </SettingsSection>
-    </>
+        </Section>
+      )}
+    </PageBody>
   );
 }

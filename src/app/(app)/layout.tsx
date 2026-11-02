@@ -1,18 +1,16 @@
 import { redirect } from "next/navigation";
 
-import { AppShell } from "@/components/app-shell";
+import { NavShell } from "@/components/ui/nav-shell";
+import { PhoneHint } from "@/components/use-media-query";
+import { guessPhone } from "@/lib/device";
+import { TRPCProvider } from "@/trpc/react";
 import { HydrateClient, caller, getServerContext, loadHousehold, loadQuery } from "@/trpc/server";
 
-export default async function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+/** The signed-in frame: the session and household gate, the data layer, and the app shell. */
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getServerContext();
   if (!ctx.session?.user) redirect("/signin");
 
-  // The shell and every page ask for these two, so they arrive with the page. Side by side with the check
-  // that you belong to a Household: one round trip to the database, not three.
   const [householdId] = await Promise.all([
     ctx.getHouseholdId(),
     loadQuery("user.me", undefined, () => caller.user.me()),
@@ -23,8 +21,12 @@ export default async function AppLayout({
   const userName = ctx.session.user.name ?? ctx.session.user.email?.split("@")[0] ?? "there";
 
   return (
-    <HydrateClient>
-      <AppShell userName={userName}>{children}</AppShell>
-    </HydrateClient>
+    <TRPCProvider>
+      <HydrateClient>
+        <PhoneHint phone={await guessPhone()}>
+          <NavShell userName={userName}>{children}</NavShell>
+        </PhoneHint>
+      </HydrateClient>
+    </TRPCProvider>
   );
 }

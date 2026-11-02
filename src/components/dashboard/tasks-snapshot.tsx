@@ -2,28 +2,31 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { LockKeyholeIcon } from "lucide-react";
 
 import { trpc } from "@/trpc/react";
-import { VaultIcon } from "@/components/nav-icons";
 import { daysUntil } from "@/lib/vault";
 import { formatDate } from "@/lib/format";
-import { ChecklistRow } from "@/components/tasks/checklist-row";
-import { useTaskActions } from "@/components/tasks/use-tasks";
-import { PRIORITY_ORDER } from "@/components/tasks/priority-pill";
-import type { Task, Member } from "@/components/tasks/types";
-import { ReminderRow, type ReminderData } from "@/components/reminders/reminder-row";
+import { agoLabel, describeSchedule, dueBucket, dueLabel, todayInHousehold } from "@/lib/schedule";
+import { ConfirmDelete } from "@/components/ui/confirm-delete";
+import { Row, RowList } from "@/components/ui/row";
+import { Section } from "@/components/ui/section";
+import { ReminderFormSheet } from "@/components/reminders/reminder-form-sheet";
+import type { ReminderData } from "@/components/reminders/types";
 import { useReminderActions } from "@/components/reminders/use-reminders";
-import { dueBucket, todayInHousehold } from "@/lib/schedule";
+import { assigneeLabel } from "@/components/tasks/members";
+import { PRIORITIES, PRIORITY_ORDER } from "@/components/tasks/priority";
+import { TodoSheet } from "@/components/tasks/todo-sheet";
+import { useTaskActions } from "@/components/tasks/use-tasks";
+import type { Member, Task } from "@/components/tasks/types";
 
 /**
- * "What needs my attention": Reminders due today or overdue that are mine or
- * everyone's, Vault expiries coming up, and my open Tasks (highest priority
- * first). Never another member's reminder or task. It uses the same rows as
- * the Tasks page, so everything is editable right here — and ticking a
- * Reminder shows the same "Undo" toast.
+ * "What needs my attention": Reminders due today or overdue that are mine or everyone's, Vault expiries coming up,
+ * and my open Todos (highest priority first). Never another member's reminder or todo. The rows are the same as on
+ * the Tasks page, so ticking and editing work right here — and ticking a Reminder shows the same "Undo" toast.
  *
- * `justCompleted` keeps a Task visible (struck through) for this render after
- * you check it off, instead of it vanishing the instant the refetch lands.
+ * `justCompleted` keeps a Todo visible (struck through) for this render after you check it off, instead of it
+ * vanishing the instant the refetch lands.
  */
 export function TasksSnapshot({ showTasks = true, showVault = false }: { showTasks?: boolean; showVault?: boolean }) {
   const { data: tasks } = trpc.task.list.useQuery(undefined, { enabled: showTasks });
@@ -32,14 +35,18 @@ export function TasksSnapshot({ showTasks = true, showVault = false }: { showTas
   const { data: household } = trpc.household.current.useQuery();
   const { data: me } = trpc.user.me.useQuery();
   const [justCompleted, setJustCompleted] = useState<Set<string>>(new Set());
+  const [editingTask, setEditingTask] = useState<string | null>(null);
+  const [editingReminder, setEditingReminder] = useState<string | null>(null);
+  const [deletingTask, setDeletingTask] = useState<Task | null>(null);
+  const [deletingReminder, setDeletingReminder] = useState<ReminderData | null>(null);
   const reminderActions = useReminderActions();
-
   const taskActions = useTaskActions();
 
   if ((showTasks && (!tasks || !reminders)) || !me) return null;
 
   const currentUserId = me.id;
   const members: Member[] = household?.members ?? [];
+  const multiMember = members.length > 1;
   const today = todayInHousehold();
 
   const mine = <T extends { ownerId: string | null }>(items: T[]) =>
@@ -63,75 +70,126 @@ export function TasksSnapshot({ showTasks = true, showVault = false }: { showTas
 
   if (dueReminders.length === 0 && checklist.length === 0 && vaultRows.length === 0) return null;
 
+  const task = (tasks as Task[] | undefined)?.find((t) => t.id === editingTask);
+  const reminder = (reminders as ReminderData[] | undefined)?.find((r) => r.id === editingReminder);
+
   return (
-    <section className="-mx-4 md:mx-0 md:overflow-hidden md:rounded-[20px] md:border md:border-border-soft md:bg-surface">
+    <Section title={showTasks ? "Tasks" : "Coming up"}>
       {reminderActions.toast}
-      <div className="mb-3 flex items-center justify-between px-4 pt-4 md:items-baseline md:px-6 md:pt-6">
-        <h2 className="text-[15px] font-semibold">{showTasks ? "Tasks" : "Coming up"}</h2>
-        <Link href={showTasks ? "/tasks" : "/vault"} className="flex min-h-[var(--tap)] items-center px-2 -mr-2 text-[14px] font-medium text-accent hover:opacity-80 md:min-h-0 md:text-[12.5px]">
-          View all
-        </Link>
-      </div>
+      <RowList>
+        {dueReminders.map((r) => {
+          const last = r.completions[0];
+          const bucket = dueBucket(new Date(r.nextDueDate), today);
+          return (
+            <Row
+              key={r.id}
+              check={{ checked: false, onChange: () => reminderActions.tick(r), label: `Mark ${r.title} as done` }}
+              title={r.title}
+              wrapMeta
+              meta={
+                <>
+                  <span className={bucket === "overdue" ? "font-medium text-destructive" : "font-medium text-foreground"}>
+                    {dueLabel(new Date(r.nextDueDate), today)}
+                  </span>
+                  {` · ${describeSchedule(r.intervalCount, r.intervalUnit)} · ${last ? `last done ${agoLabel(new Date(last.completedAt), today)}` : "not done yet"}`}
+                </>
+              }
+              onClick={() => setEditingReminder(r.id)}
+            />
+          );
+        })}
 
-      <div className="border-t border-border-soft">
-        {dueReminders.map((r) => (
-          <ReminderRow
-            key={r.id}
-            reminder={r}
-            members={members}
-            currentUserId={currentUserId}
-            today={today}
-            compact
-            onTick={() => reminderActions.tick(r)}
-            onUpdate={(patch) => reminderActions.update.mutate({ id: r.id, ...patch })}
-            onDelete={() => reminderActions.remove.mutate({ id: r.id })}
-          />
-        ))}
+        {vaultRows.map((e) => {
+          const overdue = daysUntil(e.date) < 0;
+          return (
+            <Row
+              key={`vault-${e.id}`}
+              href="/vault"
+              leading={<LockKeyholeIcon className="size-4 text-muted-foreground" aria-hidden />}
+              title={`${e.title} expires`}
+              meta={
+                <span className={overdue ? "font-medium text-destructive" : undefined}>
+                  {formatDate(e.date)}
+                  {overdue ? " · overdue" : ""}
+                </span>
+              }
+              chevron
+            />
+          );
+        })}
 
-        {vaultRows.map((e) => (
-          <VaultExpiryRow key={`vault-${e.id}`} title={e.title} date={e.date} />
-        ))}
+        {checklist.map((t) => {
+          const done = !!t.completedAt;
+          const priority = PRIORITIES.find((p) => p.value === t.priority)!;
+          return (
+            <Row
+              key={t.id}
+              check={{
+                checked: done,
+                onChange: () => {
+                  if (!done) setJustCompleted((prev) => new Set(prev).add(t.id));
+                  taskActions.toggle(t.id);
+                },
+                label: done ? `Mark ${t.title} as not done` : `Mark ${t.title} as done`,
+              }}
+              title={t.title}
+              done={done}
+              meta={
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="block size-2 rounded-full" style={{ background: priority.dot }} aria-hidden />
+                  {priority.label}
+                  {multiMember && ` · ${assigneeLabel(t.ownerId, members, currentUserId)}`}
+                </span>
+              }
+              onClick={() => setEditingTask(t.id)}
+            />
+          );
+        })}
+      </RowList>
 
-        {checklist.map((task) => (
-          <ChecklistRow
-            key={task.id}
-            compact
-            task={task}
-            members={members}
-            currentUserId={currentUserId}
-            onToggle={() => {
-              if (!task.completedAt) setJustCompleted((prev) => new Set(prev).add(task.id));
-              taskActions.toggle(task.id);
-            }}
-            onUpdate={(values) => taskActions.update(task.id, values)}
-            onDelete={() => taskActions.remove(task.id)}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
+      <Link href={showTasks ? "/tasks" : "/vault"} className="inline-flex min-h-11 items-center self-start text-sm font-medium text-muted-foreground hover:text-foreground">
+        View all
+      </Link>
 
-/** A Vault entry's expiry as a read-only dated line — title and date only, never a value. */
-function VaultExpiryRow({ title, date }: { title: string; date: Date }) {
-  const overdue = daysUntil(date) < 0;
-  return (
-    <Link
-      href="/vault"
-      className="flex items-center gap-3 border-b border-border-soft px-6 py-3 transition-colors last:border-b-0 hover:bg-surface-hover"
-    >
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center text-text-muted">
-        <span className="block h-4 w-4">
-          <VaultIcon />
-        </span>
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-[14px] font-medium">{title} expires</div>
-        <div className={`text-[12px] ${overdue ? "font-medium text-critical" : "text-text-muted"}`}>
-          {formatDate(date)}
-          {overdue ? " · overdue" : ""}
-        </div>
-      </div>
-    </Link>
+      {task && (
+        <TodoSheet
+          task={task}
+          members={members}
+          currentUserId={currentUserId}
+          onUpdate={(values) => taskActions.update(task.id, values)}
+          onDelete={() => {
+            setEditingTask(null);
+            setDeletingTask(task);
+          }}
+          onClose={() => setEditingTask(null)}
+        />
+      )}
+      {reminder && (
+        <ReminderFormSheet
+          reminder={reminder}
+          members={members}
+          currentUserId={currentUserId}
+          onUpdate={(patch) => reminderActions.update.mutate({ id: reminder.id, ...patch })}
+          onDelete={() => {
+            setEditingReminder(null);
+            setDeletingReminder(reminder);
+          }}
+          onClose={() => setEditingReminder(null)}
+        />
+      )}
+      <ConfirmDelete
+        open={!!deletingTask}
+        onOpenChange={(o) => !o && setDeletingTask(null)}
+        title={`Delete "${deletingTask?.title ?? ""}"?`}
+        onConfirm={() => deletingTask && taskActions.remove(deletingTask.id)}
+      />
+      <ConfirmDelete
+        open={!!deletingReminder}
+        onOpenChange={(o) => !o && setDeletingReminder(null)}
+        title={`Delete "${deletingReminder?.title ?? ""}"?`}
+        description="Its history goes with it."
+        onConfirm={() => deletingReminder && reminderActions.remove.mutate({ id: deletingReminder.id })}
+      />
+    </Section>
   );
 }

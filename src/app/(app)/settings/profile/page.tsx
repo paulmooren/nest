@@ -1,41 +1,50 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@base-ui/react/button";
-import { Input } from "@base-ui/react/input";
 
 import { IS_DEMO_CLIENT } from "@/lib/demo";
 import { useDelayed } from "@/components/use-delayed";
-import { FormSkeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/react";
 import { useRefresh } from "@/trpc/optimistic";
 import { useProfileActions } from "@/components/settings/use-settings";
 import { Avatar } from "@/components/avatar";
-import { Field, SettingsSection, UpdateButton, inputClass } from "@/components/settings/form";
+import { Button } from "@/components/ui/button";
+import { Section } from "@/components/ui/section";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TextField } from "@/components/ui/text-field";
+import { PageBody } from "@/components/ui/page-header";
 import { fileToAvatarDataUrl } from "@/lib/image";
 import { signOutAction } from "../actions";
 
 export default function ProfileSettingsPage() {
   const { data: me } = trpc.user.me.useQuery();
   const showSkeleton = useDelayed(me === undefined);
-  if (me === undefined) return showSkeleton ? <FormSkeleton /> : null;
+  if (me === undefined) return showSkeleton ? <FormBones /> : null;
 
   return (
-    <>
+    <PageBody className="gap-10">
       <ProfileSection />
       {/* The Demo has no real passwords to change. */}
       {!IS_DEMO_CLIENT && <SecuritySection />}
-      <SettingsSection title="Session">
+      <Section title="Session">
         <form action={signOutAction}>
-          <Button
-            type="submit"
-            className="rounded-xl border border-border-soft min-h-[var(--tap)] px-5 py-2.5 text-[13.5px] font-medium text-critical hover:bg-surface-2"
-          >
+          <Button type="submit" variant="outline" className="text-destructive">
             Sign out
           </Button>
         </form>
-      </SettingsSection>
-    </>
+      </Section>
+    </PageBody>
+  );
+}
+
+function FormBones() {
+  return (
+    <div role="status" aria-busy="true" className="flex flex-col gap-4">
+      <span className="sr-only">Loading…</span>
+      <Skeleton className="size-16 rounded-full" />
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+    </div>
   );
 }
 
@@ -43,15 +52,16 @@ function ProfileSection() {
   const { data: me } = trpc.user.me.useQuery();
   const profile = useProfileActions();
   const [name, setName] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
   const value = name ?? me?.name ?? "";
   const dirty = !!me && value.trim() !== "" && value.trim() !== (me.name ?? "");
 
   return (
-    <SettingsSection title="Profile">
+    <Section label="Profile">
       <div className="flex items-center gap-4">
         <Avatar name={me?.name || me?.email || ""} image={me?.image} size={64} />
-        <div className="flex items-center gap-4 text-[13px] font-medium">
-          <label className="cursor-pointer rounded-xl border border-border-soft px-4 py-2 hover:bg-surface-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" render={<label />} nativeButton={false} className="cursor-pointer">
             {me?.image ? "Change picture" : "Upload picture"}
             <input
               type="file"
@@ -62,27 +72,29 @@ function ProfileSection() {
                 e.target.value = "";
                 if (!file) return;
                 try {
+                  setImageError(false);
                   profile.updateAvatar({ image: await fileToAvatarDataUrl(file) });
                 } catch {
-                  alert("Couldn't read that image — try a JPG or PNG.");
+                  setImageError(true);
                 }
               }}
             />
-          </label>
+          </Button>
           {me?.image && (
-            <Button
-              type="button"
-              onClick={() => profile.updateAvatar({ image: null })}
-              className="text-text-muted hover:text-critical"
-            >
+            <Button type="button" variant="ghost" onClick={() => profile.updateAvatar({ image: null })}>
               Remove
             </Button>
           )}
         </div>
       </div>
+      {imageError && (
+        <p role="alert" className="text-sm text-destructive">
+          Couldn&apos;t read that image — try a JPG or PNG.
+        </p>
+      )}
 
       <form
-        className="flex flex-col gap-5"
+        className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           if (!dirty) return;
@@ -90,21 +102,20 @@ function ProfileSection() {
           setName(null);
         }}
       >
-        <Field label="Name">
-          <Input
-            value={value}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={60}
-            placeholder="Your name"
-            className={inputClass}
-          />
-        </Field>
-        <Field label="Email">
-          <Input value={me?.email ?? ""} disabled readOnly className={inputClass} />
-        </Field>
-        <UpdateButton disabled={!dirty} />
+        <TextField
+          label="Name"
+          value={value}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={60}
+          placeholder="Your name"
+          autoComplete="name"
+        />
+        <TextField label="Email" value={me?.email ?? ""} disabled readOnly />
+        <Button type="submit" disabled={!dirty} className="self-start">
+          Update
+        </Button>
       </form>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -131,16 +142,19 @@ function SecuritySection() {
   const hasPassword = me?.hasPassword ?? false;
   const mismatch = confirm.length > 0 && next !== confirm;
   const ready = next.length >= 8 && next === confirm && (!hasPassword || current.length > 0);
+  const type = show ? "text" : "password";
 
   return (
-    <SettingsSection title="Security">
-      {me && !hasPassword && (
-        <p className="-mt-2 text-[13px] text-text-muted">
-          You sign in with Google. Set a password if you also want to sign in with your email.
-        </p>
-      )}
+    <Section
+      title="Security"
+      description={
+        me && !hasPassword
+          ? "You sign in with Google. Set a password if you also want to sign in with your email."
+          : undefined
+      }
+    >
       <form
-        className="flex flex-col gap-5"
+        className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           if (!ready) return;
@@ -152,54 +166,42 @@ function SecuritySection() {
         }}
       >
         {hasPassword && (
-          <Field label="Current password">
-            <Input
-              type="password"
-              autoComplete="current-password"
-              value={current}
-              onChange={(e) => setCurrent(e.target.value)}
-              placeholder="Current password"
-              className={inputClass}
-            />
-          </Field>
-        )}
-        <Field label="New password">
-          <div className="relative">
-            <Input
-              type={show ? "text" : "password"}
-              autoComplete="new-password"
-              value={next}
-              onChange={(e) => setNext(e.target.value)}
-              placeholder="New password (min. 8 characters)"
-              className={`${inputClass} pr-16`}
-            />
-            <Button
-              type="button"
-              onClick={() => setShow((s) => !s)}
-              className="absolute inset-y-0 right-3.5 text-[12px] font-medium text-text-muted hover:text-text"
-            >
-              {show ? "Hide" : "Show"}
-            </Button>
-          </div>
-        </Field>
-        <Field label="Confirm new password">
-          <Input
-            type={show ? "text" : "password"}
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            placeholder="Confirm password"
-            className={inputClass}
+          <TextField
+            label="Current password"
+            type="password"
+            autoComplete="current-password"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
           />
-        </Field>
-        {mismatch && <p className="-mt-2 text-[12.5px] text-critical">Passwords don&apos;t match.</p>}
-        {message && (
-          <p className={`-mt-2 text-[12.5px] ${message.ok ? "text-good" : "text-critical"}`}>{message.text}</p>
         )}
-        <UpdateButton disabled={!ready || changePassword.isPending}>
+        <TextField
+          label="New password"
+          type={type}
+          autoComplete="new-password"
+          value={next}
+          onChange={(e) => setNext(e.target.value)}
+          hint="At least 8 characters."
+        />
+        <TextField
+          label="Confirm new password"
+          type={type}
+          autoComplete="new-password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          error={mismatch ? "Passwords don't match." : undefined}
+        />
+        <Button type="button" variant="ghost" onClick={() => setShow((s) => !s)} className="self-start" aria-pressed={show}>
+          {show ? "Hide passwords" : "Show passwords"}
+        </Button>
+        {message && (
+          <p role={message.ok ? "status" : "alert"} className={`text-sm ${message.ok ? "text-success" : "text-destructive"}`}>
+            {message.text}
+          </p>
+        )}
+        <Button type="submit" disabled={!ready || changePassword.isPending} className="self-start">
           {hasPassword ? "Update" : "Set password"}
-        </UpdateButton>
+        </Button>
       </form>
-    </SettingsSection>
+    </Section>
   );
 }

@@ -1,9 +1,5 @@
-import { LoadingScreen, RowsSkeleton } from "@/components/ui/skeleton";
+import { VaultBones } from "@/components/vault/vault-ui";
 
 export default function Loading() {
-  return (
-    <LoadingScreen>
-      <RowsSkeleton rows={6} />
-    </LoadingScreen>
-  );
+  return <VaultBones />;
 }

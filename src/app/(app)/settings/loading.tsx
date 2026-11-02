@@ -1,9 +1,13 @@
-import { LoadingScreen, FormSkeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Loading() {
   return (
-    <LoadingScreen>
-      <FormSkeleton />
-    </LoadingScreen>
+    <div role="status" aria-busy="true" className="flex flex-col gap-5">
+      <span className="sr-only">Loading…</span>
+      <Skeleton className="h-8 w-40" />
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-11 w-28" />
+    </div>
   );
 }

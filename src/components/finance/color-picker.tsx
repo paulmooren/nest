@@ -33,7 +33,7 @@ export function ColorBarPicker({
           <Popover.Positioner side="bottom" align="start" sideOffset={8} collisionPadding={8} className="outline-none">
             <Popover.Popup
               aria-label="Pick a colour"
-              className="grid w-max grid-cols-5 gap-1.5 md:grid-cols-10 rounded-xl border border-border-soft bg-surface p-3 shadow-lg outline-none"
+              className="grid w-max grid-cols-5 gap-1.5 md:grid-cols-10 rounded-xl border bg-popover p-3 shadow-lg outline-none"
             >
               {CATEGORY_COLORS.map((color) => (
                 <Button
@@ -45,8 +45,8 @@ export function ColorBarPicker({
                     onChange(color);
                     setOpen(false);
                   }}
-                  className={`h-11 w-11 rounded-full transition-transform md:h-6 md:w-6 hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                    color.toLowerCase() === value.toLowerCase() ? "ring-2 ring-text ring-offset-2 ring-offset-surface" : ""
+                  className={`h-11 w-11 rounded-full transition-transform md:h-6 md:w-6 hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                    color.toLowerCase() === value.toLowerCase() ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : ""
                   }`}
                   style={{ background: color }}
                 />

@@ -1,4 +1,3 @@
-import Papa from "papaparse";
 
 import {
   cleanMerchant,
@@ -38,9 +37,9 @@ export type ParsedStatementText = { fields: string[]; rows: Record<string, strin
  * long quoted field — it then swallows following lines and returns less than
  * half the rows. When every line is `"a","b","c"` with the same number of
  * fields, splitting on `","` is exact, so that is used; anything else goes
- * through Papa Parse.
+ * through Papa Parse (loaded on demand).
  */
-export function parseStatementText(text: string): ParsedStatementText | null {
+export async function parseStatementText(text: string): Promise<ParsedStatementText | null> {
   const lines = text
     .replace(/^\uFEFF/, "")
     .split(/\r?\n/)
@@ -57,6 +56,8 @@ export function parseStatementText(text: string): ParsedStatementText | null {
     }
   }
 
+  // Loaded here, not at the top, so the CSV parser only downloads when a statement is actually imported.
+  const { default: Papa } = await import("papaparse");
   const parsed = Papa.parse<Record<string, string>>(text, { header: true, skipEmptyLines: true, delimiter: "" });
   const fields = parsed.meta.fields ?? [];
   if (fields.length === 0 || parsed.data.length === 0) return null;
@@ -75,7 +76,7 @@ export type StatementResult =
  */
 export async function readStatement(file: File): Promise<StatementResult> {
   const text = await file.text();
-  const parsed = parseStatementText(text);
+  const parsed = await parseStatementText(text);
   if (!parsed) {
     return { ok: false, error: "Couldn't read that file. Is it a CSV export from your bank?" };
   }

@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@base-ui/react/button";
-import { Input } from "@base-ui/react/input";
 
 import { useDelayed } from "@/components/use-delayed";
-import { FormSkeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/react";
 import { useCategoryActions } from "@/components/finance/use-categories";
 import { ColorBarPicker } from "@/components/finance/color-picker";
-import { SettingsSection, inputClass } from "@/components/settings/form";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { PageBody } from "@/components/ui/page-header";
+import { RowList } from "@/components/ui/row";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CategoriesSettingsPage() {
   const { data: categories } = trpc.category.list.useQuery();
@@ -18,39 +19,19 @@ export default function CategoriesSettingsPage() {
   const [newCategory, setNewCategory] = useState("");
   const [newColor, setNewColor] = useState("#7fb8e8");
 
-  if (categories === undefined) return showSkeleton ? <FormSkeleton fields={5} /> : null;
-
-  return (
-    <SettingsSection title="Categories">
-      <div>
-        {categories?.map((c) => (
-          <div key={c.id} className="flex items-center gap-3 border-b border-border-soft py-2 last:border-none">
-            <ColorBarPicker
-              value={c.color}
-              label={`Change colour of ${c.name}`}
-              onChange={(color) => categoryActions.update({ id: c.id, color })}
-            />
-            <Input
-              // Remounted when the name changes, so an edit that was undone shows the old name again.
-              key={c.name}
-              defaultValue={c.name}
-              onBlur={(e) => {
-                if (e.target.value && e.target.value !== c.name) {
-                  categoryActions.update({ id: c.id, name: e.target.value });
-                }
-              }}
-              className="min-h-[var(--tap)] min-w-0 flex-1 rounded-lg bg-transparent px-2 py-1 text-[13.5px] outline-none focus:bg-surface-2 md:min-h-0"
-            />
-            <Button
-              onClick={() => categoryActions.remove({ id: c.id })}
-              className="min-h-[var(--tap)] px-2 text-[14px] text-text-muted hover:text-critical md:min-h-0 md:px-0 md:text-[12px]"
-            >
-              Delete
-            </Button>
-          </div>
+  if (categories === undefined) {
+    return showSkeleton ? (
+      <div role="status" aria-busy="true" className="flex flex-col gap-2">
+        <span className="sr-only">Loading…</span>
+        {Array.from({ length: 5 }, (_, i) => (
+          <Skeleton key={i} className="h-12 w-full" />
         ))}
       </div>
+    ) : null;
+  }
 
+  return (
+    <PageBody>
       <form
         className="flex gap-3"
         onSubmit={(e) => {
@@ -64,16 +45,40 @@ export default function CategoriesSettingsPage() {
         <Input
           value={newCategory}
           onChange={(e) => setNewCategory(e.target.value)}
+          aria-label="New category"
           placeholder="New category"
-          className={inputClass}
         />
-        <Button
-          type="submit"
-          className="rounded-xl border border-border-soft min-h-[var(--tap)] px-5 py-2.5 text-[13.5px] font-medium text-text-muted hover:text-text"
-        >
+        <Button type="submit" variant="outline">
           Add
         </Button>
       </form>
-    </SettingsSection>
+
+      <RowList>
+        {categories.map((c) => (
+          <li key={c.id} className="flex min-h-14 items-center gap-3 px-4 py-1 md:px-5">
+            <ColorBarPicker
+              value={c.color}
+              label={`Change colour of ${c.name}`}
+              onChange={(color) => categoryActions.update({ id: c.id, color })}
+            />
+            <Input
+              // Remounted when the name changes, so an edit that was undone shows the old name again.
+              key={c.name}
+              defaultValue={c.name}
+              aria-label={`Name of ${c.name}`}
+              onBlur={(e) => {
+                if (e.target.value && e.target.value !== c.name) {
+                  categoryActions.update({ id: c.id, name: e.target.value });
+                }
+              }}
+              className="min-w-0 flex-1 border-transparent bg-transparent shadow-none hover:bg-muted focus-visible:bg-background"
+            />
+            <Button variant="ghost" onClick={() => categoryActions.remove({ id: c.id })} aria-label={`Delete ${c.name}`}>
+              Delete
+            </Button>
+          </li>
+        ))}
+      </RowList>
+    </PageBody>
   );
 }

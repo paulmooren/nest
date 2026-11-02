@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Button } from "@base-ui/react/button";
-import { Input } from "@base-ui/react/input";
 
-import { AuthFrame } from "@/components/auth-frame";
-import { AuthError, AuthHeader, authInputClass, authPrimaryButtonClass } from "@/components/auth-ui";
+import { AuthFrame, AuthHeader, AuthNotice } from "@/components/ui/auth-frame";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { isDemoServer } from "@/lib/demo";
 import { resetPassword } from "./actions";
+
+export const metadata = { title: "Choose a new password" };
 
 const ERROR_MESSAGES: Record<string, string> = {
   "weak-password": "Password must be at least 8 characters.",
@@ -25,44 +26,52 @@ export default async function ResetPasswordPage({
   if (!token || error === "INVALID_TOKEN") {
     return (
       <AuthFrame>
-        <div>
-          <AuthHeader eyebrow="Password" title="That link has expired" />
-          <p className="text-[14px] leading-relaxed text-text-muted">
-            Reset links work once, for one hour. Ask for a new one and we&apos;ll send it right away.
-          </p>
-          <p className="mt-5 text-center text-[13px] text-text-muted">
-            <Link href="/forgot-password" className="font-semibold text-accent hover:underline">
-              Send a new link
-            </Link>
-          </p>
-        </div>
+        <AuthHeader
+          eyebrow="Password"
+          title="That link has expired"
+          description="Reset links work once, for one hour. Ask for a new one and we'll send it right away."
+        />
+        <p className="text-center text-sm">
+          <Link href="/forgot-password" className="inline-flex min-h-11 items-center font-semibold text-foreground hover:underline">
+            Send a new link
+          </Link>
+        </p>
       </AuthFrame>
     );
   }
 
   return (
     <AuthFrame>
-      <div>
-        <AuthHeader eyebrow="Password" title="Choose a new password" />
-        {error && ERROR_MESSAGES[error] && <AuthError>{ERROR_MESSAGES[error]}</AuthError>}
-        <form action={resetPassword} className="flex flex-col gap-3">
-          <input type="hidden" name="token" value={token} />
-          <Input
-            type="password"
-            name="password"
-            autoComplete="new-password"
-            enterKeyHint="next"
-            required
-            minLength={8}
-            placeholder="New password (min. 8 characters)"
-            className={authInputClass}
-          />
-          <Input type="password" name="confirm" autoComplete="new-password" enterKeyHint="go" required minLength={8} placeholder="Repeat the new password" className={authInputClass} />
-          <Button type="submit" className={authPrimaryButtonClass}>
-            Save password
-          </Button>
-        </form>
-      </div>
+      <AuthHeader eyebrow="Password" title="Choose a new password" />
+      {error && ERROR_MESSAGES[error] && <AuthNotice tone="error">{ERROR_MESSAGES[error]}</AuthNotice>}
+      <form action={resetPassword} className="flex flex-col gap-3">
+        <input type="hidden" name="token" value={token} />
+        <Input
+          type="password"
+          name="password"
+          aria-label="New password"
+          autoComplete="new-password"
+          enterKeyHint="next"
+          required
+          minLength={8}
+          placeholder="New password (min. 8 characters)"
+          className="h-12 rounded-xl"
+        />
+        <Input
+          type="password"
+          name="confirm"
+          aria-label="Repeat the new password"
+          autoComplete="new-password"
+          enterKeyHint="go"
+          required
+          minLength={8}
+          placeholder="Repeat the new password"
+          className="h-12 rounded-xl"
+        />
+        <Button type="submit" size="lg" className="w-full rounded-xl font-semibold">
+          Save password
+        </Button>
+      </form>
     </AuthFrame>
   );
 }

@@ -1,10 +1,13 @@
-import { LoadingScreen } from "@/components/ui/skeleton";
-import { AccountsSkeleton } from "@/components/finance/finance-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Loading() {
   return (
-    <LoadingScreen>
-      <AccountsSkeleton />
-    </LoadingScreen>
+    <div role="status" aria-busy="true" className="flex flex-col gap-2">
+      <span className="sr-only">Loading…</span>
+      <Skeleton className="mb-4 h-8 w-32" />
+      {Array.from({ length: 5 }, (_, i) => (
+        <Skeleton key={i} className="h-16 w-full" />
+      ))}
+    </div>
   );
 }

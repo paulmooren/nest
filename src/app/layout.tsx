@@ -3,7 +3,6 @@ import { IS_DEMO_CLIENT } from "@/lib/demo";
 import { Instrument_Sans, Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 
-import { TRPCProvider } from "@/trpc/react";
 import "./globals.css";
 
 const instrumentSans = Instrument_Sans({
@@ -19,7 +18,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Nest",
+  title: { default: "Nest", template: "%s · Nest" },
   description: "An overview of your accounts, budgets, and spending.",
   // Lets iOS run the saved home-screen app full screen, with the right name.
   appleWebApp: { capable: true, title: "Nest", statusBarStyle: "default" },
@@ -44,9 +43,7 @@ export default function RootLayout({
         className={`${instrumentSans.variable} ${plusJakartaSans.variable}`}
       >
         {/* Base UI pop-ups are portalled to the body; this stacking context keeps them above the page (see docs/adr/0006). */}
-        <TRPCProvider>
-          <div className="isolate">{children}</div>
-        </TRPCProvider>
+        <div className="isolate">{children}</div>
         <Script id="register-sw" strategy="afterInteractive">
           {`if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }`}
         </Script>

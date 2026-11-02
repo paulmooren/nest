@@ -6,7 +6,7 @@ import { trpc } from "@/trpc/react";
 import { useShoppingItems } from "@/components/shopping/use-shopping";
 import { useDelayed } from "@/components/use-delayed";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ReminderData } from "@/components/reminders/reminder-row";
+import type { ReminderData } from "@/components/reminders/types";
 import type { Task } from "@/components/tasks/types";
 import { dueBucket, todayInHousehold } from "@/lib/schedule";
 
@@ -58,14 +58,14 @@ export function DashboardSummary({ tasks: showTasks, shopping: showShopping, vau
   const shown = parts.filter((p) => p.count > 0);
 
   return (
-    <p className="min-h-6 text-[15px] text-text-muted">
+    <p className="min-h-6 text-base text-muted-foreground">
       {shown.length === 0
         ? "Nothing due today."
         : shown.map((p, i) => (
             <span key={p.href}>
               {i > 0 && " · "}
-              <Link href={p.href} className="hover:text-text hover:underline">
-                <span className="font-semibold text-text">{p.count}</span> {p.count === 1 ? p.one : p.many}
+              <Link href={p.href} className="hover:text-foreground hover:underline">
+                <span className="font-semibold text-foreground">{p.count}</span> {p.count === 1 ? p.one : p.many}
               </Link>
             </span>
           ))}

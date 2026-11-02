@@ -106,6 +106,7 @@ model Household {
   shoppingLists     ShoppingList[]
   wishes            Wish[]
   vaultEntries      VaultEntry[]
+  vaultCategories   VaultCategory[]
   reminders         Reminder[]
 
   @@map("households")
@@ -495,19 +496,58 @@ model VaultEntry {
   householdId        String
   ownerId            String?
   visibleToHousehold Boolean   @default(true)
+  pinned             Boolean   @default(false)
   title              String
-  category           String
+  categoryId         String
+  // The Entry's one main date and what it is called ("Valid until", "Warranty ends", …).
   expiresOn          DateTime? @db.Date
+  expiryLabel        String?
+  // [{ label, kind: "text" | "date" | "secret", value }]; only secret values are encrypted.
   fields             Json
   noteEnc            String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  owner     User?     @relation("VaultEntryOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  household   Household         @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  owner       User?             @relation("VaultEntryOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  category    VaultCategory     @relation(fields: [categoryId], references: [id], onDelete: NoAction)
+  attachments VaultAttachment[]
 
   @@index([householdId])
+  @@index([categoryId])
   @@map("vault_entries")
+}
+
+model VaultCategory {
+  id          String   @id @default(cuid())
+  householdId String
+  name        String
+  position    Int      @default(0)
+  // "Other" is the one Entries fall back to; it can't be deleted.
+  isFallback  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  household Household    @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  entries   VaultEntry[]
+
+  @@unique([householdId, name])
+  @@map("vault_categories")
+}
+
+// A file on an Entry. The bytes are encrypted and live in object storage under `storageKey`.
+model VaultAttachment {
+  id          String   @id @default(cuid())
+  entryId     String
+  name        String
+  contentType String
+  size        Int
+  storageKey  String
+  createdAt   DateTime @default(now())
+
+  entry VaultEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@index([entryId])
+  @@map("vault_attachments")
 }
 
 // Things a list's members regularly need, one tap away. Per list, so

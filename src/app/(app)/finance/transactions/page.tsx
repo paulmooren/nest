@@ -1,1030 +1,52 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@base-ui/react/button";
-import { Input } from "@base-ui/react/input";
-import type { inferRouterOutputs } from "@trpc/server";
+import { ListFilterIcon, PlusIcon, UploadIcon, XIcon } from "lucide-react";
 
 import { trpc } from "@/trpc/react";
-import type { AppRouter } from "@/server/api/root";
 import { useRefresh } from "@/trpc/optimistic";
-import { formatEUR, formatDate } from "@/lib/format";
-import { TRANSFER_COLOR } from "@/lib/constants";
-import {
-  parseAmount,
-  parseFlexibleDate,
-  detectColumns,
-  detectPartyColumns,
-  cleanMerchant,
-  normalizeIban,
-} from "@/lib/csv";
-import { describeImport, parseStatementText, statementIban, type ImportResult } from "@/lib/statement-import";
-import { suggestCategoryId } from "@/lib/categorize";
-import { Avatar } from "@/components/avatar";
-import { PageActions } from "@/components/page-actions";
-import { Modal, ModalFooter } from "@/components/modal";
-import { Toast, toastPrimary, toastSecondary } from "@/components/toast";
-import { RepeatIcon } from "@/components/action-icons";
-import { Tip } from "@/components/ui/tooltip";
-import { MarkRecurringModal, type RecurringSource } from "@/components/finance/mark-recurring-modal";
+import { formatEUR } from "@/lib/format";
 import { describeSchedule } from "@/lib/schedule";
-import { Field, SelectInput, inputClass } from "@/components/settings/form";
-import { SelectField } from "@/components/ui/select";
-import { CategoryCell } from "@/components/finance/category-cell";
+import { describeImport, type ImportResult } from "@/lib/statement-import";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ConfirmDelete } from "@/components/ui/confirm-delete";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { FinancePage } from "@/components/finance/finance-page";
+import { MarkRecurringSheet, type RecurringSource } from "@/components/finance/mark-recurring-sheet";
+import { groupLabel, type Member } from "@/components/finance/ownership-groups";
 import {
   NO_FILTERS,
-  TransactionFilterBar,
+  amountSummary,
+  dateSummary,
   hasFilters,
   type TransactionFilters,
 } from "@/components/finance/transaction-filters";
+import { TxFilterSheet } from "@/components/finance/tx-filter-sheet";
+import { TxImportSheet } from "@/components/finance/tx-import-sheet";
+import { TxRows, TxSheet, type Tx } from "@/components/finance/tx-list";
+import { NewTxSheet } from "@/components/finance/tx-new-sheet";
 import { useCategoryAssign } from "@/components/finance/use-category-assign";
 import { AFTER_BULK_TRANSACTION_CHANGE, useTransactionActions } from "@/components/finance/use-transactions";
-import { groupLabel, groupOrder, type Member } from "@/components/finance/ownership-groups";
-import { useConfirm } from "@/components/confirm-dialog";
-import { useIsPhone } from "@/components/use-media-query";
+import { Toast, toastPrimary, toastSecondary } from "@/components/toast";
 import { useDelayed } from "@/components/use-delayed";
-import { RowsSkeleton } from "@/components/ui/skeleton";
-import { PopoverMenu, MenuItem } from "@/components/popover-menu";
-import { TransactionFilterSheet } from "@/components/finance/transaction-filter-sheet";
-import { TransactionSheet } from "@/components/finance/transaction-sheet";
-
-type TxType = "EXPENSE" | "INCOME" | "TRANSFER";
+import { useIsPhone } from "@/components/use-media-query";
 
 const PAGE_SIZE = 200;
 /** Phones load fewer rows at a time: a long list is slow to scroll and hard to find anything in. */
 const PHONE_PAGE_SIZE = 50;
 
-const COL_DATE = "w-[100px] shrink-0";
-const COL_CATEGORY = "w-[160px] shrink-0";
-const COL_AMOUNT = "w-[110px] shrink-0";
-
-/** Shared text size for every transaction property, so merchant/date/category/amount all read at the same scale. */
-const CELL_TEXT = "text-[14px]";
-const COL_ACTIONS = "flex w-[56px] shrink-0 items-center justify-end gap-2.5";
-
 export default function TransactionsPage() {
   return (
     <Suspense>
-      <TransactionsPageInner />
+      <Transactions />
     </Suspense>
   );
 }
-
-function TransactionsPageInner() {
-  const confirm = useConfirm();
-  const searchParams = useSearchParams();
-  const importAccountId = searchParams.get("import");
-
-  const { data: accounts } = trpc.account.list.useQuery();
-  const { data: categories } = trpc.category.list.useQuery();
-  // Deep-linkable (?account=<id>) so the Budgets tab's account cards can open
-  // straight into one account's transactions.
-  const [accountFilter, setAccountFilter] = useState(searchParams.get("account") ?? "");
-  const [filters, setFilters] = useState<TransactionFilters>(NO_FILTERS);
-  const filtering = hasFilters(filters);
-  const isPhone = useIsPhone();
-  const [pages, setPages] = useState(1);
-  const pageSize = isPhone ? PHONE_PAGE_SIZE : PAGE_SIZE;
-  const limit = pageSize * pages;
-  const [openTransactionId, setOpenTransactionId] = useState<string | null>(null);
-  const [imported, setImported] = useState<ImportResult | null>(null);
-  const { data: recurring } = trpc.recurring.list.useQuery();
-  const [recurringFor, setRecurringFor] = useState<RecurringSource | null>(null);
-  const [recurringAdded, setRecurringAdded] = useState<{ name: string; type: "EXPENSE" | "INCOME" | "TRANSFER" } | null>(null);
-
-  // A transaction is recurring when it has been linked to a recurring item (by the other party, not by its wording).
-  const recurringById = new Map((recurring ?? []).map((item) => [item.id, item]));
-  const { data: transactions } = trpc.transaction.list.useQuery(
-    {
-      limit,
-      ...(accountFilter ? { accountId: accountFilter } : {}),
-      ...(filters.from ? { from: filters.from } : {}),
-      ...(filters.to ? { to: filters.to } : {}),
-      ...(filters.categoryIds.length ? { categoryIds: filters.categoryIds } : {}),
-      ...(filters.minAmount !== undefined ? { minAmount: filters.minAmount } : {}),
-      ...(filters.maxAmount !== undefined ? { maxAmount: filters.maxAmount } : {}),
-    },
-    // Keep the old rows on screen while a new filter loads, so the list doesn't flash empty.
-    { placeholderData: (previous) => previous },
-  );
-  const { data: household } = trpc.household.current.useQuery();
-  const { data: me } = trpc.user.me.useQuery();
-
-  const members: Member[] = household?.members ?? [];
-  const currentUserId = me?.id ?? "";
-  const multiMember = members.length > 1;
-  // Visible-but-not-yours accounts are read-only, so they're not offered when
-  // adding or importing transactions.
-  const writableAccounts = (accounts ?? []).filter(
-    (a) => a.ownerId === null || a.ownerId === currentUserId,
-  );
-
-  // "Remove all" only ever touches transactions on accounts you can edit — for
-  // a filtered account that's its own transactions (not incoming transfers).
-  const filteredAccount = accounts?.find((a) => a.id === accountFilter);
-  const removableCount = (transactions ?? []).filter((t) =>
-    accountFilter
-      ? t.accountId === accountFilter && (t.account.ownerId === null || t.account.ownerId === currentUserId)
-      : t.account.ownerId === null || t.account.ownerId === currentUserId,
-  ).length;
-
-  const [mode, setMode] = useState<"none" | "manual" | "import">(
-    importAccountId ? "import" : "none",
-  );
-
-  const transactionActions = useTransactionActions();
-  const showSkeleton = useDelayed(transactions === undefined);
-  const { assign: assignCategory, toast: categoryToast } = useCategoryAssign(categories ?? []);
-  // Removing everything, like importing, is worked out by the server: it waits, and the button shows it.
-  const refresh = useRefresh();
-  const removeAllTransactions = trpc.transaction.removeAll.useMutation({
-    onSuccess: () => refresh(...AFTER_BULK_TRANSACTION_CHANGE),
-  });
-
-  return (
-    <div className="flex flex-col gap-5">
-      {categoryToast}
-      <PageActions>
-        {!isPhone && removableCount > 0 && !filtering && (
-          <Button
-            onClick={async () => {
-              const scope = filteredAccount ? `on ${filteredAccount.name}` : "on your accounts";
-              if (
-                await confirm({
-                  title: `Delete all transactions ${scope}?`,
-                  description: "This cannot be undone and will reset the affected account balances.",
-                })
-              ) {
-                removeAllTransactions.mutate(accountFilter ? { accountId: accountFilter } : undefined);
-              }
-            }}
-            disabled={removeAllTransactions.isPending}
-            className="px-2 text-[13px] font-medium text-critical hover:opacity-80 disabled:opacity-60"
-          >
-            Remove all
-          </Button>
-        )}
-        {!isPhone && (
-          <Button
-            onClick={() => setMode("import")}
-            className="rounded-xl border border-border bg-surface px-4 py-2.5 text-[13.5px] font-medium hover:bg-surface-hover"
-          >
-            Import CSV
-          </Button>
-        )}
-        <Button
-          onClick={() => setMode("manual")}
-          className="rounded-xl bg-accent-fill px-4 py-2.5 text-[13.5px] font-semibold text-accent-ink hover:opacity-90"
-        >
-          + Transaction
-        </Button>
-      </PageActions>
-
-      <section>
-        {isPhone ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <TransactionFilterSheet
-              filters={filters}
-              onChange={(next) => {
-                setFilters(next);
-                setPages(1);
-              }}
-              categories={categories ?? []}
-              accounts={(accounts ?? []).map((a) => ({
-                id: a.id,
-                label: multiMember ? `${a.name} · ${groupLabel(a.ownerId, members, currentUserId)}` : a.name,
-              }))}
-              accountFilter={accountFilter}
-              onAccountChange={(id) => {
-                setAccountFilter(id);
-                setPages(1);
-              }}
-            />
-            <span className="ml-auto">
-              <PopoverMenu
-                trigger={
-                  <Button
-                    type="button"
-                    aria-label="More actions"
-                    className="flex h-[var(--tap)] w-[var(--tap)] items-center justify-center rounded-full bg-surface-2 text-[20px] leading-none text-text"
-                  >
-                    ⋯
-                  </Button>
-                }
-              >
-                <MenuItem onClick={() => setMode("import")}>Import CSV</MenuItem>
-                {removableCount > 0 && !filtering && (
-                  <MenuItem
-                    onClick={async () => {
-                      const scope = filteredAccount ? `on ${filteredAccount.name}` : "on your accounts";
-                      if (
-                        await confirm({
-                          title: `Delete all transactions ${scope}?`,
-                          description: "This cannot be undone and will reset the affected account balances.",
-                        })
-                      ) {
-                        removeAllTransactions.mutate(accountFilter ? { accountId: accountFilter } : undefined);
-                      }
-                    }}
-                  >
-                    <span className="text-critical">Remove all</span>
-                  </MenuItem>
-                )}
-              </PopoverMenu>
-            </span>
-          </div>
-        ) : (
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-          {accounts && accounts.length > 1 && (
-            <PopoverMenu
-              align="left"
-              trigger={
-                <Button
-                  type="button"
-                  aria-label="Filter by account"
-                  className="inline-flex h-8 items-center gap-1.5 rounded-full bg-surface-2 px-3 text-[13px] font-medium text-text hover:bg-border-soft"
-                >
-                  {filteredAccount && multiMember && (
-                    <Avatar
-                      name={ownerName(filteredAccount.ownerId, members, currentUserId)}
-                      image={members.find((m) => m.user.id === filteredAccount.ownerId)?.user.image}
-                    />
-                  )}
-                  {filteredAccount ? filteredAccount.name : "All accounts"}
-                  <span aria-hidden className="text-[10px] text-text-faint">▾</span>
-                </Button>
-              }
-            >
-              <MenuItem active={!accountFilter} onClick={() => setAccountFilter("")}>
-                All accounts
-              </MenuItem>
-              {groupOrder(members, currentUserId)
-                .filter((ownerId) => accounts.some((a) => a.ownerId === ownerId))
-                .map((ownerId) => (
-                  <div key={ownerId ?? "shared"}>
-                    {multiMember && (
-                      <p className="px-3.5 pt-2 pb-1 text-[12px] font-medium text-text-faint">
-                        {groupLabel(ownerId, members, currentUserId)}
-                      </p>
-                    )}
-                    {accounts
-                      .filter((a) => a.ownerId === ownerId)
-                      .map((a) => (
-                        <MenuItem key={a.id} active={accountFilter === a.id} onClick={() => setAccountFilter(a.id)}>
-                          {multiMember && (
-                            <Avatar
-                              name={ownerName(a.ownerId, members, currentUserId)}
-                              image={members.find((m) => m.user.id === a.ownerId)?.user.image}
-                            />
-                          )}
-                          {a.name}
-                        </MenuItem>
-                      ))}
-                  </div>
-                ))}
-            </PopoverMenu>
-          )}
-          <TransactionFilterBar
-            filters={filters}
-            onChange={(next) => {
-              setFilters(next);
-              setPages(1);
-            }}
-            categories={categories ?? []}
-          />
-        </div>
-        )}
-
-        {filtering && transactions && (
-          <FilterSummary transactions={transactions} limit={limit} />
-        )}
-
-        {mode === "manual" && writableAccounts.length > 0 && (
-          <Modal title="New transaction" onClose={() => setMode("none")}>
-            <ManualTransactionForm
-              accounts={writableAccounts}
-              initialAccountId={accountFilter || undefined}
-              categories={categories ?? []}
-              onSubmit={(values) => {
-                transactionActions.create(values);
-                setMode("none");
-              }}
-              onCancel={() => setMode("none")}
-            />
-          </Modal>
-        )}
-
-        {mode === "import" && writableAccounts.length > 0 && (
-          <Modal title="Import bank statement" onClose={() => setMode("none")} width="max-w-3xl">
-            <CsvImportForm
-              accounts={writableAccounts}
-              categories={categories ?? []}
-              initialAccountId={accountFilter || importAccountId || undefined}
-              onImported={(result) => {
-                setImported(result);
-                setMode("none");
-              }}
-              onCancel={() => setMode("none")}
-            />
-          </Modal>
-        )}
-
-        {recurringFor && (
-          <MarkRecurringModal
-            source={recurringFor}
-            categories={categories ?? []}
-            onClose={() => setRecurringFor(null)}
-            onDone={(result) => {
-              setRecurringFor(null);
-              setRecurringAdded(result);
-            }}
-          />
-        )}
-
-        {recurringAdded && (
-          <Toast
-            onClose={() => setRecurringAdded(null)}
-            actions={
-              <>
-                <Link href="/finance/budgets" onClick={() => setRecurringAdded(null)} className={toastPrimary}>
-                  View in Budgets
-                </Link>
-                <Button type="button" onClick={() => setRecurringAdded(null)} className={toastSecondary}>
-                  Close
-                </Button>
-              </>
-            }
-          >
-            <p className="font-semibold">
-              ✓ Added to recurring {recurringAdded.type === "INCOME" ? "income" : "expenses"}
-            </p>
-            <p className="mt-0.5 text-bg/75">{recurringAdded.name}</p>
-          </Toast>
-        )}
-
-        {imported !== null && (
-          <Toast
-            onClose={() => setImported(null)}
-            actions={
-              <Button type="button" onClick={() => setImported(null)} className={toastPrimary}>
-                Done
-              </Button>
-            }
-          >
-            <p className="font-semibold">✓ {describeImport(imported).headline}</p>
-            {describeImport(imported).detail && (
-              <p className="mt-0.5 text-bg/75">{describeImport(imported).detail}</p>
-            )}
-          </Toast>
-        )}
-
-        {isPhone && (
-          <PhoneTransactionList
-            loading={transactions === undefined && showSkeleton}
-            transactions={transactions}
-            filtering={filtering}
-            accountFilter={accountFilter}
-            members={members}
-            multiMember={multiMember}
-            currentUserId={currentUserId}
-            categories={categories ?? []}
-            recurringById={recurringById}
-            limit={limit}
-            onLoadMore={() => setPages((p) => p + 1)}
-            openId={openTransactionId}
-            onOpen={setOpenTransactionId}
-            onAssignCategory={assignCategory}
-            onMarkRecurring={setRecurringFor}
-            onDelete={async (id) => {
-              if (await confirm({ title: "Delete this transaction?" })) transactionActions.remove(id);
-            }}
-          />
-        )}
-
-        {!isPhone && (
-        <div className="-mx-4 mt-5 overflow-x-auto border-t border-border-soft md:-mx-6">
-          <div className="min-w-[640px]">
-            <div className="flex items-center gap-3.5 px-6 pt-5 pb-2.5 text-[12px] font-semibold tracking-[0.08em] text-text-faint uppercase">
-              <span className="block w-[3px] shrink-0" />
-              <div className="min-w-0 flex-1" />
-              <div className={COL_DATE}>Date</div>
-              <div className={COL_CATEGORY}>Category</div>
-              <div className={COL_AMOUNT}>Amount</div>
-              <div className={COL_ACTIONS} />
-            </div>
-
-            {transactions === undefined && showSkeleton && <RowsSkeleton boxed={false} rows={8} />}
-            {transactions?.length === 0 && (
-              <p className="px-6 py-4 text-[13px] text-text-muted">
-                {filtering ? "No transactions match these filters." : "No transactions yet."}
-              </p>
-            )}
-
-            {transactions?.map((t) => {
-              const isTransfer = t.type === "TRANSFER";
-              const isIncome = t.type === "INCOME";
-              // Seen through one account, a transfer into it is money in.
-              const isInflow =
-                isIncome || (isTransfer && !!accountFilter && t.transferToAccountId === accountFilter);
-              const label =
-                isTransfer && accountFilter
-                  ? t.transferToAccountId === accountFilter
-                    ? `Transfer from ${t.account.name}`
-                    : `Transfer to ${t.transferToAccount?.name ?? "another account"}`
-                  : t.merchant;
-              const barColor = isTransfer ? TRANSFER_COLOR : (t.category?.color ?? "#c7c9cf");
-              const canEdit = t.account.ownerId === null || t.account.ownerId === currentUserId;
-              const recurringItem = t.recurringItemId && !t.recurringExcluded ? recurringById.get(t.recurringItemId) : undefined;
-              return (
-                <div
-                  key={t.id}
-                  className="group flex items-center gap-3.5 border-b border-border-soft px-6 py-3 transition-colors last:border-b-0 hover:bg-surface-hover"
-                >
-                  <span
-                    className="block w-[3px] shrink-0 self-stretch rounded-full"
-                    style={{ background: barColor }}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className={`truncate ${CELL_TEXT} font-medium`}>{label}</div>
-                    {multiMember && (
-                      <div className="flex items-center gap-1.5 truncate text-[12px] text-text-faint">
-                        {multiMember && (
-                          <span className="truncate">
-                            {t.account.name} · {groupLabel(t.account.ownerId, members, currentUserId)}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className={`${COL_DATE} truncate ${CELL_TEXT} text-text-muted`}>
-                    {formatDate(t.date)}
-                  </div>
-                  <div className={COL_CATEGORY}>
-                    {isTransfer ? (
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full border border-border-soft bg-surface-2 px-2.5 py-0.5 ${CELL_TEXT} text-text-muted`}
-                      >
-                        ↔ Transfer
-                      </span>
-                    ) : canEdit ? (
-                      <CategoryCell
-                        categoryId={t.categoryId}
-                        categories={categories ?? []}
-                        onChange={(categoryId) => assignCategory(t.id, categoryId)}
-                      />
-                    ) : (
-                      <span className={`truncate ${CELL_TEXT} text-text-muted`}>
-                        {t.category?.name ?? "No category"}
-                      </span>
-                    )}
-                  </div>
-                  <div
-                    className={`${COL_AMOUNT} truncate ${CELL_TEXT} font-semibold tabular-nums ${
-                      isIncome ? "text-good" : isTransfer ? "text-text-muted" : ""
-                    }`}
-                  >
-                    {isInflow ? "+" : "−"} {formatEUR(Number(t.amount))}
-                  </div>
-                  <div className={COL_ACTIONS}>
-                    {recurringItem && (
-                      // Active: this transaction belongs to a recurring item. Hovering says how often.
-                      <Tip
-                        align="end"
-                        label={`Recurring · ${describeSchedule(recurringItem.intervalCount, recurringItem.intervalUnit).replace(/^Every /, "every ")}`}
-                      >
-                        <span
-                          role="img"
-                          tabIndex={0}
-                          aria-label={`Recurring, ${describeSchedule(recurringItem.intervalCount, recurringItem.intervalUnit).replace(/^Every /, "every ")}`}
-                          className="relative flex h-6 w-6 items-center justify-center text-good outline-none focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-text"
-                        >
-                          <span className="block h-3.5 w-3.5">
-                            <RepeatIcon />
-                          </span>
-                        </span>
-                      </Tip>
-                    )}
-                    {canEdit && !recurringItem && (
-                      <Button
-                        type="button"
-                        onClick={() =>
-                          setRecurringFor({
-                            id: t.id,
-                            merchant: t.merchant,
-                            type: t.type as "EXPENSE" | "INCOME" | "TRANSFER",
-                            amount: Number(t.amount),
-                            date: t.date,
-                            categoryId: t.categoryId,
-                            accountId: t.accountId,
-                            accountName: t.account.name,
-                            toAccountId: t.transferToAccountId,
-                            toAccountName: t.transferToAccount?.name,
-                          })
-                        }
-                        aria-label={`Mark ${t.merchant} as recurring`}
-                        title={
-                          isTransfer
-                            ? "Mark as recurring transfer"
-                            : isIncome
-                              ? "Mark as recurring income"
-                              : "Mark as recurring expense"
-                        }
-                        className="flex h-6 w-6 items-center justify-center rounded-full text-text-faint transition-colors hover:bg-surface-2 hover:text-text"
-                      >
-                        <span className="block h-3.5 w-3.5">
-                          <RepeatIcon />
-                        </span>
-                      </Button>
-                    )}
-                    {canEdit && (
-                      <Button
-                        onClick={async () => {
-                          if (await confirm({ title: "Delete this transaction?" })) transactionActions.remove(t.id);
-                        }}
-                        className="text-[12px] text-text-muted hover:text-critical"
-                      >
-                        ✕
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
-            {transactions && transactions.length >= limit && (
-              <Button
-                type="button"
-                onClick={() => setPages((p) => p + 1)}
-                className="block w-full px-6 py-3.5 text-left text-[13px] font-medium text-accent hover:opacity-80"
-              >
-                Showing the latest {transactions.length} — load more
-              </Button>
-            )}
-          </div>
-        </div>
-        )}
-      </section>
-    </div>
-  );
-}
-
-/** What the current filters add up to — only exact once every match is loaded. */
-function FilterSummary({
-  transactions,
-  limit,
-}: {
-  transactions: { type: string; amount: unknown }[];
-  limit: number;
-}) {
-  const truncated = transactions.length >= limit;
-  let expenses = 0;
-  let income = 0;
-  for (const t of transactions) {
-    if (t.type === "EXPENSE") expenses += Number(t.amount);
-    else if (t.type === "INCOME") income += Number(t.amount);
-  }
-  return (
-    <p className="mt-3 text-[12.5px] text-text-muted md:text-right">
-      {truncated ? `${transactions.length}+` : transactions.length} transaction{transactions.length === 1 ? "" : "s"}
-      {truncated
-        ? " — load more for exact totals"
-        : ` · ${formatEUR(expenses)} spent · ${formatEUR(income)} received`}
-    </p>
-  );
-}
-
-function ownerName(ownerId: string | null, members: Member[], currentUserId: string) {
-  if (ownerId === null) return "Shared";
-  const member = members.find((m) => m.user.id === ownerId);
-  return member?.user.name || member?.user.email || (ownerId === currentUserId ? "You" : "?");
-}
-
-function ManualTransactionForm({
-  accounts,
-  initialAccountId,
-  categories,
-  onSubmit,
-  onCancel,
-}: {
-  accounts: { id: string; name: string }[];
-  initialAccountId?: string;
-  categories: { id: string; name: string }[];
-  onCancel: () => void;
-  onSubmit: (values: {
-    accountId: string;
-    type: TxType;
-    amount: number;
-    date: Date;
-    merchant: string;
-    categoryId?: string;
-    transferToAccountId?: string;
-  }) => void;
-}) {
-  const [type, setType] = useState<TxType>("EXPENSE");
-  const [accountId, setAccountId] = useState(
-    initialAccountId && accounts.some((a) => a.id === initialAccountId) ? initialAccountId : (accounts[0]?.id ?? ""),
-  );
-
-  return (
-    <form
-      className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2"
-      onSubmit={(e) => {
-        e.preventDefault();
-        const form = new FormData(e.currentTarget);
-        onSubmit({
-          accountId,
-          type,
-          amount: Math.abs(Number(form.get("amount") || 0)),
-          date: new Date(String(form.get("date"))),
-          merchant: String(form.get("merchant")),
-          categoryId: type === "TRANSFER" ? undefined : String(form.get("categoryId") || "") || undefined,
-          transferToAccountId:
-            type === "TRANSFER" ? String(form.get("transferToAccountId") || "") || undefined : undefined,
-        });
-      }}
-    >
-      <Field label="Account">
-        <SelectInput value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </SelectInput>
-      </Field>
-      <Field label="Type">
-        <SelectInput value={type} onChange={(e) => setType(e.target.value as TxType)}>
-          <option value="EXPENSE">Expense</option>
-          <option value="INCOME">Income</option>
-          <option value="TRANSFER">Transfer</option>
-        </SelectInput>
-      </Field>
-      <Field label="Description">
-        <Input name="merchant" required autoFocus placeholder="e.g. Albert Heijn" className={inputClass} />
-      </Field>
-      <Field label="Amount (€)">
-        <Input name="amount" type="number" step="0.01" required placeholder="0.00" className={inputClass} />
-      </Field>
-      {type === "TRANSFER" ? (
-        <Field label="To account">
-          <SelectInput name="transferToAccountId" required defaultValue="">
-            <option value="">Choose destination account</option>
-            {accounts
-              .filter((a) => a.id !== accountId)
-              .map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-          </SelectInput>
-        </Field>
-      ) : (
-        <Field label="Category (optional)">
-          <SelectInput name="categoryId" defaultValue="">
-            <option value="">No category</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </SelectInput>
-        </Field>
-      )}
-      <Field label="Date">
-        <Input name="date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className={inputClass} />
-      </Field>
-      <ModalFooter className="col-span-full">
-        <Button
-          type="submit"
-          className="rounded-xl bg-accent-fill px-5 py-2.5 text-[13.5px] font-semibold text-accent-ink hover:opacity-90"
-        >
-          Add transaction
-        </Button>
-        <Button
-          type="button"
-          onClick={onCancel}
-          className="rounded-xl border border-border px-5 py-2.5 text-[13.5px] font-medium text-text-muted hover:bg-surface-hover hover:text-text"
-        >
-          Cancel
-        </Button>
-      </ModalFooter>
-    </form>
-  );
-}
-
-type ParsedRow = Record<string, string>;
-
-function CsvImportForm({
-  accounts,
-  categories,
-  initialAccountId,
-  onImported,
-  onCancel,
-}: {
-  accounts: { id: string; name: string }[];
-  categories: { id: string; name: string; color: string }[];
-  initialAccountId?: string;
-  onImported: (result: ImportResult) => void;
-  onCancel: () => void;
-}) {
-  const refresh = useRefresh();
-  const [accountId, setAccountId] = useState(
-    initialAccountId && accounts.some((a) => a.id === initialAccountId)
-      ? initialAccountId
-      : (accounts[0]?.id ?? ""),
-  );
-  const [headers, setHeaders] = useState<string[]>([]);
-  const [rows, setRows] = useState<ParsedRow[]>([]);
-  const [dateCol, setDateCol] = useState("");
-  const [merchantCol, setMerchantCol] = useState("");
-  const [merchantFallbackCol, setMerchantFallbackCol] = useState("");
-  const [amountCol, setAmountCol] = useState("");
-  // Who the statement is for and who each row was with; empty when the bank doesn't export them.
-  const [partyCols, setPartyCols] = useState({ accountIbanCol: "", counterpartyIbanCol: "", counterpartyNameCol: "" });
-  const [categoryOverrides, setCategoryOverrides] = useState<Record<number, string>>({});
-  const [error, setError] = useState<string | null>(null);
-  const [fileName, setFileName] = useState("");
-  const [dragging, setDragging] = useState(false);
-
-  const importCsv = trpc.transaction.importCsv.useMutation({
-    onSuccess: (result) => {
-      refresh(...AFTER_BULK_TRANSACTION_CHANGE);
-      onImported(result);
-    },
-  });
-
-  async function handleFile(file: File) {
-    setError(null);
-    setFileName(file.name);
-    const parsed = parseStatementText(await file.text());
-    if (!parsed) {
-      setError("Couldn't read the file. Is it a valid CSV file?");
-      return;
-    }
-    setHeaders(parsed.fields);
-    setRows(parsed.rows);
-    const cols = detectColumns(parsed.fields);
-    setDateCol(cols.dateCol);
-    setMerchantCol(cols.merchantCol);
-    setMerchantFallbackCol(cols.merchantFallbackCol);
-    setAmountCol(cols.amountCol);
-    setPartyCols(detectPartyColumns(parsed.fields));
-  }
-
-  const parsedRows = useMemo(
-    () =>
-      rows.map((row) => {
-        const primary = merchantCol ? cleanMerchant(row[merchantCol] ?? "") : "";
-        const fallback = merchantFallbackCol ? cleanMerchant(row[merchantFallbackCol] ?? "") : "";
-        return {
-          date: dateCol ? parseFlexibleDate(row[dateCol] ?? "") : null,
-          merchant: primary || fallback || "Transaction",
-          amount: amountCol ? parseAmount(row[amountCol] ?? "") : NaN,
-          counterpartyIban: partyCols.counterpartyIbanCol ? normalizeIban(row[partyCols.counterpartyIbanCol]) : null,
-          counterpartyName: partyCols.counterpartyNameCol
-            ? cleanMerchant(row[partyCols.counterpartyNameCol] ?? "") || null
-            : null,
-        };
-      }),
-    [rows, dateCol, merchantCol, merchantFallbackCol, amountCol, partyCols],
-  );
-
-  function categoryFor(i: number, merchant: string) {
-    return categoryOverrides[i] ?? suggestCategoryId(merchant, categories) ?? "";
-  }
-
-  const categorizedCount = parsedRows.filter((p, i) => categoryFor(i, p.merchant)).length;
-  const skippedCount = parsedRows.filter((r) => !r.date || Number.isNaN(r.amount)).length;
-
-  function handleImport() {
-    const parsed = parsedRows
-      .map((row, i) => ({ ...row, categoryId: categoryFor(i, row.merchant) || undefined }))
-      .filter((r) => r.date && r.merchant && !Number.isNaN(r.amount)) as {
-      date: Date;
-      merchant: string;
-      amount: number;
-      categoryId?: string;
-      counterpartyIban: string | null;
-      counterpartyName: string | null;
-    }[];
-
-    if (parsed.length === 0) {
-      setError("No valid rows found. Check the column mapping.");
-      return;
-    }
-    importCsv.mutate({
-      accountId,
-      accountIban: statementIban(rows, partyCols.accountIbanCol),
-      rows: parsed,
-    });
-  }
-
-  return (
-    <div className="flex flex-col gap-5">
-      <Field label="Account">
-        <SelectInput value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </SelectInput>
-      </Field>
-
-      <div className="flex flex-col gap-2">
-        <span className="text-[12.5px] text-text-muted">Bank statement</span>
-        <label
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragging(false);
-            const file = e.dataTransfer.files?.[0];
-            if (file) handleFile(file);
-          }}
-          className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 text-center transition-colors ${
-            dragging ? "border-text bg-surface-2" : "border-border hover:border-text-faint hover:bg-surface-hover"
-          }`}
-        >
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-text-muted">
-            {fileName ? <FileIcon /> : <UploadIcon />}
-          </span>
-          {fileName ? (
-            <>
-              <span className="max-w-full truncate text-[14px] font-medium">{fileName}</span>
-              <span className="text-[12.5px] text-text-muted">Drop or click to choose a different file</span>
-            </>
-          ) : (
-            <>
-              <span className="text-[14px] font-medium">
-                Drag and drop your statement here, or <span className="underline">browse</span>
-              </span>
-              <span className="text-[12.5px] text-text-muted">CSV file from your bank</span>
-            </>
-          )}
-          <input
-            type="file"
-            accept=".csv,text/csv"
-            className="sr-only"
-            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-          />
-        </label>
-      </div>
-
-      {(error || importCsv.error) && (
-        <p className="rounded-xl border border-critical/30 bg-critical/10 px-3.5 py-2.5 text-[13px] text-critical">
-          {error ??
-            (importCsv.error?.data?.code === "BAD_REQUEST"
-              ? importCsv.error.message
-              : "The import didn't go through. Please try again, or check the column mapping.")}
-        </p>
-      )}
-
-      {headers.length > 0 && (
-        <>
-          <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-3">
-            <ColumnSelect label="Date column" headers={headers} value={dateCol} onChange={setDateCol} />
-            <ColumnSelect
-              label="Description column"
-              headers={headers}
-              value={merchantCol}
-              onChange={setMerchantCol}
-            />
-            <ColumnSelect label="Amount column" headers={headers} value={amountCol} onChange={setAmountCol} />
-          </div>
-
-          <div className="overflow-x-auto rounded-xl border border-border-soft">
-            <table className="w-full text-left text-[12.5px]">
-              <thead className="bg-surface-2 text-text-faint">
-                <tr>
-                  <th className="px-3 py-2">Date</th>
-                  <th className="px-3 py-2">Description</th>
-                  <th className="px-3 py-2">Category</th>
-                  <th className="px-3 py-2 text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {parsedRows.map((p, i) => {
-                  const categoryId = categoryFor(i, p.merchant);
-                  const color = categories.find((c) => c.id === categoryId)?.color ?? "#9a9da5";
-                  return (
-                    <tr key={i} className="border-t border-border-soft">
-                      <td className="px-3 py-2 whitespace-nowrap text-text-muted">
-                        {p.date ? formatDate(p.date) : "—"}
-                      </td>
-                      <td className="px-3 py-2">{p.merchant}</td>
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <span className="block h-2 w-2 shrink-0 rounded-full" style={{ background: color }} />
-                          <SelectField
-                            value={categoryId}
-                            onValueChange={(v) => setCategoryOverrides((prev) => ({ ...prev, [i]: v }))}
-                            options={[
-                              { value: "", label: "No category" },
-                              ...categories.map((c) => ({ value: c.id, label: c.name })),
-                            ]}
-                            wrapperClassName="w-full"
-                            className="min-w-[120px] rounded-md border border-border bg-surface px-2 py-1 text-[12px] text-text outline-none focus:border-accent"
-                          />
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums">
-                        {Number.isNaN(p.amount) ? "—" : formatEUR(p.amount)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="-mt-1 flex flex-col gap-1.5">
-            <p className="text-[12px] text-text-muted">
-              {rows.length} rows detected · {categorizedCount} categorized automatically — review before
-              importing · negative amount = expense, positive amount = income
-            </p>
-            {skippedCount > 0 && (
-              <p className="text-[12px] font-medium text-critical">
-                {skippedCount} row{skippedCount === 1 ? "" : "s"} will be skipped — unreadable date or amount. Check
-                the column mapping above.
-              </p>
-            )}
-          </div>
-        </>
-      )}
-
-      <ModalFooter>
-        <Button
-          onClick={handleImport}
-          disabled={importCsv.isPending || headers.length === 0}
-          className="rounded-xl bg-accent-fill px-5 py-2.5 text-[13.5px] font-semibold text-accent-ink hover:opacity-90 disabled:bg-surface-2 disabled:text-text-faint"
-        >
-          {importCsv.isPending ? "Importing…" : headers.length > 0 ? `Import ${rows.length} transactions` : "Import"}
-        </Button>
-        <Button
-          type="button"
-          onClick={onCancel}
-          className="rounded-xl border border-border px-5 py-2.5 text-[13.5px] font-medium text-text-muted hover:bg-surface-hover hover:text-text"
-        >
-          Cancel
-        </Button>
-      </ModalFooter>
-    </div>
-  );
-}
-
-function ColumnSelect({
-  label,
-  headers,
-  value,
-  onChange,
-}: {
-  label: string;
-  headers: string[];
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <Field label={label}>
-      <SelectInput value={value} onChange={(e) => onChange(e.target.value)}>
-        {headers.map((h) => (
-          <option key={h} value={h}>
-            {h}
-          </option>
-        ))}
-      </SelectInput>
-    </Field>
-  );
-}
-
-function UploadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden>
-      <path d="M12 16V4" />
-      <path d="m7 9 5-5 5 5" />
-      <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
-    </svg>
-  );
-}
-
-function FileIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden>
-      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" />
-      <path d="M14 3v5h5" />
-      <path d="M9 13h6M9 17h4" />
-    </svg>
-  );
-}
-
-
-type TransactionRows = inferRouterOutputs<AppRouter>["transaction"]["list"];
-type RecurringItems = inferRouterOutputs<AppRouter>["recurring"]["list"];
 
 const dayKey = (date: Date | string) => new Date(date).toISOString().slice(0, 10);
 
@@ -1046,46 +68,81 @@ function dayLabel(key: string) {
   });
 }
 
-/**
- * The phone's transaction list: grouped by day, each row a merchant with its category and account underneath and
- * the amount always in view on the right. Tapping a row opens the sheet with everything you can do to it.
- */
-function PhoneTransactionList({
-  loading,
-  transactions,
-  filtering,
-  accountFilter,
-  members,
-  multiMember,
-  currentUserId,
-  categories,
-  recurringById,
-  limit,
-  onLoadMore,
-  openId,
-  onOpen,
-  onAssignCategory,
-  onMarkRecurring,
-  onDelete,
-}: {
-  loading: boolean;
-  transactions: TransactionRows | undefined;
-  filtering: boolean;
-  accountFilter: string;
-  members: Member[];
-  multiMember: boolean;
-  currentUserId: string;
-  categories: { id: string; name: string; color: string }[];
-  recurringById: Map<string, RecurringItems[number]>;
-  limit: number;
-  onLoadMore: () => void;
-  openId: string | null;
-  onOpen: (id: string | null) => void;
-  onAssignCategory: (id: string, categoryId: string | null) => void;
-  onMarkRecurring: (source: RecurringSource) => void;
-  onDelete: (id: string) => void;
-}) {
-  const groups: { key: string; rows: TransactionRows }[] = [];
+function Transactions() {
+  const searchParams = useSearchParams();
+  const importAccountId = searchParams.get("import");
+
+  const { data: accounts } = trpc.account.list.useQuery();
+  const { data: categories } = trpc.category.list.useQuery();
+  const { data: recurring } = trpc.recurring.list.useQuery();
+  const { data: household } = trpc.household.current.useQuery();
+  const { data: me } = trpc.user.me.useQuery();
+
+  // Deep-linkable (?account=<id>) so the Budgets tab's account cards can open straight into one account.
+  const [accountFilter, setAccountFilter] = useState(searchParams.get("account") ?? "");
+  const [filters, setFilters] = useState<TransactionFilters>(NO_FILTERS);
+  const [filtering, setFiltering] = useState(false);
+  const [pages, setPages] = useState(1);
+  const isPhone = useIsPhone();
+  const limit = (isPhone ? PHONE_PAGE_SIZE : PAGE_SIZE) * pages;
+
+  const [mode, setMode] = useState<"none" | "new" | "import">(importAccountId ? "import" : "none");
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [removeAll, setRemoveAll] = useState(false);
+  const [imported, setImported] = useState<ImportResult | null>(null);
+  const [recurringFor, setRecurringFor] = useState<RecurringSource | null>(null);
+  const [recurringAdded, setRecurringAdded] = useState<{ name: string; type: "EXPENSE" | "INCOME" | "TRANSFER" } | null>(null);
+
+  const { data: transactions } = trpc.transaction.list.useQuery(
+    {
+      limit,
+      ...(accountFilter ? { accountId: accountFilter } : {}),
+      ...(filters.from ? { from: filters.from } : {}),
+      ...(filters.to ? { to: filters.to } : {}),
+      ...(filters.categoryIds.length ? { categoryIds: filters.categoryIds } : {}),
+      ...(filters.minAmount !== undefined ? { minAmount: filters.minAmount } : {}),
+      ...(filters.maxAmount !== undefined ? { maxAmount: filters.maxAmount } : {}),
+    },
+    // Keep the old rows on screen while a new filter loads, so the list doesn't flash empty.
+    { placeholderData: (previous) => previous },
+  );
+
+  const transactionActions = useTransactionActions();
+  const { assign: assignCategory, toast: categoryToast } = useCategoryAssign(categories ?? []);
+  const refresh = useRefresh();
+  // Removing everything, like importing, is worked out by the server: it waits, and the button shows it.
+  const removeAllTransactions = trpc.transaction.removeAll.useMutation({
+    onSuccess: () => refresh(...AFTER_BULK_TRANSACTION_CHANGE),
+  });
+  const showSkeleton = useDelayed(transactions === undefined);
+
+  const members: Member[] = household?.members ?? [];
+  const currentUserId = me?.id ?? "";
+  const multiMember = members.length > 1;
+  // Visible-but-not-yours accounts are read-only, so they're not offered when adding or importing.
+  const writableAccounts = (accounts ?? []).filter((a) => a.ownerId === null || a.ownerId === currentUserId);
+  const filtered = hasFilters(filters);
+  const filteredAccount = accounts?.find((a) => a.id === accountFilter);
+
+  // "Remove all" only ever touches transactions on accounts you can edit.
+  const removableCount = (transactions ?? []).filter((t) =>
+    accountFilter
+      ? t.accountId === accountFilter && (t.account.ownerId === null || t.account.ownerId === currentUserId)
+      : t.account.ownerId === null || t.account.ownerId === currentUserId,
+  ).length;
+
+  const recurringById = new Map((recurring ?? []).map((item) => [item.id, item]));
+  const recurringOf = (t: Tx) => (t.recurringItemId && !t.recurringExcluded ? recurringById.get(t.recurringItemId) : undefined);
+
+  const accountItems = [
+    { value: "all", label: "All accounts" },
+    ...(accounts ?? []).map((a) => ({
+      value: a.id,
+      label: multiMember ? `${a.name} · ${groupLabel(a.ownerId, members, currentUserId)}` : a.name,
+    })),
+  ];
+
+  const groups: { key: string; rows: Tx[] }[] = [];
   for (const t of transactions ?? []) {
     const key = dayKey(t.date);
     const last = groups[groups.length - 1];
@@ -1093,103 +150,173 @@ function PhoneTransactionList({
     else groups.push({ key, rows: [t] });
   }
 
-  const describe = (t: TransactionRows[number]) => {
-    const isTransfer = t.type === "TRANSFER";
-    const inflow = t.type === "INCOME" || (isTransfer && !!accountFilter && t.transferToAccountId === accountFilter);
-    const label =
-      isTransfer && accountFilter
-        ? t.transferToAccountId === accountFilter
-          ? `Transfer from ${t.account.name}`
-          : `Transfer to ${t.transferToAccount?.name ?? "another account"}`
-        : t.merchant;
-    const recurringItem = t.recurringItemId && !t.recurringExcluded ? recurringById.get(t.recurringItemId) : undefined;
-    const accountLine = multiMember ? `${t.account.name} · ${groupLabel(t.account.ownerId, members, currentUserId)}` : t.account.name;
-    return { isTransfer, inflow, label, recurringItem, accountLine };
-  };
-
   const open = transactions?.find((t) => t.id === openId);
-  const openInfo = open && describe(open);
+  const openRecurring = open ? recurringOf(open) : undefined;
+  const reset = () => setPages(1);
+
+  const activeChips: { key: string; text: string; clear: () => void }[] = [];
+  if (filters.from || filters.to)
+    activeChips.push({ key: "date", text: dateSummary(filters), clear: () => setFilters({ ...filters, from: undefined, to: undefined, dateLabel: undefined }) });
+  if (filters.categoryIds.length)
+    activeChips.push({
+      key: "cat",
+      text: filters.categoryIds.length === 1 ? (categories?.find((c) => c.id === filters.categoryIds[0])?.name ?? "Uncategorized") : `${filters.categoryIds.length} categories`,
+      clear: () => setFilters({ ...filters, categoryIds: [] }),
+    });
+  if (filters.minAmount !== undefined || filters.maxAmount !== undefined)
+    activeChips.push({ key: "amt", text: amountSummary(filters), clear: () => setFilters({ ...filters, minAmount: undefined, maxAmount: undefined }) });
+
+  let spent = 0;
+  let received = 0;
+  for (const t of transactions ?? []) {
+    if (t.type === "EXPENSE") spent += Number(t.amount);
+    else if (t.type === "INCOME") received += Number(t.amount);
+  }
+  const truncated = (transactions?.length ?? 0) >= limit;
 
   return (
-    <div className="mt-4 -mx-4 border-t border-border-soft">
-      {loading && <RowsSkeleton boxed={false} rows={8} />}
-      {transactions?.length === 0 && (
-        <p className="px-4 py-6 text-[15px] text-text-muted">{filtering ? "No transactions match these filters." : "No transactions yet."}</p>
+    <FinancePage
+      actions={
+        writableAccounts.length > 0 ? (
+          <>
+            <Button variant="outline" onClick={() => setMode("import")}>
+              <UploadIcon /> Import
+            </Button>
+            <Button onClick={() => setMode("new")}>
+              <PlusIcon /> Transaction
+            </Button>
+          </>
+        ) : undefined
+      }
+    >
+      {categoryToast}
+
+      <div className="flex flex-wrap items-center gap-2">
+        {accounts && accounts.length > 1 && (
+          <Select
+            items={accountItems}
+            value={accountFilter || "all"}
+            onValueChange={(v) => {
+              setAccountFilter(v === "all" || v === null ? "" : v);
+              reset();
+            }}
+          >
+            <SelectTrigger aria-label="Filter by account" className="w-full sm:w-64">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {accountItems.map((a) => (
+                <SelectItem key={a.value} value={a.value}>
+                  {a.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        <Button variant="outline" onClick={() => setFiltering(true)}>
+          <ListFilterIcon /> Filters
+          {activeChips.length > 0 && <Badge className="ml-1 h-5 min-w-5 px-1.5">{activeChips.length}</Badge>}
+        </Button>
+      </div>
+
+      {activeChips.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Active filters">
+          {activeChips.map((c) => (
+            <Button
+              key={c.key}
+              variant="secondary"
+              className="rounded-full"
+              onClick={() => {
+                c.clear();
+                reset();
+              }}
+              aria-label={`Remove filter: ${c.text}`}
+            >
+              {c.text}
+              <XIcon />
+            </Button>
+          ))}
+        </div>
       )}
 
-      {groups.map((group) => (
-        <section key={group.key} aria-label={dayLabel(group.key)}>
-          <h2 className="px-4 pt-4 pb-1 text-[13px] font-semibold text-text-muted">{dayLabel(group.key)}</h2>
-          {group.rows.map((t) => {
-            const { isTransfer, inflow, label, recurringItem } = describe(t);
-            return (
-              <Button
-                key={t.id}
-                type="button"
-                onClick={() => onOpen(t.id)}
-                aria-label={`${label}, ${inflow ? "+" : "−"} ${formatEUR(Number(t.amount))}. Open details`}
-                className="flex min-h-[60px] w-full items-center gap-3 border-b border-border-soft px-4 py-2 text-left last:border-b-0"
-              >
-                <span
-                  className="block h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ background: isTransfer ? TRANSFER_COLOR : (t.category?.color ?? "#c7c9cf") }}
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5">
-                    <span className="truncate text-[16px] font-medium">{label}</span>
-                    {recurringItem && (
-                      <span className="block h-3.5 w-3.5 shrink-0 text-good" role="img" aria-label="Recurring">
-                        <RepeatIcon />
-                      </span>
-                    )}
-                  </span>
-                  <span className="block truncate text-[13px] text-text-muted">
-                    {isTransfer ? "Transfer" : (t.category?.name ?? "No category")}
-                    {multiMember && ` · ${t.account.name}`}
-                  </span>
-                </span>
-                <span
-                  className={`shrink-0 text-[16px] font-semibold tabular-nums ${inflow && !isTransfer ? "text-good" : isTransfer ? "text-text-muted" : ""}`}
-                >
-                  {inflow ? "+" : "−"} {formatEUR(Number(t.amount))}
-                </span>
-              </Button>
-            );
-          })}
-        </section>
-      ))}
+      {filtered && transactions && (
+        <p className="text-sm text-muted-foreground" role="status">
+          {truncated ? `${transactions.length}+` : transactions.length} transaction{transactions.length === 1 ? "" : "s"}
+          {truncated ? " — load more for exact totals" : ` · ${formatEUR(spent)} spent · ${formatEUR(received)} received`}
+        </p>
+      )}
 
-      {transactions && transactions.length >= limit && (
-        <Button
-          type="button"
-          onClick={onLoadMore}
-          className="block min-h-[var(--tap-primary)] w-full px-4 text-center text-[15px] font-medium text-accent"
-        >
-          Showing the latest {transactions.length} · load more
+      {transactions === undefined ? (
+        showSkeleton && (
+          <div role="status" aria-busy="true" className="flex flex-col gap-2">
+            <span className="sr-only">Loading…</span>
+            {Array.from({ length: 8 }, (_, i) => (
+              <Skeleton key={i} className="h-14 w-full" />
+            ))}
+          </div>
+        )
+      ) : transactions.length === 0 ? (
+        <EmptyState
+          title={filtered ? "No transactions match these filters." : "No transactions yet."}
+          action={
+            !filtered && writableAccounts.length > 0 ? (
+              <div className="flex gap-2">
+                <Button onClick={() => setMode("new")}>Add one</Button>
+                <Button variant="outline" onClick={() => setMode("import")}>
+                  Import a statement
+                </Button>
+              </div>
+            ) : undefined
+          }
+        />
+      ) : (
+        groups.map((g) => (
+          <section key={g.key} aria-label={dayLabel(g.key)} className="flex flex-col gap-2">
+            <h2 className="text-xs font-semibold tracking-[0.09em] text-muted-foreground uppercase">{dayLabel(g.key)}</h2>
+            <TxRows
+              transactions={g.rows}
+              accountId={accountFilter || undefined}
+              showAccount={multiMember}
+              showDate={false}
+              isRecurring={(t) => !!recurringOf(t)}
+              onOpen={(t) => setOpenId(t.id)}
+            />
+          </section>
+        ))
+      )}
+
+      {truncated && (
+        <Button variant="outline" size="lg" onClick={() => setPages((p) => p + 1)}>
+          Showing the latest {transactions?.length} · load more
         </Button>
       )}
 
-      {open && openInfo && (
-        <TransactionSheet
-          label={openInfo.label}
-          amount={Number(open.amount)}
-          inflow={openInfo.inflow}
-          type={open.type as "EXPENSE" | "INCOME" | "TRANSFER"}
-          date={open.date}
-          accountLine={openInfo.accountLine}
-          categoryId={open.categoryId}
-          categoryName={open.category?.name ?? null}
-          categories={categories}
+      {removableCount > 0 && !filtered && (
+        <Button
+          variant="ghost"
+          className="self-start text-destructive"
+          disabled={removeAllTransactions.isPending}
+          onClick={() => setRemoveAll(true)}
+        >
+          Remove all transactions…
+        </Button>
+      )}
+
+      {open && (
+        <TxSheet
+          tx={open}
+          accountId={accountFilter || undefined}
+          categories={categories ?? []}
           canEdit={open.account.ownerId === null || open.account.ownerId === currentUserId}
           recurringText={
-            openInfo.recurringItem
-              ? `Recurring · ${describeSchedule(openInfo.recurringItem.intervalCount, openInfo.recurringItem.intervalUnit).replace(/^Every /, "every ")}`
+            openRecurring
+              ? `Recurring · ${describeSchedule(openRecurring.intervalCount, openRecurring.intervalUnit).replace(/^Every /, "every ")}`
               : null
           }
-          onCategory={(categoryId) => onAssignCategory(open.id, categoryId)}
+          onCategory={(categoryId) => void assignCategory(open.id, categoryId)}
           onMarkRecurring={() => {
-            onOpen(null);
-            onMarkRecurring({
+            setOpenId(null);
+            setRecurringFor({
               id: open.id,
               merchant: open.merchant,
               type: open.type as "EXPENSE" | "INCOME" | "TRANSFER",
@@ -1202,13 +329,99 @@ function PhoneTransactionList({
               toAccountName: open.transferToAccount?.name,
             });
           }}
-          onDelete={() => {
-            onOpen(null);
-            onDelete(open.id);
-          }}
-          onClose={() => onOpen(null)}
+          onDelete={() => transactionActions.remove(open.id)}
+          onClose={() => setOpenId(null)}
         />
       )}
-    </div>
+
+      {filtering && (
+        <TxFilterSheet
+          filters={filters}
+          categories={categories ?? []}
+          onApply={(next) => {
+            setFilters(next);
+            reset();
+          }}
+          onClose={() => setFiltering(false)}
+        />
+      )}
+
+      {mode === "new" && writableAccounts.length > 0 && (
+        <NewTxSheet
+          accounts={writableAccounts}
+          categories={categories ?? []}
+          initialAccountId={accountFilter || undefined}
+          onSubmit={(values) => transactionActions.create(values)}
+          onClose={() => setMode("none")}
+        />
+      )}
+
+      {mode === "import" && writableAccounts.length > 0 && (
+        <TxImportSheet
+          accounts={writableAccounts}
+          categories={categories ?? []}
+          initialAccountId={accountFilter || importAccountId || undefined}
+          onImported={(result) => {
+            setImported(result);
+            setMode("none");
+          }}
+          onClose={() => setMode("none")}
+        />
+      )}
+
+      {recurringFor && (
+        <MarkRecurringSheet
+          source={recurringFor}
+          categories={categories ?? []}
+          onClose={() => setRecurringFor(null)}
+          onDone={(result) => {
+            setRecurringFor(null);
+            setRecurringAdded(result);
+          }}
+        />
+      )}
+
+      <ConfirmDelete
+        open={removeAll}
+        onOpenChange={setRemoveAll}
+        title={`Delete all transactions ${filteredAccount ? `on ${filteredAccount.name}` : "on your accounts"}?`}
+        description="This cannot be undone and will reset the affected account balances."
+        confirmLabel="Delete all"
+        onConfirm={() => removeAllTransactions.mutate(accountFilter ? { accountId: accountFilter } : undefined)}
+      />
+
+      {recurringAdded && (
+        <Toast
+          onClose={() => setRecurringAdded(null)}
+          actions={
+            <>
+              <Link href="/finance/budgets" onClick={() => setRecurringAdded(null)} className={toastPrimary}>
+                View in Budgets
+              </Link>
+              <Button type="button" variant="ghost" onClick={() => setRecurringAdded(null)} className={toastSecondary}>
+                Close
+              </Button>
+            </>
+          }
+        >
+          <p className="font-semibold">✓ Added to recurring {recurringAdded.type === "INCOME" ? "income" : "expenses"}</p>
+          <p className="mt-0.5 text-background/75">{recurringAdded.name}</p>
+        </Toast>
+      )}
+
+      {imported !== null && (
+        <Toast
+          onClose={() => setImported(null)}
+          actions={
+            <Button type="button" variant="ghost" onClick={() => setImported(null)} className={toastPrimary}>
+              Done
+            </Button>
+          }
+        >
+          <p className="font-semibold">✓ {describeImport(imported).headline}</p>
+          {describeImport(imported).detail && <p className="mt-0.5 text-background/75">{describeImport(imported).detail}</p>}
+        </Toast>
+      )}
+    </FinancePage>
   );
 }
