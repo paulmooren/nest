@@ -22,11 +22,11 @@ import { useTransactionActions } from "@/components/finance/use-transactions";
 function BackLink() {
   return (
     <Link
-      href="/finance/accounts"
+      href="/finance/budgets"
       className="-mt-2 mb-2 inline-flex min-h-11 w-fit items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
     >
       <ChevronLeftIcon className="size-4" aria-hidden />
-      Accounts
+      Budget
     </Link>
   );
 }
@@ -152,7 +152,7 @@ export default function AccountDetailPage() {
         onConfirm={() => {
           if (!account) return;
           accountActions.remove.mutate({ id: account.id });
-          router.push("/finance/accounts");
+          router.push("/finance/budgets");
         }}
       />
     </>

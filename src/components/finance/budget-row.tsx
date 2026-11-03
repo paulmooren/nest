@@ -20,6 +20,7 @@ export function BudgetRow({
   item,
   transferText,
   canEdit,
+  compact,
   onOpen,
   onAcceptProposal,
   onKeepAmount,
@@ -28,6 +29,8 @@ export function BudgetRow({
   /** "Transfer to X" / "Transfer from Y" for a transfer, else null. */
   transferText: string | null;
   canEdit: boolean;
+  /** Inside an opened account: no category dot, a quieter row. */
+  compact?: boolean;
   onOpen: () => void;
   onAcceptProposal: () => void;
   onKeepAmount: () => void;
@@ -70,12 +73,12 @@ export function BudgetRow({
         ) : (
           <span className="hidden w-6 shrink-0 md:block" aria-hidden />
         )}
-        <span className="block size-3 shrink-0 rounded-full " style={{ background: item.category?.color ?? "#9a9da5" }} aria-hidden />
+        {!compact && <span className="block size-3 shrink-0 rounded-full " style={{ background: item.category?.color ?? "#9a9da5" }} aria-hidden />}
         <button
           type="button"
           onClick={onOpen}
           aria-label={`${item.name}: open details`}
-          className="flex min-h-14 min-w-0 flex-1 items-center gap-3 py-3 text-left transition-colors hover:bg-muted/60"
+          className={cn("flex min-w-0 flex-1 items-center gap-3 py-3 text-left transition-colors hover:bg-muted/60", compact ? "min-h-12" : "min-h-14")}
         >
           <span className="min-w-0 flex-1">
             <span className="block text-base font-medium md:text-sm">{item.name}</span>

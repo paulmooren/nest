@@ -147,7 +147,7 @@ export function MissingStatementsCard() {
           actions={
             <>
               <Link
-                href={`/finance/transactions?account=${outcome.accountId}`}
+                href={`/finance/accounts/${outcome.accountId}`}
                 onClick={() => setOutcome(null)}
                 className={toastPrimary}
               >
@@ -174,7 +174,7 @@ export function MissingStatementsCard() {
           actions={
             <>
               <Link
-                href={`/finance/transactions?import=${outcome.accountId}`}
+                href={`/finance/budgets?import=${outcome.accountId}`}
                 onClick={() => setOutcome(null)}
                 className={toastPrimary}
               >

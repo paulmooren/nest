@@ -1,54 +1,91 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ChevronRightIcon, PlusIcon } from "lucide-react";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { ChevronRightIcon, DownloadIcon, PlusIcon } from "lucide-react";
 
 import { trpc } from "@/trpc/react";
+import { useRefresh } from "@/trpc/optimistic";
 import { formatEUR, formatSignedEUR } from "@/lib/format";
 import {
   HOUSEHOLD,
   YOU,
   entriesOf,
-  monthlyOf,
   scopeOfOwner,
   totalsOf,
   type AccountRef,
   type Entry,
   type ScopeKey,
 } from "@/lib/budget-scope";
+import { describeImport, type ImportResult } from "@/lib/statement-import";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ChoiceChips } from "@/components/ui/choice-chips";
+import { AddChip, ChoiceChips } from "@/components/ui/choice-chips";
 import { ConfirmDelete } from "@/components/ui/confirm-delete";
 import { EmptyState } from "@/components/ui/empty-state";
 import { RowList } from "@/components/ui/row";
 import { Section } from "@/components/ui/section";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AccountSheet } from "@/components/finance/account-sheet";
+import { AccountSection, isAssetType, type AccountSummary } from "@/components/finance/account-section";
 import { BudgetRow } from "@/components/finance/budget-row";
 import { NO_ACCOUNT, type AccountOption, type FormValues, type Item, type Suggestion, type TxType } from "@/components/finance/budget-types";
-import { AddGroup, ExpenseSections, type BudgetGroup } from "@/components/finance/expense-sections";
+import type { BudgetGroup } from "@/components/finance/expense-sections";
 import { FinancePage } from "@/components/finance/finance-page";
 import type { Member } from "@/components/finance/ownership-groups";
 import { PaymentHistorySheet } from "@/components/finance/payment-history-sheet";
 import { RecurringFormSheet } from "@/components/finance/recurring-form-sheet";
 import { SuggestionsSheet } from "@/components/finance/suggestions-sheet";
+import { TxImportSheet } from "@/components/finance/tx-import-sheet";
+import { AFTER_ACCOUNT_CREATED } from "@/components/finance/use-accounts";
 import { useBudgetGroupActions, useRecurringActions } from "@/components/finance/use-recurring";
-import { SortableList } from "@/components/sortable-list";
+import { Toast, toastPrimary } from "@/components/toast";
 import { useDelayed } from "@/components/use-delayed";
 
 export default function BudgetsPage() {
+  return (
+    <Suspense>
+      <Budgets />
+    </Suspense>
+  );
+}
+
+function Budgets() {
+  const refresh = useRefresh();
+  const importParam = useSearchParams().get("import");
+
   const { data: household } = trpc.household.current.useQuery();
   const { data: me } = trpc.user.me.useQuery();
   const { data: accounts } = trpc.account.list.useQuery();
   const { data: items } = trpc.recurring.list.useQuery();
+  const { data: suggestions } = trpc.recurring.suggestions.useQuery();
+  const { data: categories } = trpc.category.list.useQuery();
+  const { data: budgetGroups } = trpc.budgetGroup.list.useQuery();
   const members = useMemo<Member[]>(() => household?.members ?? [], [household]);
   const currentUserId = me?.id ?? "";
 
+  const recurring = useRecurringActions();
+  const groupActions = useBudgetGroupActions();
+  // A new account waits for the server (it works out the balance and the net worth), so its sheet shows it is busy.
+  const createAccount = trpc.account.create.useMutation({
+    onSuccess: () => {
+      refresh(...AFTER_ACCOUNT_CREATED);
+      setCreatingAccount(false);
+    },
+  });
+
   const [scope, setScope] = useState<ScopeKey>(YOU);
-  // The one add action of the page: a new income or expense, chosen inside the sheet.
-  const [adding, setAdding] = useState(false);
-  // The lists show one account at a time; until one is picked (or after a scope change) the first is shown.
-  const [pickedAccount, setPickedAccount] = useState("");
+  // Which accounts are opened; an account never touched follows the default (the first, or one with an amount to review).
+  const [opened, setOpened] = useState<Record<string, boolean>>({});
+  // The one add action of the page: a new income or expense, with the account it was started from.
+  const [adding, setAdding] = useState<{ accountId: string } | null>(null);
+  const [creatingAccount, setCreatingAccount] = useState(false);
+  const [importing, setImporting] = useState(!!importParam);
+  const [imported, setImported] = useState<ImportResult | null>(null);
+  const [reviewing, setReviewing] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [history, setHistory] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<Item | null>(null);
 
   const accountRefs = useMemo(
     () => new Map<string, AccountRef>((accounts ?? []).map((a) => [a.id, { id: a.id, ownerId: a.ownerId, type: a.type }])),
@@ -73,14 +110,10 @@ export default function BudgetsPage() {
   const showScopes = members.length > 1;
   const activeScope = showScopes ? scope : YOU;
 
-  const scopeEntries = entries.filter((e) => e.scope === activeScope);
-  const scopeAccounts = (accounts ?? []).filter((a) => scopeOfOwner(a.ownerId, currentUserId) === activeScope);
-  // Items that run through no account get their own chip, so one selection always covers every item.
-  const hasUnlinked = scopeEntries.some((e) => !e.accountId);
-  const accountFilter =
-    pickedAccount === NO_ACCOUNT && hasUnlinked
-      ? NO_ACCOUNT
-      : (scopeAccounts.find((a) => a.id === pickedAccount)?.id ?? scopeAccounts[0]?.id ?? (hasUnlinked ? NO_ACCOUNT : ""));
+  const usedGroupIds = useMemo(
+    () => new Set((items ?? []).map((i) => i.budgetGroupId).filter((id): id is string => !!id)),
+    [items],
+  );
 
   const showSkeleton = useDelayed(accounts === undefined || items === undefined);
 
@@ -101,126 +134,21 @@ export default function BudgetsPage() {
     );
   }
 
+  const scopeEntries = entries.filter((e) => e.scope === activeScope) as Entry<Item>[];
+  const scopeAccounts = accounts.filter((a) => scopeOfOwner(a.ownerId, currentUserId) === activeScope);
+  const unlinked = scopeEntries.filter((e) => !e.accountId);
+  const groups: BudgetGroup[] = budgetGroups ?? [];
+
   const { left } = totalsOf(scopeEntries);
-  const changed = new Set(scopeEntries.filter((e) => (e.item as Item).proposal !== null).map((e) => e.item.id)).size;
+  const netWorth = scopeAccounts.reduce((sum, a) => sum + (isAssetType(a.type) ? Number(a.balance) : -Math.abs(Number(a.balance))), 0);
+  const changed = new Set(scopeEntries.filter((e) => e.item.proposal !== null).map((e) => e.item.id)).size;
   const hasItems = items.length > 0;
 
-  return (
-    <FinancePage
-      actions={
-        <Button onClick={() => setAdding(true)}>
-          <PlusIcon /> Item
-        </Button>
-      }
-    >
-      <section aria-label="Left each month" className="flex flex-col gap-3">
-        <p className={cn("font-heading text-5xl leading-none font-bold tracking-tight tabular-nums", left < 0 ? "text-destructive" : "text-success")}>
-          {hasItems ? formatSignedEUR(left).replace(/^\+/, "") : formatEUR(0)}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          {hasItems
-            ? "left each month after fixed costs"
-            : "Add your recurring income and expenses below, or confirm the suggestions, to see what is left each month."}
-        </p>
-        {showScopes && (
-          <ChoiceChips
-            label="Whose budget"
-            value={activeScope}
-            onChange={(key) => {
-              setScope(key);
-              setPickedAccount("");
-            }}
-            options={scopes.map((s) => ({ value: s.key, label: s.label }))}
-          />
-        )}
-        {changed > 0 && (
-          <Button
-            type="button"
-            variant="secondary"
-            className="self-start"
-            onClick={() => document.querySelector("[data-proposal]")?.scrollIntoView({ behavior: "smooth", block: "center" })}
-          >
-            {changed} amount{changed === 1 ? "" : "s"} changed — review
-          </Button>
-        )}
-      </section>
-
-      {scopeAccounts.length + (hasUnlinked ? 1 : 0) > 1 && (
-        <ChoiceChips
-          label="Account"
-          value={accountFilter}
-          onChange={setPickedAccount}
-          options={[
-            ...scopeAccounts.map((a) => ({ value: a.id, label: a.name })),
-            ...(hasUnlinked ? [{ value: NO_ACCOUNT, label: "No account" }] : []),
-          ]}
-        />
-      )}
-
-      <RecurringItems
-        members={members}
-        currentUserId={currentUserId}
-        accounts={accounts as AccountOption[]}
-        accountFilter={accountFilter}
-        scopeEntries={scopeEntries as Entry<Item>[]}
-        scope={activeScope}
-        adding={adding}
-        onCloseAdd={() => setAdding(false)}
-      />
-    </FinancePage>
-  );
-}
-
-function RecurringItems({
-  members,
-  currentUserId,
-  accounts,
-  accountFilter,
-  scopeEntries,
-  scope,
-  adding,
-  onCloseAdd,
-}: {
-  members: Member[];
-  currentUserId: string;
-  accounts: AccountOption[];
-  accountFilter: string;
-  scopeEntries: Entry<Item>[];
-  scope: ScopeKey;
-  adding: boolean;
-  onCloseAdd: () => void;
-}) {
-  const { data: suggestions } = trpc.recurring.suggestions.useQuery();
-  const { data: categories } = trpc.category.list.useQuery();
-  const { data: allItems } = trpc.recurring.list.useQuery();
-  const { data: budgetGroups } = trpc.budgetGroup.list.useQuery();
-  const groups: BudgetGroup[] = budgetGroups ?? [];
-  const usedGroupIds = useMemo(
-    () => new Set((allItems ?? []).map((i) => i.budgetGroupId).filter((id): id is string => !!id)),
-    [allItems],
-  );
-
-  const recurring = useRecurringActions();
-  const groupActions = useBudgetGroupActions();
-
-  const [reviewing, setReviewing] = useState(false);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [history, setHistory] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState<Item | null>(null);
+  const mine = (suggestions ?? []).filter((c) => scopeOfOwner(c.ownerId, currentUserId) === activeScope) as Suggestion[];
+  const writableAccounts = accounts.filter((a) => a.ownerId === null || a.ownerId === currentUserId);
 
   const accountName = (id: string | null) => accounts.find((a) => a.id === id)?.name ?? "another account";
-
-  const shown = scopeEntries.filter((e) => !accountFilter || e.accountId === accountFilter);
-  const income = shown.filter((e) => e.side === "INCOME");
-  const expenses = shown.filter((e) => e.side === "EXPENSE");
-  const monthlyIncome = income.reduce((sum, e) => sum + monthlyOf(e.item), 0);
-  const monthlyExpenses = expenses.reduce((sum, e) => sum + monthlyOf(e.item), 0);
-
-  const mine = (suggestions ?? []).filter(
-    (c) => scopeOfOwner(c.ownerId, currentUserId) === scope && (!accountFilter || (accountFilter !== NO_ACCOUNT && c.accountId === accountFilter)),
-  ) as Suggestion[];
-
-  const editingItem = (allItems as Item[] | undefined)?.find((i) => i.id === editing);
+  const editingItem = (items as Item[]).find((i) => i.id === editing);
   const canEditItem = (i: Item) => i.ownerId === null || i.ownerId === currentUserId;
 
   const renderRow = (entry: Entry<Item>) => {
@@ -237,6 +165,7 @@ function RecurringItems({
         item={item}
         transferText={transferText}
         canEdit={canEditItem(item)}
+        compact
         onOpen={() => setEditing(item.id)}
         onAcceptProposal={() => recurring.acceptProposal({ id: item.id })}
         onKeepAmount={() => recurring.keepAmount({ id: item.id })}
@@ -244,45 +173,91 @@ function RecurringItems({
     );
   };
 
-  const column = (type: "INCOME" | "EXPENSE", title: string, total: number, list: Entry<Item>[]) => (
-    <Section
-      key={type}
-      title={title}
-      description={undefined}
-      className="gap-3"
-    >
-      <p className="-mt-3 text-sm text-muted-foreground tabular-nums">
-        <span className={cn("font-heading text-2xl font-bold tracking-tight", type === "INCOME" ? "text-success" : "text-foreground")}>
-          {formatEUR(total)}
-        </span>{" "}
-        / month
-      </p>
-      {list.length === 0 && <EmptyState title={`Nothing here yet — add ${type === "INCOME" ? "income" : "an expense"} with the Item button.`} />}
-      {type === "EXPENSE" ? (
-        <ExpenseSections
-          entries={list}
-          groups={groups}
-          usedGroupIds={usedGroupIds}
-          hostsFresh
-          renderRow={renderRow}
-          onReorder={(ids) => recurring.reorder({ ids })}
-          onMove={({ id, groupId, ids }) => recurring.reorder({ ids, move: { id, groupId } })}
-          onRename={groupActions.rename}
-          onDelete={groupActions.remove}
-        />
-      ) : (
-        list.length > 0 && (
-          <SortableList ids={list.map((e) => e.item.id)} onReorder={(ids) => recurring.reorder({ ids })}>
-            <RowList>{list.map(renderRow)}</RowList>
-          </SortableList>
-        )
-      )}
-      {type === "EXPENSE" && <AddGroup onAdd={groupActions.create} />}
-    </Section>
-  );
+  const firstId = scopeAccounts.find((a) => isAssetType(a.type))?.id ?? scopeAccounts[0]?.id;
+  const section = (account: AccountSummary | null) => {
+    const id = account?.id ?? NO_ACCOUNT;
+    const own = scopeEntries.filter((e) => (account ? e.accountId === account.id : !e.accountId));
+    const hasProposal = own.some((e) => e.item.proposal !== null);
+    const writable = !account || writableAccounts.some((a) => a.id === account.id);
+    return (
+      <AccountSection
+        key={id}
+        account={account}
+        entries={own}
+        open={opened[id] ?? (hasProposal || id === firstId)}
+        onToggle={() => setOpened((o) => ({ ...o, [id]: !(o[id] ?? (hasProposal || id === firstId)) }))}
+        groups={groups}
+        usedGroupIds={usedGroupIds}
+        renderRow={renderRow}
+        onReorder={(ids) => recurring.reorder({ ids })}
+        onMove={({ id: itemId, groupId, ids }) => recurring.reorder({ ids, move: { id: itemId, groupId } })}
+        onRenameGroup={groupActions.rename}
+        onDeleteGroup={groupActions.remove}
+        onAddItem={writable ? () => setAdding({ accountId: account?.id ?? "" }) : undefined}
+      />
+    );
+  };
+
+  const group = (title: string, list: typeof scopeAccounts) =>
+    list.length > 0 && (
+      <Section title={title} className="gap-3">
+        <RowList>{list.map((a) => section(a))}</RowList>
+      </Section>
+    );
 
   return (
-    <>
+    <FinancePage
+      actions={
+        <Button onClick={() => setAdding({ accountId: "" })}>
+          <PlusIcon /> Item
+        </Button>
+      }
+    >
+      <section aria-label="Left each month" className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-end gap-x-10 gap-y-3">
+          <div className="flex flex-col gap-3">
+            <p className={cn("font-heading text-5xl leading-none font-bold tracking-tight tabular-nums", left < 0 ? "text-destructive" : "text-success")}>
+              {hasItems ? formatSignedEUR(left).replace(/^\+/, "") : formatEUR(0)}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {hasItems
+                ? "left each month after fixed costs"
+                : "Add your recurring income and expenses below, or import a statement to find them, to see what is left each month."}
+            </p>
+          </div>
+          {scopeAccounts.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <p className="font-heading text-2xl leading-none font-bold tracking-tight tabular-nums">{formatEUR(netWorth)}</p>
+              <p className="text-sm text-muted-foreground">net worth</p>
+            </div>
+          )}
+        </div>
+        {showScopes && (
+          <ChoiceChips
+            label="Whose budget"
+            value={activeScope}
+            onChange={setScope}
+            options={scopes.map((s) => ({ value: s.key, label: s.label }))}
+          />
+        )}
+        <div className="flex flex-wrap items-center gap-3">
+          {writableAccounts.length > 0 && (
+            <Button type="button" variant="secondary" onClick={() => setImporting(true)}>
+              <DownloadIcon /> Import transactions
+            </Button>
+          )}
+          {changed > 0 && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => document.querySelector("[data-proposal]")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+            >
+              {changed} amount{changed === 1 ? "" : "s"} changed — review
+            </Button>
+          )}
+        </div>
+      </section>
+
       {mine.length > 0 && (
         <button
           type="button"
@@ -299,10 +274,21 @@ function RecurringItems({
         </button>
       )}
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        {column("INCOME", "Income", monthlyIncome, income)}
-        {column("EXPENSE", "Expenses", monthlyExpenses, expenses)}
-      </div>
+      {scopeAccounts.length === 0 && unlinked.length === 0 && (
+        <EmptyState title="No accounts yet. Add your first one." action={<Button onClick={() => setCreatingAccount(true)}>Add account</Button>} />
+      )}
+      {group("Assets", scopeAccounts.filter((a) => isAssetType(a.type)))}
+      {group("Liabilities", scopeAccounts.filter((a) => !isAssetType(a.type)))}
+      {unlinked.length > 0 && (
+        <Section title="No account" className="gap-3">
+          <RowList>{section(null)}</RowList>
+        </Section>
+      )}
+      {scopeAccounts.length > 0 && (
+        <div className="self-start">
+          <AddChip onClick={() => setCreatingAccount(true)}>Account</AddChip>
+        </div>
+      )}
 
       {reviewing && (
         <SuggestionsSheet
@@ -319,10 +305,10 @@ function RecurringItems({
           categories={categories ?? []}
           members={members}
           currentUserId={currentUserId}
-          accounts={accounts}
-          defaultAccountId={accountFilter === NO_ACCOUNT ? "" : accountFilter}
+          accounts={accounts as AccountOption[]}
+          defaultAccountId={adding.accountId}
           onSubmit={(values: FormValues, kind: TxType) => recurring.create({ ...values, type: kind })}
-          onClose={onCloseAdd}
+          onClose={() => setAdding(null)}
         />
       )}
 
@@ -334,17 +320,21 @@ function RecurringItems({
           categories={categories ?? []}
           members={members}
           currentUserId={currentUserId}
-          accounts={accounts}
+          accounts={accounts as AccountOption[]}
           canEdit={canEditItem(editingItem)}
           onSubmit={(values) => {
             // Only a changed amount counts as typing one (which makes the item Fixed); a rename or new schedule must not.
             const { amount, ...rest } = values;
             recurring.update({ id: editingItem.id, ...(amount === editingItem.amount ? rest : values) });
           }}
-          onHistory={editingItem.paymentCount > 0 ? () => {
-            setEditing(null);
-            setHistory(editingItem.id);
-          } : undefined}
+          onHistory={
+            editingItem.paymentCount > 0
+              ? () => {
+                  setEditing(null);
+                  setHistory(editingItem.id);
+                }
+              : undefined
+          }
           onDelete={() => {
             setEditing(null);
             setDeleting(editingItem);
@@ -355,6 +345,30 @@ function RecurringItems({
 
       {history && <PaymentHistorySheet itemId={history} onClose={() => setHistory(null)} />}
 
+      {creatingAccount && (
+        <AccountSheet
+          members={members}
+          currentUserId={currentUserId}
+          pending={createAccount.isPending}
+          error={createAccount.error?.message}
+          onSubmit={(values) => createAccount.mutate(values)}
+          onClose={() => setCreatingAccount(false)}
+        />
+      )}
+
+      {importing && writableAccounts.length > 0 && (
+        <TxImportSheet
+          accounts={writableAccounts}
+          categories={categories ?? []}
+          initialAccountId={importParam ?? undefined}
+          onImported={(result) => {
+            setImported(result);
+            setImporting(false);
+          }}
+          onClose={() => setImporting(false)}
+        />
+      )}
+
       <ConfirmDelete
         open={!!deleting}
         onOpenChange={(o) => !o && setDeleting(null)}
@@ -362,6 +376,20 @@ function RecurringItems({
         description="Its payments stay as transactions."
         onConfirm={() => deleting && recurring.remove({ id: deleting.id })}
       />
-    </>
+
+      {imported !== null && (
+        <Toast
+          onClose={() => setImported(null)}
+          actions={
+            <Button type="button" variant="ghost" onClick={() => setImported(null)} className={toastPrimary}>
+              Done
+            </Button>
+          }
+        >
+          <p className="font-semibold">✓ {describeImport(imported).headline}</p>
+          {describeImport(imported).detail && <p className="mt-0.5 text-background/75">{describeImport(imported).detail}</p>}
+        </Toast>
+      )}
+    </FinancePage>
   );
 }
