@@ -26,10 +26,7 @@ function SideHeading({ side, total }: { side: "INCOME" | "EXPENSE"; total: numbe
   const income = side === "INCOME";
   return (
     <div className="flex items-baseline justify-between gap-3 border-b pb-2">
-      <h3 className="flex items-center gap-2 text-base font-semibold">
-        <span className={cn("size-2.5 rounded-full", income ? "bg-success" : "bg-foreground/70")} aria-hidden />
-        {income ? "Income" : "Expenses"}
-      </h3>
+      <h3 className="text-base font-semibold">{income ? "Income" : "Expenses"}</h3>
       <p className={cn("font-heading text-xl font-bold tabular-nums", income && "text-success")}>
         {formatEUR(total)}
         <span className="text-sm font-normal text-muted-foreground"> / mo</span>
@@ -74,8 +71,7 @@ export function AccountSection({
   const expenses = entries.filter((e) => e.side === "EXPENSE");
   const sum = (list: Entry<Item>[]) => list.reduce((s, e) => s + monthlyOf(e.item), 0);
 
-  const flow = entries.length > 0 ? `${formatEUR(sum(income))} in · ${formatEUR(sum(expenses))} out` : null;
-  const meta = flow ?? (account ? account.institution || ACCOUNT_TYPE_LABELS[account.type as AccountType] : "Not linked to an account");
+  const meta = account ? ACCOUNT_TYPE_LABELS[account.type as AccountType] : "Not linked to an account";
 
   return (
     <li className="py-1">
@@ -96,9 +92,9 @@ export function AccountSection({
       </button>
 
       {open && (
-        <div className="mb-3 flex flex-col gap-8 md:ml-12 md:border-l md:pr-4 md:pl-4">
+        <div className="mb-3 flex flex-col gap-8 md:ml-12 md:pr-4">
           {income.length > 0 && (
-            <section aria-label="Income" className="flex flex-col gap-1">
+            <section aria-label="Income" className="flex flex-col gap-1 border-l-2 border-success pl-4">
               <SideHeading side="INCOME" total={sum(income)} />
               <SortableList ids={income.map((e) => e.item.id)} onReorder={onReorder}>
                 <RowList className={FLAT}>{income.map(renderRow)}</RowList>
@@ -107,7 +103,7 @@ export function AccountSection({
           )}
 
           {expenses.length > 0 && (
-            <section aria-label="Expenses" className="flex flex-col gap-1">
+            <section aria-label="Expenses" className="flex flex-col gap-1 border-l-2 border-destructive pl-4">
               <SideHeading side="EXPENSE" total={sum(expenses)} />
               <ExpenseSections
                 entries={expenses}
