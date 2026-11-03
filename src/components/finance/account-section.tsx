@@ -27,7 +27,7 @@ function SideHeading({ side, total }: { side: "INCOME" | "EXPENSE"; total: numbe
   return (
     <div className="flex items-baseline justify-between gap-3 border-b pb-2">
       <h3 className="text-base font-semibold">{income ? "Income" : "Expenses"}</h3>
-      <p className={cn("font-heading text-xl font-bold tabular-nums", income && "text-success")}>
+      <p className={cn("font-heading text-xl font-bold tabular-nums", income ? "text-success" : "text-destructive")}>
         {formatEUR(total)}
         <span className="text-sm font-normal text-muted-foreground"> / mo</span>
       </p>
