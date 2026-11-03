@@ -140,7 +140,6 @@ function Budgets() {
   const groups: BudgetGroup[] = budgetGroups ?? [];
 
   const { left } = totalsOf(scopeEntries);
-  const netWorth = scopeAccounts.reduce((sum, a) => sum + (isAssetType(a.type) ? Number(a.balance) : -Math.abs(Number(a.balance))), 0);
   const changed = new Set(scopeEntries.filter((e) => e.item.proposal !== null).map((e) => e.item.id)).size;
   const hasItems = items.length > 0;
 
@@ -225,12 +224,6 @@ function Budgets() {
                 : "Add your recurring income and expenses below, or import a statement to find them, to see what is left each month."}
             </p>
           </div>
-          {scopeAccounts.length > 0 && (
-            <div className="flex flex-col gap-1">
-              <p className="font-heading text-2xl leading-none font-bold tracking-tight tabular-nums">{formatEUR(netWorth)}</p>
-              <p className="text-sm text-muted-foreground">net worth</p>
-            </div>
-          )}
         </div>
         {showScopes && (
           <ChoiceChips
