@@ -68,6 +68,7 @@ export function AppShell({
   brand = "Nest",
   account,
   badge,
+  title,
   children,
 }: {
   items: NavItem[]
@@ -76,6 +77,8 @@ export function AppShell({
   account?: React.ReactNode
   /** Beside the wordmark: the Demo marker. */
   badge?: React.ReactNode
+  /** The phone's top bar shows this (the section you are in) instead of the wordmark. */
+  title?: string
   children: React.ReactNode
 }) {
   const [open, setOpen] = React.useState(false)
@@ -110,7 +113,7 @@ export function AppShell({
             </SheetContent>
           </Sheet>
           <span className="flex items-center gap-2">
-            <span className="font-heading text-lg font-bold tracking-tight">{brand}</span>
+            <span aria-hidden={title ? true : undefined} className="font-heading text-lg font-bold tracking-tight">{title ?? brand}</span>
             {badge}
           </span>
         </header>

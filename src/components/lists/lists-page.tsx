@@ -17,7 +17,7 @@ export function ListsPage({ actions, children }: { actions?: React.ReactNode; ch
 
   return (
     <>
-      <PageHeader title="Lists" actions={actions} />
+      <PageHeader title="Lists" actions={actions} inHeader />
       <PageBody>
         {tabs.length > 1 && <SectionTabs tabs={tabs} label="List sections" />}
         {children}

@@ -12,7 +12,7 @@ const TABS = [
 export function TasksPage({ actions, children }: { actions?: React.ReactNode; children: React.ReactNode }) {
   return (
     <>
-      <PageHeader title="Tasks" actions={actions} />
+      <PageHeader title="Tasks" actions={actions} inHeader />
       <PageBody>
         <SectionTabs tabs={TABS} label="Task sections" />
         {children}

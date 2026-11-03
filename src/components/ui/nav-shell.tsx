@@ -33,10 +33,15 @@ export function NavShell({ userName, children }: { userName: string; children: R
   const { isEnabled } = useModules()
   const items = ALL_NAV_ITEMS.filter((item) => !item.modules || item.modules.some(isEnabled))
   const inSettings = pathname === "/settings" || pathname.startsWith("/settings/")
+  // The phone's top bar names the section you are in. Every page also has its own <h1>, which is what is read out.
+  const section = [...items, { href: "/settings", label: "Settings" }].find(
+    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
+  )
 
   return (
     <AppShell
       items={items}
+      title={section?.label}
       badge={<DemoBadge />}
       account={
         <Link

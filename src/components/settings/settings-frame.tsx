@@ -54,7 +54,7 @@ export function SettingsIndex({ sections }: { sections: SettingsSection[] }) {
 
   return (
     <div className="md:hidden">
-      <PageHeader title="Settings" />
+      <PageHeader title="Settings" inHeader />
       <RowList>
         {sections.map((s) => (
           <Row key={s.href} href={s.href} title={s.label} meta={s.description} chevron />
