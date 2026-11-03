@@ -6,6 +6,7 @@ import { HistoryIcon } from "lucide-react";
 import { parseMoney } from "@/lib/money";
 import { SCHEDULE_UNITS, todayInHousehold, unitLabel, type ScheduleUnit } from "@/lib/schedule";
 import { Button } from "@/components/ui/button";
+import { ChoiceChips } from "@/components/ui/choice-chips";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -56,7 +57,7 @@ function Pick({
  */
 export function RecurringFormSheet({
   initial,
-  type,
+  type: initialType,
   groups,
   categories,
   members,
@@ -79,12 +80,15 @@ export function RecurringFormSheet({
   accounts: AccountOption[];
   defaultAccountId?: string;
   canEdit?: boolean;
-  onSubmit: (values: FormValues) => void;
+  onSubmit: (values: FormValues, type: TxType) => void;
   onHistory?: () => void;
   onDelete?: () => void;
   onClose: () => void;
 }) {
   const multiMember = members.length > 1;
+  // A new item chooses income or expense here; an existing one keeps its kind.
+  const [kind, setKind] = useState<TxType>(initialType);
+  const type = initial ? initial.type : kind;
   // Only accounts you can edit (yours or shared) can carry a recurring item.
   const writable = accounts.filter((a) => a.ownerId === null || a.ownerId === currentUserId);
   const initialNext = (initial?.nextDueDate ? new Date(initial.nextDueDate) : todayInHousehold()).toISOString().slice(0, 10);
@@ -126,7 +130,8 @@ export function RecurringFormSheet({
           e.preventDefault();
           setTried(true);
           if (!canEdit || amountError || nameError || parsed === null) return;
-          onSubmit({
+          onSubmit(
+            {
             name: name.trim(),
             amount: parsed,
             intervalCount: n,
@@ -143,11 +148,24 @@ export function RecurringFormSheet({
             // With no partner yet, default to personal (not shared): the same privacy-conserving default as accounts.
             ownerId: multiMember ? ownerId || null : currentUserId,
             accountId: accountId || null,
-          });
+            },
+            type,
+          );
           onClose();
         }}
       >
         <fieldset disabled={!canEdit} className="flex flex-col gap-5">
+          {!initial && (
+            <ChoiceChips
+              label="Kind"
+              value={kind}
+              onChange={setKind}
+              options={[
+                { value: "EXPENSE", label: "Expense" },
+                { value: "INCOME", label: "Income" },
+              ]}
+            />
+          )}
           <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} error={tried ? nameError : undefined} autoFocus={!initial} />
           <TextField
             label="Amount (€)"

@@ -1,11 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { PlusIcon, SettingsIcon } from "lucide-react";
+import { SettingsIcon } from "lucide-react";
 
 import { trpc } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
-import { ChoiceChips } from "@/components/ui/choice-chips";
+import { AddChip, ChoiceChips } from "@/components/ui/choice-chips";
 import { ConfirmDelete } from "@/components/ui/confirm-delete";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -65,15 +65,9 @@ function ShoppingLists() {
   );
   const showSuggestions = focused && query.length > 0 && (suggestions?.length ?? 0) > 0;
 
-  const header = (
-    <Button onClick={() => setCreating(true)}>
-      <PlusIcon /> List
-    </Button>
-  );
-
   if (!lists || !me || !selected) {
     return (
-      <ListsPage actions={header}>
+      <ListsPage>
         {!lists || !me ? (
           showSkeleton && (
             <div role="status" aria-busy="true" className="flex flex-col gap-2">
@@ -112,7 +106,7 @@ function ShoppingLists() {
   }
 
   return (
-    <ListsPage actions={header}>
+    <ListsPage>
       <ChoiceChips
         label="Shopping lists"
         value={selected.id}
@@ -121,6 +115,7 @@ function ShoppingLists() {
           value: l.id,
           label: `${l.name}${l.openCount > 0 ? ` · ${l.openCount}` : ""}${l.ownerId !== null ? " · Private" : ""}`,
         }))}
+        trailing={<AddChip onClick={() => setCreating(true)}>New list</AddChip>}
       />
 
       <div className="flex items-start justify-between gap-3">
