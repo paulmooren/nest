@@ -93,15 +93,11 @@ export function AppShell({
       </aside>
 
       <div className="w-full min-w-0 md:ml-60 md:py-3 md:pr-3">
-        <header className="pt-safe sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background px-4 md:hidden">
-          <span className="flex items-center gap-2">
-            <span className="font-heading text-lg font-bold tracking-tight">{brand}</span>
-            {badge}
-          </span>
+        <header className="pt-safe sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background px-4 md:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger
               render={
-                <Button variant="ghost" size="icon" aria-label="Open menu" className="-mr-2" />
+                <Button variant="ghost" size="icon" aria-label="Open menu" className="-ml-3.5" />
               }
             >
               <MenuIcon />
@@ -113,6 +109,10 @@ export function AppShell({
               {account}
             </SheetContent>
           </Sheet>
+          <span className="flex items-center gap-2">
+            <span className="font-heading text-lg font-bold tracking-tight">{brand}</span>
+            {badge}
+          </span>
         </header>
 
         <main className="min-h-[calc(100dvh-3.5rem)] bg-background px-4 pt-6 pb-28 md:min-h-[calc(100dvh-1.5rem)] md:rounded-3xl md:px-10 md:pt-9 md:pb-14">
