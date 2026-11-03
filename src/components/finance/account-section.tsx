@@ -8,7 +8,6 @@ import { monthlyOf, type Entry } from "@/lib/budget-scope";
 import { formatEUR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { AccountTypeIcon } from "@/components/account-type-icon";
-import { AddChip } from "@/components/ui/choice-chips";
 import { RowList } from "@/components/ui/row";
 import type { Item } from "@/components/finance/budget-types";
 import { ExpenseSections, type BudgetGroup } from "@/components/finance/expense-sections";
@@ -52,7 +51,6 @@ export function AccountSection({
   onMove,
   onRenameGroup,
   onDeleteGroup,
-  onAddItem,
 }: {
   account: AccountSummary | null;
   entries: Entry<Item>[];
@@ -65,7 +63,6 @@ export function AccountSection({
   onMove: (move: { id: string; groupId: string | null; ids: string[] }) => void;
   onRenameGroup: (id: string, name: string) => void;
   onDeleteGroup: (id: string) => void;
-  onAddItem?: () => void;
 }) {
   const income = entries.filter((e) => e.side === "INCOME");
   const expenses = entries.filter((e) => e.side === "EXPENSE");
@@ -123,7 +120,6 @@ export function AccountSection({
           {entries.length === 0 && <p className="text-sm text-muted-foreground">Nothing recurring on this account yet.</p>}
 
           <div className="flex flex-wrap items-center gap-3">
-            {onAddItem && <AddChip onClick={onAddItem}>Item</AddChip>}
             {account && (
               <Link
                 href={`/finance/accounts/${account.id}`}

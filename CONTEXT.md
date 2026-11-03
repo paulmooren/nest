@@ -74,6 +74,10 @@ _Avoid_: Budget (alone), remaining, free cash
 A Recurring item the app has detected from transactions but the Member has not yet confirmed. Only ever shown to the owner.
 _Avoid_: Detected item
 
+**Statement import**:
+Reading a bank statement (a CSV file) for one Financial account, to find its Recurring items: the Payments it contains are recorded and what comes back on a Schedule is offered as Suggestions. It is a way to add Recurring items, alongside typing one in, not a way to manage transactions.
+_Avoid_: Upload, sync, transaction import
+
 **Net worth**:
 Combined balance of Shared Financial accounts only; Personal accounts are shown separately and never leak into the Household figure.
 
