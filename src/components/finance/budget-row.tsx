@@ -56,7 +56,7 @@ export function BudgetRow({
         isDragging && "z-10 rounded-xl shadow-lg"
       )}
     >
-      <div className="flex items-center gap-2 rounded-xl pl-0 transition-colors hover:bg-muted/60 md:-mx-2 md:px-2">
+      <div className="group/row flex items-center gap-2 rounded-xl pl-0 md:-mx-2 md:px-2">
         {canEdit ? (
           <Button
             type="button"
@@ -81,7 +81,7 @@ export function BudgetRow({
           className={cn("flex min-w-0 flex-1 items-center gap-3 rounded-xl py-3 text-left focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none", compact ? "min-h-12" : "min-h-14")}
         >
           <span className="min-w-0 flex-1">
-            <span className="block text-base font-medium md:text-sm">{item.name}</span>
+            <span className={cn("block text-base font-medium md:text-sm", "decoration-foreground/60 decoration-1 underline-offset-4 group-hover/row:underline group-focus-within/row:underline")}>{item.name}</span>
             <span className="block text-sm text-muted-foreground md:text-xs">{meta}</span>
           </span>
           <span className="shrink-0 text-base font-semibold tabular-nums md:text-sm">{formatEUR(item.amount)}</span>
