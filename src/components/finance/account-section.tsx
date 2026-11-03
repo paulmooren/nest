@@ -76,13 +76,13 @@ export function AccountSection({
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className="group -mx-2 flex min-h-14 w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 py-3 text-left transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+        className="group/row group -mx-2 flex min-h-14 w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 py-3 text-left focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
       >
         <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] border bg-muted text-muted-foreground">
           <span className="block size-4">{account ? <AccountTypeIcon type={account.type} /> : <WalletIcon className="size-4" />}</span>
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-base font-medium md:text-sm">{account?.name ?? "No account"}</span>
+          <span className={cn("block text-base font-medium md:text-sm", "decoration-foreground/60 decoration-1 underline-offset-4 group-hover/row:underline group-focus-within/row:underline")}>{account?.name ?? "No account"}</span>
           <span className="block truncate text-sm text-muted-foreground md:text-xs">{meta}</span>
         </span>
         <ChevronDownIcon className={cn("size-4 shrink-0 text-muted-foreground transition-transform group-hover:text-foreground", open && "rotate-180")} aria-hidden />
