@@ -14,7 +14,7 @@ import type { Item } from "@/components/finance/budget-types";
 import { ExpenseSections, type BudgetGroup } from "@/components/finance/expense-sections";
 import { SortableList } from "@/components/sortable-list";
 
-export type AccountSummary = { id: string; name: string; type: string; institution: string | null; balance: unknown };
+export type AccountSummary = { id: string; name: string; type: string; institution: string | null };
 
 export const isAssetType = (type: string) => (ASSET_ACCOUNT_TYPES as readonly string[]).includes(type);
 
@@ -73,8 +73,6 @@ export function AccountSection({
   const income = entries.filter((e) => e.side === "INCOME");
   const expenses = entries.filter((e) => e.side === "EXPENSE");
   const sum = (list: Entry<Item>[]) => list.reduce((s, e) => s + monthlyOf(e.item), 0);
-  const balance = account ? Number(account.balance) : 0;
-  const liability = account ? !isAssetType(account.type) : false;
 
   const flow = entries.length > 0 ? `${formatEUR(sum(income))} in · ${formatEUR(sum(expenses))} out` : null;
   const meta = flow ?? (account ? account.institution || ACCOUNT_TYPE_LABELS[account.type as AccountType] : "Not linked to an account");
@@ -94,12 +92,6 @@ export function AccountSection({
           <span className="block text-base font-medium md:text-sm">{account?.name ?? "No account"}</span>
           <span className="block truncate text-sm text-muted-foreground md:text-xs">{meta}</span>
         </span>
-        {account && (
-          <span className="shrink-0 text-base font-semibold tabular-nums md:text-sm">
-            {liability ? "−" : ""}
-            {formatEUR(Math.abs(balance))}
-          </span>
-        )}
         <ChevronDownIcon className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden />
       </button>
 
