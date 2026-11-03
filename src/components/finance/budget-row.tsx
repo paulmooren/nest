@@ -56,7 +56,7 @@ export function BudgetRow({
         isDragging && "z-10 rounded-xl shadow-lg"
       )}
     >
-      <div className="flex items-center gap-2 rounded-xl pl-0 transition-colors hover:bg-muted/60 md:pr-5 md:pl-2">
+      <div className="flex items-center gap-2 rounded-xl pl-0 transition-colors hover:bg-muted/60 md:-mx-2 md:px-2">
         {canEdit ? (
           <Button
             type="button"
