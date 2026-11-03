@@ -136,7 +136,7 @@ export function ExpenseSections<T extends GroupedItem>({
   return (
     <>
       <SortableBoard sections={sections.map((s) => ({ id: s.id, ids: s.entries.map((e) => e.item.id) }))} onDrop={handleDrop}>
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3">
           {sections.map((section) => (
             <section key={section.id} aria-label={section.group?.name ?? "Other"} className="flex flex-col gap-2">
               <div className="flex items-center justify-between gap-3">

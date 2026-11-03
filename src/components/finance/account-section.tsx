@@ -21,7 +21,22 @@ export const isAssetType = (type: string) => (ASSET_ACCOUNT_TYPES as readonly st
 /** Rows inside an opened account sit on the page, not in a box of their own. */
 const FLAT = "md:overflow-visible md:rounded-none md:border-0 md:bg-transparent";
 
-const subHeading = "text-xs font-semibold tracking-[0.09em] text-muted-foreground uppercase";
+/** The Income / Expenses divider of an opened account: the label and, bigger than any item, what it adds up to. */
+function SideHeading({ side, total }: { side: "INCOME" | "EXPENSE"; total: number }) {
+  const income = side === "INCOME";
+  return (
+    <div className="flex items-baseline justify-between gap-3 border-b pb-2">
+      <h3 className="flex items-center gap-2 text-base font-semibold">
+        <span className={cn("size-2.5 rounded-full", income ? "bg-success" : "bg-foreground/70")} aria-hidden />
+        {income ? "Income" : "Expenses"}
+      </h3>
+      <p className={cn("font-heading text-xl font-bold tabular-nums", income && "text-success")}>
+        {formatEUR(total)}
+        <span className="text-sm font-normal text-muted-foreground"> / mo</span>
+      </p>
+    </div>
+  );
+}
 
 /**
  * One account of the Budget page: its name and balance, what recurs on it each month, and (opened) its income and
@@ -89,13 +104,10 @@ export function AccountSection({
       </button>
 
       {open && (
-        <div className="mb-3 flex flex-col gap-5 md:ml-12 md:border-l md:pr-4 md:pl-4">
+        <div className="mb-3 flex flex-col gap-8 md:ml-12 md:border-l md:pr-4 md:pl-4">
           {income.length > 0 && (
-            <section aria-label="Income" className="flex flex-col gap-2">
-              <h3 className={cn(subHeading, "flex items-center justify-between gap-3")}>
-                Income
-                <span className="font-normal tracking-normal normal-case tabular-nums">{formatEUR(sum(income))} / mo</span>
-              </h3>
+            <section aria-label="Income" className="flex flex-col gap-1">
+              <SideHeading side="INCOME" total={sum(income)} />
               <SortableList ids={income.map((e) => e.item.id)} onReorder={onReorder}>
                 <RowList className={FLAT}>{income.map(renderRow)}</RowList>
               </SortableList>
@@ -103,11 +115,8 @@ export function AccountSection({
           )}
 
           {expenses.length > 0 && (
-            <section aria-label="Expenses" className="flex flex-col gap-2">
-              <h3 className={cn(subHeading, "flex items-center justify-between gap-3")}>
-                Expenses
-                <span className="font-normal tracking-normal normal-case tabular-nums">{formatEUR(sum(expenses))} / mo</span>
-              </h3>
+            <section aria-label="Expenses" className="flex flex-col gap-1">
+              <SideHeading side="EXPENSE" total={sum(expenses)} />
               <ExpenseSections
                 entries={expenses}
                 groups={groups}
