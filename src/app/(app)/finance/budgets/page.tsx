@@ -201,7 +201,7 @@ function Budgets() {
   const group = (title: string, list: typeof scopeAccounts) =>
     list.length > 0 && (
       <Section title={title} className="gap-3">
-        <RowList>{list.map((a) => section(a))}</RowList>
+        <RowList className="md:overflow-visible md:rounded-none md:border-0 md:bg-transparent">{list.map((a) => section(a))}</RowList>
       </Section>
     );
 
@@ -281,7 +281,7 @@ function Budgets() {
       {group("Liabilities", scopeAccounts.filter((a) => !isAssetType(a.type)))}
       {unlinked.length > 0 && (
         <Section title="No account" className="gap-3">
-          <RowList>{section(null)}</RowList>
+          <RowList className="md:overflow-visible md:rounded-none md:border-0 md:bg-transparent">{section(null)}</RowList>
         </Section>
       )}
       {scopeAccounts.length > 0 && (
