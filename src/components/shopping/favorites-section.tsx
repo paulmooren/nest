@@ -4,6 +4,8 @@ import { useState } from "react";
 import { CheckIcon, PlusIcon, SettingsIcon, XIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { chipClass } from "@/components/ui/choice-chips";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Section } from "@/components/ui/section";
@@ -47,21 +49,20 @@ export function FavoritesSection({
           const existing = items.find((i) => i.name.toLowerCase() === fav.name.toLowerCase());
           const onList = !!existing && !existing.checkedAt;
           return (
-            <Button
+            <button
               key={fav.id}
               type="button"
-              variant={onList ? "secondary" : "outline"}
               disabled={onList}
               onClick={() => (existing ? onRestore(existing.id) : onAdd(fav))}
               aria-label={onList ? `${fav.name} is already on the list` : `Add ${fav.name} to the list`}
-              className="rounded-full"
+              className={cn(chipClass(false), "border-border bg-background", onList && "bg-muted opacity-60")}
             >
-              {onList ? <CheckIcon /> : <PlusIcon />}
+              {onList ? <CheckIcon className="size-4" /> : <PlusIcon className="size-4" />}
               {fav.name}
-            </Button>
+            </button>
           );
         })}
-        <Button type="button" variant="ghost" onClick={() => setManaging(true)} className="rounded-full">
+        <Button type="button" variant="ghost" onClick={() => setManaging(true)}>
           <SettingsIcon /> Manage
         </Button>
       </div>

@@ -55,7 +55,7 @@ export default function CategoriesSettingsPage() {
 
       <RowList>
         {categories.map((c) => (
-          <li key={c.id} className="flex min-h-14 items-center gap-3 px-4 py-1 md:px-5">
+          <li key={c.id} className="flex min-h-14 items-center gap-3 px-0 py-1 md:px-5">
             <ColorBarPicker
               value={c.color}
               label={`Change colour of ${c.name}`}

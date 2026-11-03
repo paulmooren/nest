@@ -24,7 +24,7 @@ export function PageHeader({
         {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
       </div>
       {actions && (
-        <div className="fixed right-3 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-end gap-2 rounded-2xl border bg-background/95 p-2 shadow-lg backdrop-blur md:static md:z-auto md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
+        <div className="fixed right-3 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-end md:static md:z-auto [&_[data-slot=button]]:shadow-lg md:[&_[data-slot=button]]:shadow-none">
           {actions}
         </div>
       )}

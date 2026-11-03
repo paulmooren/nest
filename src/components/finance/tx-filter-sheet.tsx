@@ -4,11 +4,10 @@ import { useState } from "react";
 
 import { parseMoney } from "@/lib/money";
 import { Button } from "@/components/ui/button";
-import { ChoiceChips } from "@/components/ui/choice-chips";
+import { ChoiceChips, chipClass } from "@/components/ui/choice-chips";
 import { Field } from "@/components/ui/field";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { TextField } from "@/components/ui/text-field";
-import { cn } from "@/lib/utils";
 import { NO_FILTERS, PRESETS, type TransactionFilters } from "@/components/finance/transaction-filters";
 
 type Category = { id: string; name: string; color: string };
@@ -105,10 +104,7 @@ export function TxFilterSheet({
                   type="button"
                   aria-pressed={on}
                   onClick={() => toggle(c.id)}
-                  className={cn(
-                    "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-base font-medium transition-colors md:min-h-9 md:text-sm",
-                    on ? "border-foreground bg-foreground text-background" : "border-transparent bg-muted text-muted-foreground hover:text-foreground"
-                  )}
+                  className={chipClass(on)}
                 >
                   <span className="block size-2.5 rounded-full" style={{ background: c.color }} aria-hidden />
                   {c.name}
