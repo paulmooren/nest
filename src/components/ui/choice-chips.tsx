@@ -2,6 +2,8 @@
 
 import * as React from "react"
 
+import { PlusIcon } from "lucide-react"
+
 import { cn } from "@/lib/utils"
 
 /**
@@ -28,11 +30,14 @@ export function ChoiceChips<T extends string>({
   value,
   options,
   onChange,
+  trailing,
 }: {
   label: string
   value: T | null
   options: Choice<T>[]
   onChange: (value: T) => void
+  /** After the last chip, in the same row: the "+ New …" chip that adds another choice. */
+  trailing?: React.ReactNode
 }) {
   return (
     <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
@@ -52,6 +57,21 @@ export function ChoiceChips<T extends string>({
           </button>
         )
       })}
+      {trailing}
     </div>
+  )
+}
+
+/** The chip that adds a choice to a row of chips ("+ New list", "+ Group"): dashed, so it reads as an action. */
+export function AddChip({ children, ...props }: React.ComponentProps<"button">) {
+  return (
+    <button
+      type="button"
+      {...props}
+      className={cn(chipClass(false), "border-dashed border-border bg-background text-muted-foreground", props.className)}
+    >
+      <PlusIcon className="size-4" aria-hidden />
+      {children}
+    </button>
   )
 }

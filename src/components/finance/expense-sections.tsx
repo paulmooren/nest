@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { PencilIcon, PlusIcon } from "lucide-react";
+import { PencilIcon } from "lucide-react";
 
 import { SECTION_PREFIX, SortableBoard, SortableList, SortableSection, type BoardDrop } from "@/components/sortable-list";
 import { monthlyOf, type BudgetItem, type Entry } from "@/lib/budget-scope";
 import { formatEUR } from "@/lib/format";
 import { Button } from "@/components/ui/button";
+import { AddChip } from "@/components/ui/choice-chips";
 import { ConfirmDelete } from "@/components/ui/confirm-delete";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { RowList } from "@/components/ui/row";
@@ -189,9 +190,9 @@ export function AddGroup({ onAdd }: { onAdd: (name: string) => void }) {
   const [name, setName] = useState("");
   return (
     <>
-      <Button type="button" variant="ghost" className="self-start" onClick={() => setOpen(true)}>
-        <PlusIcon /> Add group
-      </Button>
+      <div className="self-start">
+        <AddChip onClick={() => setOpen(true)}>Group</AddChip>
+      </div>
       {open && (
         <ResponsiveSheet open onOpenChange={(o) => !o && setOpen(false)} title="New group">
           <form

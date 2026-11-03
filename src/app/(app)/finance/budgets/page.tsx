@@ -45,6 +45,8 @@ export default function BudgetsPage() {
   const currentUserId = me?.id ?? "";
 
   const [scope, setScope] = useState<ScopeKey>(YOU);
+  // The one add action of the page: a new income or expense, chosen inside the sheet.
+  const [adding, setAdding] = useState(false);
   // The lists show one account at a time; until one is picked (or after a scope change) the first is shown.
   const [pickedAccount, setPickedAccount] = useState("");
 
@@ -104,7 +106,13 @@ export default function BudgetsPage() {
   const hasItems = items.length > 0;
 
   return (
-    <FinancePage>
+    <FinancePage
+      actions={
+        <Button onClick={() => setAdding(true)}>
+          <PlusIcon /> Item
+        </Button>
+      }
+    >
       <section aria-label="Left each month" className="flex flex-col gap-3">
         <p className={cn("font-heading text-5xl leading-none font-bold tracking-tight tabular-nums", left < 0 ? "text-destructive" : "text-success")}>
           {hasItems ? formatSignedEUR(left).replace(/^\+/, "") : formatEUR(0)}
@@ -156,6 +164,8 @@ export default function BudgetsPage() {
         accountFilter={accountFilter}
         scopeEntries={scopeEntries as Entry<Item>[]}
         scope={activeScope}
+        adding={adding}
+        onCloseAdd={() => setAdding(false)}
       />
     </FinancePage>
   );
@@ -168,6 +178,8 @@ function RecurringItems({
   accountFilter,
   scopeEntries,
   scope,
+  adding,
+  onCloseAdd,
 }: {
   members: Member[];
   currentUserId: string;
@@ -175,6 +187,8 @@ function RecurringItems({
   accountFilter: string;
   scopeEntries: Entry<Item>[];
   scope: ScopeKey;
+  adding: boolean;
+  onCloseAdd: () => void;
 }) {
   const { data: suggestions } = trpc.recurring.suggestions.useQuery();
   const { data: categories } = trpc.category.list.useQuery();
@@ -191,7 +205,6 @@ function RecurringItems({
 
   const [reviewing, setReviewing] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
-  const [adding, setAdding] = useState<"INCOME" | "EXPENSE" | null>(null);
   const [history, setHistory] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Item | null>(null);
 
@@ -244,7 +257,7 @@ function RecurringItems({
         </span>{" "}
         / month
       </p>
-      {list.length === 0 && <EmptyState title={`Nothing here yet — add ${type === "INCOME" ? "income" : "an expense"} below.`} />}
+      {list.length === 0 && <EmptyState title={`Nothing here yet — add ${type === "INCOME" ? "income" : "an expense"} with the Item button.`} />}
       {type === "EXPENSE" ? (
         <ExpenseSections
           entries={list}
@@ -264,12 +277,7 @@ function RecurringItems({
           </SortableList>
         )
       )}
-      <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" onClick={() => setAdding(type)}>
-          <PlusIcon /> Add {type === "INCOME" ? "income" : "expense"}
-        </Button>
-        {type === "EXPENSE" && <AddGroup onAdd={groupActions.create} />}
-      </div>
+      {type === "EXPENSE" && <AddGroup onAdd={groupActions.create} />}
     </Section>
   );
 
@@ -306,15 +314,15 @@ function RecurringItems({
 
       {adding && (
         <RecurringFormSheet
-          type={adding}
+          type="EXPENSE"
           groups={groups}
           categories={categories ?? []}
           members={members}
           currentUserId={currentUserId}
           accounts={accounts}
           defaultAccountId={accountFilter === NO_ACCOUNT ? "" : accountFilter}
-          onSubmit={(values: FormValues) => recurring.create({ ...values, type: adding as TxType })}
-          onClose={() => setAdding(null)}
+          onSubmit={(values: FormValues, kind: TxType) => recurring.create({ ...values, type: kind })}
+          onClose={onCloseAdd}
         />
       )}
 
