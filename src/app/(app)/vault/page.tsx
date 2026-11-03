@@ -74,7 +74,7 @@ function Vault() {
   if (!entries || !categories || !me) {
     return (
       <>
-        <PageHeader title="Vault" actions={newEntry} />
+        <PageHeader title="Vault" actions={newEntry} inHeader />
         {showSkeleton && <VaultBones />}
       </>
     );
@@ -143,7 +143,7 @@ function Vault() {
         void onDrop(e.dataTransfer.files);
       }}
     >
-      <PageHeader title="Vault" actions={newEntry} />
+      <PageHeader title="Vault" actions={newEntry} inHeader />
       <PageBody>
         {dragging && (
           <p className="rounded-2xl border border-dashed border-foreground/40 bg-muted px-6 py-6 text-center text-sm text-muted-foreground">

@@ -13,7 +13,7 @@ const TABS = [
 export function FinancePage({ actions, children }: { actions?: React.ReactNode; children: React.ReactNode }) {
   return (
     <>
-      <PageHeader title="Finance" actions={actions} />
+      <PageHeader title="Finance" actions={actions} inHeader />
       <PageBody>
         <SectionTabs tabs={TABS} label="Finance sections" />
         {children}
