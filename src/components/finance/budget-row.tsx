@@ -56,7 +56,7 @@ export function BudgetRow({
         isDragging && "z-10 rounded-xl shadow-lg"
       )}
     >
-      <div className="flex items-center gap-2 pl-0 md:pr-5 md:pl-2">
+      <div className="flex items-center gap-2 rounded-xl pl-0 transition-colors hover:bg-muted/60 md:-mx-2 md:px-2">
         {canEdit ? (
           <Button
             type="button"
@@ -78,7 +78,7 @@ export function BudgetRow({
           type="button"
           onClick={onOpen}
           aria-label={`${item.name}: open details`}
-          className={cn("flex min-w-0 flex-1 items-center gap-3 py-3 text-left transition-colors hover:bg-muted/60", compact ? "min-h-12" : "min-h-14")}
+          className={cn("flex min-w-0 flex-1 items-center gap-3 rounded-xl py-3 text-left focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none", compact ? "min-h-12" : "min-h-14")}
         >
           <span className="min-w-0 flex-1">
             <span className="block text-base font-medium md:text-sm">{item.name}</span>

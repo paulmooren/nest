@@ -14,7 +14,7 @@ import type { Item } from "@/components/finance/budget-types";
 import { ExpenseSections, type BudgetGroup } from "@/components/finance/expense-sections";
 import { SortableList } from "@/components/sortable-list";
 
-export type AccountSummary = { id: string; name: string; type: string; institution: string | null; balance: unknown };
+export type AccountSummary = { id: string; name: string; type: string; institution: string | null };
 
 export const isAssetType = (type: string) => (ASSET_ACCOUNT_TYPES as readonly string[]).includes(type);
 
@@ -26,11 +26,8 @@ function SideHeading({ side, total }: { side: "INCOME" | "EXPENSE"; total: numbe
   const income = side === "INCOME";
   return (
     <div className="flex items-baseline justify-between gap-3 border-b pb-2">
-      <h3 className="flex items-center gap-2 text-base font-semibold">
-        <span className={cn("size-2.5 rounded-full", income ? "bg-success" : "bg-foreground/70")} aria-hidden />
-        {income ? "Income" : "Expenses"}
-      </h3>
-      <p className={cn("font-heading text-xl font-bold tabular-nums", income && "text-success")}>
+      <h3 className="text-base font-semibold">{income ? "Income" : "Expenses"}</h3>
+      <p className={cn("font-heading text-xl font-bold tabular-nums", income ? "text-success" : "text-destructive")}>
         {formatEUR(total)}
         <span className="text-sm font-normal text-muted-foreground"> / mo</span>
       </p>
@@ -73,11 +70,8 @@ export function AccountSection({
   const income = entries.filter((e) => e.side === "INCOME");
   const expenses = entries.filter((e) => e.side === "EXPENSE");
   const sum = (list: Entry<Item>[]) => list.reduce((s, e) => s + monthlyOf(e.item), 0);
-  const balance = account ? Number(account.balance) : 0;
-  const liability = account ? !isAssetType(account.type) : false;
 
-  const flow = entries.length > 0 ? `${formatEUR(sum(income))} in · ${formatEUR(sum(expenses))} out` : null;
-  const meta = flow ?? (account ? account.institution || ACCOUNT_TYPE_LABELS[account.type as AccountType] : "Not linked to an account");
+  const meta = account ? ACCOUNT_TYPE_LABELS[account.type as AccountType] : "Not linked to an account";
 
   return (
     <li className="py-1">
@@ -85,7 +79,7 @@ export function AccountSection({
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className="flex min-h-14 w-full items-center gap-3 py-3 text-left transition-colors hover:bg-muted/60"
+        className="group -mx-2 flex min-h-14 w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 py-3 text-left transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
       >
         <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] border bg-muted text-muted-foreground">
           <span className="block size-4">{account ? <AccountTypeIcon type={account.type} /> : <WalletIcon className="size-4" />}</span>
@@ -94,19 +88,13 @@ export function AccountSection({
           <span className="block text-base font-medium md:text-sm">{account?.name ?? "No account"}</span>
           <span className="block truncate text-sm text-muted-foreground md:text-xs">{meta}</span>
         </span>
-        {account && (
-          <span className="shrink-0 text-base font-semibold tabular-nums md:text-sm">
-            {liability ? "−" : ""}
-            {formatEUR(Math.abs(balance))}
-          </span>
-        )}
-        <ChevronDownIcon className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden />
+        <ChevronDownIcon className={cn("size-4 shrink-0 text-muted-foreground transition-transform group-hover:text-foreground", open && "rotate-180")} aria-hidden />
       </button>
 
       {open && (
-        <div className="mb-3 flex flex-col gap-8 md:ml-12 md:border-l md:pr-4 md:pl-4">
+        <div className="mb-3 flex flex-col gap-8 md:ml-12 md:pr-4">
           {income.length > 0 && (
-            <section aria-label="Income" className="flex flex-col gap-1">
+            <section aria-label="Income" className="flex flex-col gap-1 border-l-2 border-success pl-4">
               <SideHeading side="INCOME" total={sum(income)} />
               <SortableList ids={income.map((e) => e.item.id)} onReorder={onReorder}>
                 <RowList className={FLAT}>{income.map(renderRow)}</RowList>
@@ -115,7 +103,7 @@ export function AccountSection({
           )}
 
           {expenses.length > 0 && (
-            <section aria-label="Expenses" className="flex flex-col gap-1">
+            <section aria-label="Expenses" className="flex flex-col gap-1 border-l-2 border-destructive pl-4">
               <SideHeading side="EXPENSE" total={sum(expenses)} />
               <ExpenseSections
                 entries={expenses}
