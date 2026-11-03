@@ -165,6 +165,7 @@ function Budgets() {
         item={item}
         transferText={transferText}
         canEdit={canEditItem(item)}
+        compact
         onOpen={() => setEditing(item.id)}
         onAcceptProposal={() => recurring.acceptProposal({ id: item.id })}
         onKeepAmount={() => recurring.keepAmount({ id: item.id })}

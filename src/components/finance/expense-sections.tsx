@@ -87,6 +87,7 @@ export function ExpenseSections<T extends GroupedItem>({
   groups,
   usedGroupIds,
   hostsFresh,
+  listClassName,
   renderRow,
   onReorder,
   onMove,
@@ -98,6 +99,8 @@ export function ExpenseSections<T extends GroupedItem>({
   /** Groups that hold at least one item anywhere in the household. */
   usedGroupIds: Set<string>;
   hostsFresh: boolean;
+  /** Extra classes for the row lists, e.g. to drop the box. */
+  listClassName?: string;
   renderRow: (entry: Entry<T>) => React.ReactNode;
   onReorder: (ids: string[]) => void;
   onMove: (move: { id: string; groupId: string | null; ids: string[] }) => void;
@@ -120,7 +123,7 @@ export function ExpenseSections<T extends GroupedItem>({
   if (sections.length === 0 || (sections.length === 1 && sections[0].group === null)) {
     return entries.length === 0 ? null : (
       <SortableList ids={entries.map((e) => e.item.id)} onReorder={onReorder}>
-        <RowList>{entries.map(renderRow)}</RowList>
+        <RowList className={listClassName}>{entries.map(renderRow)}</RowList>
       </SortableList>
     );
   }
@@ -166,7 +169,7 @@ export function ExpenseSections<T extends GroupedItem>({
                   </p>
                 }
               >
-                {section.entries.length > 0 && <RowList>{section.entries.map(renderRow)}</RowList>}
+                {section.entries.length > 0 && <RowList className={listClassName}>{section.entries.map(renderRow)}</RowList>}
               </SortableSection>
             </section>
           ))}

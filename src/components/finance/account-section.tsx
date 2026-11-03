@@ -18,6 +18,9 @@ export type AccountSummary = { id: string; name: string; type: string; instituti
 
 export const isAssetType = (type: string) => (ASSET_ACCOUNT_TYPES as readonly string[]).includes(type);
 
+/** Rows inside an opened account sit on the page, not in a box of their own. */
+const FLAT = "md:overflow-visible md:rounded-none md:border-0 md:bg-transparent";
+
 const subHeading = "text-xs font-semibold tracking-[0.09em] text-muted-foreground uppercase";
 
 /**
@@ -86,7 +89,7 @@ export function AccountSection({
       </button>
 
       {open && (
-        <div className="mb-3 flex flex-col gap-5 md:ml-12">
+        <div className="mb-3 flex flex-col gap-5 md:ml-12 md:border-l md:pr-4 md:pl-4">
           {income.length > 0 && (
             <section aria-label="Income" className="flex flex-col gap-2">
               <h3 className={cn(subHeading, "flex items-center justify-between gap-3")}>
@@ -94,7 +97,7 @@ export function AccountSection({
                 <span className="font-normal tracking-normal normal-case tabular-nums">{formatEUR(sum(income))} / mo</span>
               </h3>
               <SortableList ids={income.map((e) => e.item.id)} onReorder={onReorder}>
-                <RowList>{income.map(renderRow)}</RowList>
+                <RowList className={FLAT}>{income.map(renderRow)}</RowList>
               </SortableList>
             </section>
           )}
@@ -110,6 +113,7 @@ export function AccountSection({
                 groups={groups}
                 usedGroupIds={usedGroupIds}
                 hostsFresh={false}
+                listClassName={FLAT}
                 renderRow={renderRow}
                 onReorder={onReorder}
                 onMove={onMove}
