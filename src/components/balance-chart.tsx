@@ -204,7 +204,7 @@ export function BalanceChart({
                 size="sm"
                 variant={p.key === presetKey ? "default" : "secondary"}
                 aria-pressed={p.key === presetKey}
-                className="rounded-full"
+                className="rounded-xl"
                 onClick={() => setPresetKey(p.key)}
               >
                 {p.label}
@@ -215,7 +215,7 @@ export function BalanceChart({
               size="sm"
               variant={presetKey === "custom" ? "default" : "secondary"}
               aria-pressed={presetKey === "custom"}
-              className="rounded-full"
+              className="rounded-xl"
               onClick={() => setPresetKey("custom")}
             >
               Custom
@@ -252,7 +252,7 @@ export function BalanceChart({
                   size="sm"
                   variant={g.key === granularity ? "outline" : "ghost"}
                   aria-pressed={g.key === granularity}
-                  className={g.key === granularity ? "rounded-full border-foreground" : "rounded-full"}
+                  className={g.key === granularity ? "rounded-xl border-foreground" : "rounded-xl"}
                   onClick={() => setGranularity(g.key)}
                 >
                   {g.label}

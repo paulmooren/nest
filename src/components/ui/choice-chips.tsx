@@ -4,6 +4,19 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * The look of every chip in the app (a choice, a filter, a toggle): 36px tall with a 44px hit area, the same corner
+ * as buttons and fields. Selected is the ink fill; unselected is the quiet fill.
+ */
+export function chipClass(active: boolean) {
+  return cn(
+    "relative inline-flex h-9 items-center gap-2 rounded-xl border px-3.5 text-sm font-medium transition-colors after:absolute after:-inset-y-[5px] after:inset-x-0 after:content-['']",
+    active
+      ? "border-foreground bg-foreground text-background"
+      : "border-transparent bg-muted text-muted-foreground hover:text-foreground"
+  )
+}
+
 export type Choice<T extends string> = { value: T; label: string; leading?: React.ReactNode }
 
 /**
@@ -32,12 +45,7 @@ export function ChoiceChips<T extends string>({
             role="radio"
             aria-checked={active}
             onClick={() => onChange(o.value)}
-            className={cn(
-              "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-base font-medium transition-colors md:min-h-9 md:text-sm",
-              active
-                ? "border-foreground bg-foreground text-background"
-                : "border-transparent bg-muted text-muted-foreground hover:text-foreground"
-            )}
+            className={chipClass(active)}
           >
             {o.leading}
             {o.label}

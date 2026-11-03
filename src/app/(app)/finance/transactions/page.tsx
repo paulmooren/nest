@@ -191,7 +191,7 @@ function Transactions() {
     >
       {categoryToast}
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-2">
         {accounts && accounts.length > 1 && (
           <Select
             items={accountItems}
@@ -201,7 +201,7 @@ function Transactions() {
               reset();
             }}
           >
-            <SelectTrigger aria-label="Filter by account" className="w-full sm:w-64">
+            <SelectTrigger aria-label="Filter by account" className="min-w-0 flex-1 sm:w-64 sm:flex-none">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -225,7 +225,7 @@ function Transactions() {
             <Button
               key={c.key}
               variant="secondary"
-              className="rounded-full"
+              className="rounded-xl"
               onClick={() => {
                 c.clear();
                 reset();

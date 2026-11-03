@@ -53,7 +53,7 @@ export function BudgetRow({
         isDragging && "z-10 rounded-xl shadow-lg"
       )}
     >
-      <div className="flex items-center gap-2 pr-4 pl-2 md:pr-5">
+      <div className="flex items-center gap-2 pl-0 md:pr-5 md:pl-2">
         {canEdit ? (
           <Button
             type="button"
@@ -70,7 +70,7 @@ export function BudgetRow({
         ) : (
           <span className="hidden w-6 shrink-0 md:block" aria-hidden />
         )}
-        <span className="block size-3 shrink-0 rounded-full max-md:ml-2" style={{ background: item.category?.color ?? "#9a9da5" }} aria-hidden />
+        <span className="block size-3 shrink-0 rounded-full " style={{ background: item.category?.color ?? "#9a9da5" }} aria-hidden />
         <button
           type="button"
           onClick={onOpen}
@@ -86,11 +86,11 @@ export function BudgetRow({
       </div>
 
       {item.drift !== null && (
-        <p className="px-4 pb-3 pl-12 text-sm text-muted-foreground md:pl-16 md:text-xs">Payments are now {formatEUR(item.drift)}</p>
+        <p className="pb-3 pl-5 text-sm text-muted-foreground md:pl-16 md:text-xs">Payments are now {formatEUR(item.drift)}</p>
       )}
 
       {item.proposal !== null && (
-        <div data-proposal className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pb-3 pl-12 md:pl-16">
+        <div data-proposal className="flex flex-wrap items-center gap-x-3 gap-y-2 pb-3 pl-5 md:pl-16">
           <span className="text-sm font-medium">
             New amount {formatEUR(item.proposal)}
             <span className="font-normal text-muted-foreground"> · was {formatEUR(item.amount)}</span>

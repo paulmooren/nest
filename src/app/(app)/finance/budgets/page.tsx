@@ -137,7 +137,7 @@ export default function BudgetsPage() {
         )}
       </section>
 
-      {(scopeAccounts.length > 0 || hasUnlinked) && (
+      {scopeAccounts.length + (hasUnlinked ? 1 : 0) > 1 && (
         <ChoiceChips
           label="Account"
           value={accountFilter}

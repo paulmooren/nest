@@ -88,7 +88,7 @@ export function Row({
   const interactive = !!(onClick || href)
   const main = cn(
     "flex min-h-14 w-full min-w-0 flex-1 items-center gap-3 py-3 text-left",
-    check ? "pr-4 md:pr-5" : "px-4 md:px-5",
+    check ? "pr-0 md:pr-5" : "px-0 md:px-5",
     interactive && "transition-colors hover:bg-muted active:bg-muted",
     className
   )
@@ -114,7 +114,7 @@ export function Row({
 
   return (
     <li className={cn("flex items-stretch", rowClassName)} style={rowStyle}>
-      <span className="flex w-12 shrink-0 items-center justify-center pl-2 md:w-14 md:pl-3">
+      <span className="flex w-10 shrink-0 items-center justify-start md:w-14 md:justify-center md:pl-3">
         <Checkbox
           checked={check.checked}
           onCheckedChange={check.onChange}

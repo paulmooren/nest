@@ -250,7 +250,7 @@ function EntryDetail({ id }: { id: string }) {
           <Section label="Details">
             <RowList>
               {rows.map((f, i) => (
-                <li key={i} className="flex min-h-14 items-center gap-3 px-4 py-3 md:px-5">
+                <li key={i} className="flex min-h-14 items-center gap-3 px-0 py-3 md:px-5">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-muted-foreground md:text-xs">{f.label}</p>
                     <p className={`break-all text-base md:text-sm ${f.kind === "secret" ? "font-mono" : ""}`}>
@@ -269,7 +269,7 @@ function EntryDetail({ id }: { id: string }) {
                 </li>
               ))}
               {entry.hasNote && (
-                <li className="px-4 py-3 md:px-5">
+                <li className="px-0 py-3 md:px-5">
                   {revealed ? (
                     <p className="whitespace-pre-wrap rounded-xl bg-muted px-3.5 py-3 text-sm">{revealed.note}</p>
                   ) : (

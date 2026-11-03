@@ -36,9 +36,12 @@ const measure = () => {
     if (cs.visibility === "hidden" || cs.display === "none") continue;
     if (r.right > vw + 1 && !el.closest("[class*=overflow-x]")) out.overflowing.push(`${el.tagName.toLowerCase()}.${String(el.className).slice(0, 50)} →${Math.round(r.right)}`);
     if (el.matches("a,button,[role=button],[role=tab],[role=checkbox],[role=switch],input:not([type=hidden]),select,textarea")) {
-      // A checkbox or switch looks small but grows its hit area to 44px with ::after, and a link inside a sentence is
+      // A checkbox, switch or chip looks small but grows its hit area to 44px with ::after, and a link inside a sentence is
       // exempt (WCAG 2.5.8 inline exception). From 768px up the layout is the desktop's, with its own sizes.
-      const growsHitArea = el.matches("[data-slot=checkbox],[data-slot=switch]");
+      const after = getComputedStyle(el, "::after");
+      const growsHitArea =
+        el.matches("[data-slot=checkbox],[data-slot=switch]") ||
+        (after.position === "absolute" && parseFloat(after.height) >= 44 && parseFloat(after.width) >= Math.min(r.width, 44));
       const inline = el.matches("a") && !!el.closest("p");
       if (vw < 768 && (r.width < 44 || r.height < 44) && r.width > 2 && !growsHitArea && !inline) out.smallTargets.push(`${label(el)} ${Math.round(r.width)}×${Math.round(r.height)}`);
     }
