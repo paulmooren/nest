@@ -5,13 +5,8 @@ import type { PrismaClient } from "@prisma/client";
 import { createTRPCRouter, householdProcedure } from "@/server/api/trpc";
 import { ASSET_ACCOUNT_TYPES } from "@/lib/constants";
 import { accountDelta } from "@/lib/account-balance";
-
-function lastMonthRange() {
-  const now = new Date();
-  const startOfThisMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const startOfLastMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
-  return { startOfThisMonth, startOfLastMonth };
-}
+import { todayInHousehold } from "@/lib/schedule";
+import { statementDue } from "@/lib/statement-due";
 
 function todayUTC() {
   const now = new Date();
@@ -36,43 +31,31 @@ function buildBuckets(from: Date, to: Date, granularity: "day" | "week" | "month
 
 type MissingCtx = { prisma: PrismaClient; householdId: string; userId: string };
 
-/** Accounts the Member owns or shares with the Household that have no transaction dated last month. */
-export async function missingStatementsFor(ctx: MissingCtx) {
-  const { startOfThisMonth, startOfLastMonth } = lastMonthRange();
-
+/**
+ * Accounts the Member owns or shares with the Household whose statement is due: 90 days since the last import, or
+ * since the account was made (ADR 0011). Each comes with the dates the statement must cover.
+ */
+export async function statementsDueFor(ctx: MissingCtx, today: Date = todayInHousehold()) {
   const accounts = await ctx.prisma.financialAccount.findMany({
-    where: {
-      householdId: ctx.householdId,
-      OR: [{ ownerId: null }, { ownerId: ctx.userId }],
-      createdAt: { lt: startOfThisMonth },
-    },
-    select: { id: true, name: true, type: true },
-  });
-  if (accounts.length === 0) return [];
-
-  const accountIds = accounts.map((a) => a.id);
-  const lastMonthTxns = await ctx.prisma.transaction.findMany({
-    where: {
-      date: { gte: startOfLastMonth, lt: startOfThisMonth },
-      OR: [{ accountId: { in: accountIds } }, { transferToAccountId: { in: accountIds } }],
-    },
-    select: { accountId: true, transferToAccountId: true },
+    where: { householdId: ctx.householdId, OR: [{ ownerId: null }, { ownerId: ctx.userId }] },
+    select: { id: true, name: true, type: true, createdAt: true, lastImportedOn: true, statementPushedFor: true },
+    orderBy: { createdAt: "asc" },
   });
 
-  const activeAccountIds = new Set<string>();
-  for (const t of lastMonthTxns) {
-    activeAccountIds.add(t.accountId);
-    if (t.transferToAccountId) activeAccountIds.add(t.transferToAccountId);
-  }
-
-  return accounts
-    .filter((a) => !activeAccountIds.has(a.id))
-    .map((a) => ({
-      type: "missing_statement" as const,
-      accountId: a.id,
-      accountName: a.name,
-      accountType: a.type,
-    }));
+  return accounts.flatMap((a) => {
+    const due = statementDue(a, today);
+    if (!due) return [];
+    return [
+      {
+        type: "statement_due" as const,
+        accountId: a.id,
+        accountName: a.name,
+        accountType: a.type,
+        pushedFor: a.statementPushedFor,
+        ...due,
+      },
+    ];
+  });
 }
 
 export const dashboardRouter = createTRPCRouter({

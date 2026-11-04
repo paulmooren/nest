@@ -1,11 +1,12 @@
 import type { PrismaClient } from "@prisma/client";
 
 import { createTRPCRouter, householdProcedure } from "@/server/api/trpc";
-import { missingStatementsFor } from "@/server/api/routers/dashboard";
+import { statementsDueFor } from "@/server/api/routers/dashboard";
 import { openSuggestions, pendingProposals } from "@/server/api/routers/recurring";
 import { expiringEntries } from "@/server/vault-access";
 import { isModuleEnabled, type ModuleKey } from "@/lib/modules";
 import { daysBetween, todayInHousehold } from "@/lib/schedule";
+import { statementRange } from "@/lib/statement-due";
 
 type Ctx = { prisma: PrismaClient; householdId: string; userId: string };
 
@@ -47,7 +48,7 @@ function expiryDetail(label: string, date: Date, days: number) {
 
 /**
  * Everything that needs this Member now (see Inbox in CONTEXT.md): their own Reminders and ones for everyone that
- * are due or overdue, last month's missing statements for accounts they own or share, Vault Entries they can edit
+ * are due or overdue, statements due (90 days since the last import) for accounts they own or share, Vault Entries they can edit
  * that are expiring, new recurring items waiting to be confirmed, and Budgeted amount changes waiting for approval.
  * Computed on every call — an item disappears when the thing behind it is dealt with. Modules that are off add nothing.
  */
@@ -70,7 +71,7 @@ export async function inboxItems(ctx: Ctx): Promise<InboxItem[]> {
           select: { id: true, title: true, nextDueDate: true },
         })
       : [],
-    on("finance") ? missingStatementsFor(ctx) : [],
+    on("finance") ? statementsDueFor(ctx, today) : [],
     on("vault") ? expiringEntries(ctx) : [],
     on("finance") ? openSuggestions(ctx) : [],
     on("finance") ? pendingProposals(ctx) : [],
@@ -91,15 +92,14 @@ export async function inboxItems(ctx: Ctx): Promise<InboxItem[]> {
     });
   }
 
-  // A statement is "missing" from the 1st of the month, so it has been waiting as many days as the date says.
-  const sinceFirst = today.getUTCDate() - 1;
+  // Due once 90 days have passed since the last import; it has been waiting as many days as have passed since then.
   for (const s of statements) {
     items.push({
       id: `statement:${s.accountId}`,
       kind: "statement",
-      rank: -sinceFirst,
-      title: `${s.accountName}: last month's statement`,
-      detail: "Import it to keep recurring items up to date",
+      rank: daysBetween(s.dueOn, today) * -1,
+      title: `${s.accountName}: statement needed`,
+      detail: statementRange(s.from, s.to),
       href: `/finance/accounts/${s.accountId}`,
       accountId: s.accountId,
       accountName: s.accountName,

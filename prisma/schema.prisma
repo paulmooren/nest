@@ -220,6 +220,11 @@ model FinancialAccount {
   startingBalance    Decimal     @default(0) @db.Decimal(14, 2)
   balance            Decimal     @default(0) @db.Decimal(14, 2)
   currency           String      @default("EUR")
+  // The day of the last statement import. That import covers up to the day before it, so it is also where the next
+  // statement starts and where the 90-day reminder clock runs from. Null: never imported, the account's creation day counts.
+  lastImportedOn     DateTime?   @db.Date
+  // The statement start date (see above) of the cycle a push was last sent for, so each cycle is pushed once.
+  statementPushedFor DateTime?   @db.Date
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 
