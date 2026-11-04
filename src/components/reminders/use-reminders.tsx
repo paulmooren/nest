@@ -16,12 +16,12 @@ const formatNext = (d: Date | string) =>
 const byDue = (a: { nextDueDate: Date; title: string }, b: { nextDueDate: Date; title: string }) =>
   a.nextDueDate.getTime() - b.nextDueDate.getTime() || a.title.localeCompare(b.title);
 
-/** Reminder mutations shared by the Reminders page and the dashboard, plus the "done — undo" toast. */
+/** Reminder mutations shared by the Reminders page and Today, plus the "done — undo" toast. */
 export function useReminderActions() {
   const utils = trpc.useUtils();
   const [undo, setUndo] = useState<{ completionId: string; reminderId: string; title: string; next: string } | null>(null);
 
-  const lists = ["reminder.list"] as const;
+  const lists = ["reminder.list", "inbox.list", "inbox.count"] as const;
   const scope = (v: { id: string }) => `reminder:${v.id}`;
   const createMutation = useOptimisticMutation("reminder.create", {
     lists,
@@ -78,6 +78,7 @@ export function useReminderActions() {
     scope,
     update: (v, cache) => {
       const me = utils.user.me.getData();
+      cache.update("inbox.list", (rows) => rows.filter((row) => row.id !== `reminder:${v.id}`));
       cache.update("reminder.list", (rows) =>
         rows
           .map((row) => {

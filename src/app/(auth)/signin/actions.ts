@@ -9,7 +9,7 @@ import { isDemoServer } from "@/lib/demo";
 
 export async function signInWithGoogle() {
   const { url } = await auth.api.signInSocial({
-    body: { provider: "google", callbackURL: "/dashboard", errorCallbackURL: "/signin" },
+    body: { provider: "google", callbackURL: "/today", errorCallbackURL: "/signin" },
     headers: await headers(),
   });
   redirect(url ?? "/signin?error=unknown");
@@ -20,7 +20,7 @@ export async function signInWithPassword(formData: FormData) {
   const password = String(formData.get("password") ?? "");
 
   try {
-    await auth.api.signInEmail({ body: { email, password, callbackURL: "/dashboard" }, headers: await headers() });
+    await auth.api.signInEmail({ body: { email, password, callbackURL: "/today" }, headers: await headers() });
   } catch (error) {
     if (error instanceof APIError) {
       // Right password but the email was never confirmed: Better Auth has just emailed a new link.
@@ -29,12 +29,12 @@ export async function signInWithPassword(formData: FormData) {
     }
     throw error;
   }
-  redirect("/dashboard");
+  redirect("/today");
 }
 
 /** The Demo's sign-in as one of its two made-up people. Does nothing outside the Demo. */
 export async function signInAsPersona(formData: FormData) {
   if (!isDemoServer()) redirect("/signin");
   await auth.api.signInDemo({ body: { persona: String(formData.get("persona") ?? "") }, headers: await headers() });
-  redirect("/dashboard");
+  redirect("/today");
 }

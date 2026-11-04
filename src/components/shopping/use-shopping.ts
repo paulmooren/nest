@@ -69,7 +69,7 @@ const listScope = (id: string) => `shopping-list:${id}`;
 
 /**
  * Mutations for one list. Everything shows at once and saves behind the scenes, which matters in a shop.
- * The open count on the list buttons (and the dashboard card) follows the items.
+ * The open count on the list buttons (and the Today card) follows the items.
  */
 export function useShoppingActions(listId: string | undefined) {
   const utils = trpc.useUtils();

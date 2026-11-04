@@ -5,15 +5,16 @@ import { newId } from "@/lib/client-id";
 import { trpc } from "@/trpc/react";
 import { asCached, asDate, useOptimisticMutation, type CacheEditor, type QueryPath } from "@/trpc/optimistic";
 
-/** Everything a transaction change can alter on screen: the lists, the balances and the dashboard figures. */
+/** Everything a transaction change can alter on screen: the lists, the balances, the Inbox and the net-worth figures. */
 const BALANCE_LISTS = [
   "transaction.list",
   "account.list",
   "dashboard.summary",
   "dashboard.netWorthHistory",
   "dashboard.accountHistory",
-  "dashboard.missingStatements",
   "budget.list",
+  "inbox.list",
+  "inbox.count",
 ] as const satisfies readonly QueryPath[];
 
 /** What a bulk change that waits for the server (an import, "remove all") must refresh when it is done. */

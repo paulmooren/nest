@@ -18,6 +18,8 @@ export type NavItem = {
   href: string
   label: string
   icon?: React.ReactNode
+  /** How many things wait here. Shown as a number after the label; nothing at zero. */
+  count?: number
 }
 
 function NavLinks({
@@ -51,6 +53,12 @@ function NavLinks({
               {item.icon}
             </span>
             {item.label}
+            {!!item.count && (
+              <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1.5 text-xs font-semibold tabular-nums text-background">
+                {item.count}
+                <span className="sr-only"> waiting</span>
+              </span>
+            )}
           </Link>
         )
       })}
@@ -82,6 +90,8 @@ export function AppShell({
   children: React.ReactNode
 }) {
   const [open, setOpen] = React.useState(false)
+  // On a phone the links sit behind the burger, so a dot on it says that something is waiting inside.
+  const waiting = items.some((item) => !!item.count)
 
   return (
     <div className="flex min-h-dvh bg-sidebar">
@@ -100,10 +110,13 @@ export function AppShell({
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger
               render={
-                <Button variant="ghost" size="icon" aria-label="Open menu" className="-ml-3.5" />
+                <Button variant="ghost" size="icon" aria-label="Open menu" className="relative -ml-3.5" />
               }
             >
               <MenuIcon />
+              {waiting && (
+                <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-destructive" aria-hidden />
+              )}
             </SheetTrigger>
             <SheetContent side="left" className="p-4">
               <SheetTitle className="sr-only">Menu</SheetTitle>

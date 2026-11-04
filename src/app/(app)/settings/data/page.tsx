@@ -57,7 +57,7 @@ function ResetDemo() {
   const reset = trpc.demo.reset.useMutation({
     onSuccess: async () => {
       await utils.invalidate();
-      router.push("/dashboard");
+      router.push("/today");
     },
   });
   return (

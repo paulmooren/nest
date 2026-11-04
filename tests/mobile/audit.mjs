@@ -17,7 +17,7 @@ const OUT = path.resolve(".visual/mobile");
 const WIDTHS = [{ w: 320, h: 640 }, { w: 360, h: 740 }, { w: 390, h: 844 }, { w: 430, h: 932 }, { w: 768, h: 1024 }];
 const ROUTES = [
   ["signin", "/signin", null], ["signup", "/signup", null],
-  ["dashboard", "/dashboard", "Alex"], ["budgets", "/finance/budgets", "Alex"], ["transactions", "/finance/transactions", "Alex"],
+  ["today", "/today", "Alex"], ["budgets", "/finance/budgets", "Alex"], ["transactions", "/finance/transactions", "Alex"],
   ["accounts", "/finance/accounts", "Alex"], ["tasks", "/tasks", "Alex"], ["shopping", "/lists/shopping", "Alex"],
   ["wishlist", "/lists/wishlist", "Alex"], ["vault", "/vault", "Alex"], ["settings", "/settings", "Alex"],
   ["settings-profile", "/settings/profile", "Alex"], ["settings-categories", "/settings/categories", "Alex"],
@@ -65,7 +65,7 @@ for (const { w, h } of WIDTHS) {
         const p = await ctx.newPage();
         await p.goto("/signin");
         await p.getByRole("button", { name: new RegExp(`Continue as ${persona}`, "i") }).click();
-        await p.waitForURL("**/dashboard", { timeout: 60_000 });
+        await p.waitForURL("**/today", { timeout: 60_000 });
         await p.close();
       }
       ctxs.set(key, ctx);

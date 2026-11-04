@@ -29,7 +29,7 @@ export function SuggestionsSheet({
   const [override, setOverride] = useState<Record<string, boolean>>({});
   const add = trpc.recurring.addSuggestions.useMutation({
     onSuccess: () => {
-      refresh("recurring.list", "recurring.suggestions", "transaction.list");
+      refresh("recurring.list", "recurring.suggestions", "transaction.list", "inbox.list", "inbox.count");
       onClose();
     },
   });

@@ -25,7 +25,7 @@ export async function signUpWithPassword(formData: FormData) {
 
   try {
     await auth.api.signUpEmail({
-      body: { email, password, name: name || email.split("@")[0], callbackURL: "/dashboard" },
+      body: { email, password, name: name || email.split("@")[0], callbackURL: "/today" },
       headers: await headers(),
     });
   } catch (error) {

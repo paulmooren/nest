@@ -62,8 +62,8 @@ async function signOut() {
 }
 
 try {
-  await step("signed out: /dashboard redirects to /signin", async () => {
-    await page.goto("/dashboard");
+  await step("signed out: /today redirects to /signin", async () => {
+    await page.goto("/today");
     await page.waitForURL("**/signin");
   });
   await step("sign up asks to check email, and does not sign in", async () => {
@@ -72,7 +72,7 @@ try {
     await page.getByPlaceholder(/Password/).fill(password);
     await page.getByRole("button", { name: "Create account" }).click();
     await page.waitForURL("**/verify-email");
-    await page.goto("/dashboard");
+    await page.goto("/today");
     await page.waitForURL("**/signin");
   });
   await step("unverified sign-in is refused and points at the email", async () => {
@@ -83,9 +83,9 @@ try {
     await page.goto(await emailedLink("Confirm your email"));
     await page.waitForURL("**/household-setup");
   });
-  await step("sign out, then /dashboard redirects again", async () => {
+  await step("sign out, then /today redirects again", async () => {
     await signOut();
-    await page.goto("/dashboard");
+    await page.goto("/today");
     await page.waitForURL("**/signin");
   });
   await step("wrong password is refused", async () => {

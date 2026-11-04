@@ -76,11 +76,13 @@ function Budgets() {
     },
   });
 
-  const [scope, setScope] = useState<ScopeKey>(YOU);
+  // A link from the Inbox can open the Household's scope; otherwise it opens on You.
+  const scopeParam = useSearchParams().get("scope");
+  const [scope, setScope] = useState<ScopeKey>(scopeParam === HOUSEHOLD ? HOUSEHOLD : YOU);
   // Which accounts are opened; an account never touched follows the default (the first, or one with an amount to review).
   const [opened, setOpened] = useState<Record<string, boolean>>({});
   // The one add action of the page: first a choice (type one in, or import a statement), then the form or the import.
-  // A link from the dashboard goes straight to the import of one account.
+  // A link from Today goes straight to the import of one account.
   const [adding, setAdding] = useState<{ step: "choose" | "type" | "import"; accountId: string } | null>(
     importParam ? { step: "import", accountId: importParam } : null,
   );

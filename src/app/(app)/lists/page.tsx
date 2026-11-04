@@ -13,7 +13,7 @@ export default function ListsIndex() {
   useEffect(() => {
     if (!ready) return;
     router.replace(
-      isEnabled("shopping") ? "/lists/shopping" : isEnabled("wishlist") ? "/lists/wishlist" : "/dashboard",
+      isEnabled("shopping") ? "/lists/shopping" : isEnabled("wishlist") ? "/lists/wishlist" : "/today",
     );
   }, [ready, isEnabled, router]);
 

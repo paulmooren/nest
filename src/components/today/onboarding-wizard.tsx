@@ -183,10 +183,10 @@ export function OnboardingWizard({ onComplete }: { onComplete: () => void }) {
         <div className="flex flex-col gap-4">
           <div>
             <h2 className="font-heading text-2xl font-bold tracking-tight">You&apos;re all set</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Your dashboard is ready.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Today is ready.</p>
           </div>
           <Button size="lg" onClick={onComplete}>
-            Go to dashboard
+            Go to Today
           </Button>
         </div>
       )}

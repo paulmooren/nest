@@ -14,7 +14,7 @@ export default async function HouseholdSetupPage() {
   if (!session?.user) redirect("/signin");
 
   const householdId = await getHouseholdIdForUser(prisma, session.user.id);
-  if (householdId) redirect("/dashboard");
+  if (householdId) redirect("/today");
 
   return (
     <AuthFrame width="max-w-md">
