@@ -5,8 +5,8 @@ import { createTRPCRouter, householdProcedure } from "@/server/api/trpc";
 import { clientIdSchema, rejectDuplicateId } from "@/server/api/client-id";
 import { decryptValue, encryptValue } from "@/server/vault-crypto";
 import { deleteFile } from "@/server/vault-storage";
-import { editable, ensureVaultCategories, readable, type VaultCtx } from "@/server/vault-access";
-import { VAULT_EXPIRY_WARNING_DAYS, VAULT_FIELD_KINDS, type VaultField } from "@/lib/vault";
+import { editable, ensureVaultCategories, expiringEntries, readable, type VaultCtx } from "@/server/vault-access";
+import { VAULT_FIELD_KINDS, type VaultField } from "@/lib/vault";
 
 type Stored = VaultField; // secret values are ciphertext here
 
@@ -291,16 +291,8 @@ export const vaultRouter = createTRPCRouter({
   }),
 
   /**
-   * Dates for the dashboard: only Shared entries and your own (never a housemate's Personal one), already past or
+   * Dates for the Inbox: only Shared entries and your own (never a housemate's Personal one), already past or
    * within the warning window. Titles and dates only — never values.
    */
-  expiringSoon: householdProcedure.query(async ({ ctx }) => {
-    const horizon = new Date();
-    horizon.setDate(horizon.getDate() + VAULT_EXPIRY_WARNING_DAYS);
-    return ctx.prisma.vaultEntry.findMany({
-      where: { ...editable(ctx), expiresOn: { not: null, lte: horizon } },
-      orderBy: { expiresOn: "asc" },
-      select: { id: true, title: true, expiresOn: true, expiryLabel: true },
-    });
-  }),
+  expiringSoon: householdProcedure.query(({ ctx }) => expiringEntries(ctx)),
 });

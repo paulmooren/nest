@@ -5,7 +5,7 @@ import { trpc } from "@/trpc/react";
 import { useOptimisticMutation } from "@/trpc/optimistic";
 import type { TaskPriority } from "@/components/tasks/types";
 
-/** Todo mutations shared by the Tasks page and the dashboard. Every change shows at once and saves behind the scenes. */
+/** Todo mutations shared by the Tasks page and Today. Every change shows at once and saves behind the scenes. */
 export function useTaskActions() {
   const utils = trpc.useUtils();
   // The Todo rows carry their assignee's name, which a new or reassigned row takes from the loaded household.

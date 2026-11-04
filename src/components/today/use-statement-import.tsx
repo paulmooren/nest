@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { TRPCClientError } from "@trpc/client";
-import { AlertTriangleIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -14,35 +13,19 @@ import { Toast, toastPrimary, toastSecondary } from "@/components/toast";
 import { suggestCategoryId } from "@/lib/categorize";
 import { describeImport, readStatement, type ImportResult } from "@/lib/statement-import";
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
-function lastMonthName() {
-  const now = new Date();
-  return MONTH_NAMES[(now.getMonth() + 11) % 12];
-}
-
 type Outcome =
   | { kind: "success"; accountId: string; accountName: string; result: ImportResult; skipped: number }
   | { kind: "error"; accountId: string; message: string };
 
 /**
- * A full-width alert banner (not a card) for each account missing last
- * month's statement — stays up from the 1st of the month until that
- * account has a transaction dated last month (`dashboard.missingStatements`
- * is pure date-math re-evaluated on every load, so there's no dismissed/seen
- * state to track: it simply stops being true once imported). Named apart
- * from "Reminders" (recurring Tasks) — same word, unrelated concepts.
+ * Importing last month's statement from an Inbox row: "Import" opens the file picker right there; the file is read,
+ * columns are guessed, and the rows are imported without leaving Today. A toast then confirms and links to the
+ * transactions. The row itself disappears once the account has a transaction dated last month.
  *
- * "Import statement" opens the file picker right here; the file is read,
- * columns are guessed, and the rows are imported without leaving the
- * dashboard. A toast then confirms and links to the transactions.
+ * `ui` holds the hidden file input and the toasts; render it once, anywhere on the page.
  */
-export function MissingStatementsCard() {
+export function useStatementImport() {
   const refresh = useRefresh();
-  const { data: missingStatements } = trpc.dashboard.missingStatements.useQuery();
   const { data: categories } = trpc.category.list.useQuery();
   const [busyAccount, setBusyAccount] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
@@ -92,11 +75,12 @@ export function MissingStatementsCard() {
     }
   }
 
-  const month = lastMonthName();
-  const hasBanners = !!missingStatements && missingStatements.length > 0;
-  if (!hasBanners && !outcome) return null;
+  function start(account: { id: string; name: string }) {
+    targetAccount.current = account;
+    fileInput.current?.click();
+  }
 
-  return (
+  const ui = (
     <>
       <input
         ref={fileInput}
@@ -111,35 +95,6 @@ export function MissingStatementsCard() {
           if (file) void handleFile(file);
         }}
       />
-
-      {hasBanners && (
-        <div className="flex flex-col gap-3">
-          {missingStatements.map((r) => (
-            <div
-              key={r.accountId}
-              className="flex flex-wrap items-center gap-3 rounded-2xl border border-warning/30 bg-warning/10 px-4 py-3"
-            >
-              <AlertTriangleIcon className="size-5 shrink-0 text-warning" aria-hidden />
-              <p className="min-w-0 flex-1 text-sm leading-snug">
-                <span className="font-semibold">Missing {month}&apos;s statement</span>{" "}
-                <span className="text-muted-foreground">
-                  — {r.accountName} has no transactions recorded for {month}.
-                </span>
-              </p>
-              <Button
-                type="button"
-                disabled={busyAccount !== null}
-                onClick={() => {
-                  targetAccount.current = { id: r.accountId, name: r.accountName };
-                  fileInput.current?.click();
-                }}
-              >
-                {busyAccount === r.accountId ? "Importing…" : "Import statement"}
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
 
       {outcome?.kind === "success" && (
         <Toast
@@ -192,4 +147,6 @@ export function MissingStatementsCard() {
       )}
     </>
   );
+
+  return { start, busyAccount, ui };
 }

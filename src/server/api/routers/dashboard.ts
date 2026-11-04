@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import type { PrismaClient } from "@prisma/client";
 
 import { createTRPCRouter, householdProcedure } from "@/server/api/trpc";
 import { ASSET_ACCOUNT_TYPES } from "@/lib/constants";
@@ -31,6 +32,47 @@ function buildBuckets(from: Date, to: Date, granularity: "day" | "week" | "month
     buckets.push(new Date(to));
   }
   return buckets;
+}
+
+type MissingCtx = { prisma: PrismaClient; householdId: string; userId: string };
+
+/** Accounts the Member owns or shares with the Household that have no transaction dated last month. */
+export async function missingStatementsFor(ctx: MissingCtx) {
+  const { startOfThisMonth, startOfLastMonth } = lastMonthRange();
+
+  const accounts = await ctx.prisma.financialAccount.findMany({
+    where: {
+      householdId: ctx.householdId,
+      OR: [{ ownerId: null }, { ownerId: ctx.userId }],
+      createdAt: { lt: startOfThisMonth },
+    },
+    select: { id: true, name: true, type: true },
+  });
+  if (accounts.length === 0) return [];
+
+  const accountIds = accounts.map((a) => a.id);
+  const lastMonthTxns = await ctx.prisma.transaction.findMany({
+    where: {
+      date: { gte: startOfLastMonth, lt: startOfThisMonth },
+      OR: [{ accountId: { in: accountIds } }, { transferToAccountId: { in: accountIds } }],
+    },
+    select: { accountId: true, transferToAccountId: true },
+  });
+
+  const activeAccountIds = new Set<string>();
+  for (const t of lastMonthTxns) {
+    activeAccountIds.add(t.accountId);
+    if (t.transferToAccountId) activeAccountIds.add(t.transferToAccountId);
+  }
+
+  return accounts
+    .filter((a) => !activeAccountIds.has(a.id))
+    .map((a) => ({
+      type: "missing_statement" as const,
+      accountId: a.id,
+      accountName: a.name,
+      accountType: a.type,
+    }));
 }
 
 export const dashboardRouter = createTRPCRouter({
@@ -173,41 +215,4 @@ export const dashboardRouter = createTRPCRouter({
     };
   }),
 
-  missingStatements: householdProcedure.query(async ({ ctx }) => {
-    const { startOfThisMonth, startOfLastMonth } = lastMonthRange();
-
-    const accounts = await ctx.prisma.financialAccount.findMany({
-      where: {
-        householdId: ctx.householdId,
-        OR: [{ ownerId: null }, { ownerId: ctx.userId }],
-        createdAt: { lt: startOfThisMonth },
-      },
-      select: { id: true, name: true, type: true },
-    });
-    if (accounts.length === 0) return [];
-
-    const accountIds = accounts.map((a) => a.id);
-    const lastMonthTxns = await ctx.prisma.transaction.findMany({
-      where: {
-        date: { gte: startOfLastMonth, lt: startOfThisMonth },
-        OR: [{ accountId: { in: accountIds } }, { transferToAccountId: { in: accountIds } }],
-      },
-      select: { accountId: true, transferToAccountId: true },
-    });
-
-    const activeAccountIds = new Set<string>();
-    for (const t of lastMonthTxns) {
-      activeAccountIds.add(t.accountId);
-      if (t.transferToAccountId) activeAccountIds.add(t.transferToAccountId);
-    }
-
-    return accounts
-      .filter((a) => !activeAccountIds.has(a.id))
-      .map((a) => ({
-        type: "missing_statement" as const,
-        accountId: a.id,
-        accountName: a.name,
-        accountType: a.type,
-      }));
-  }),
 });

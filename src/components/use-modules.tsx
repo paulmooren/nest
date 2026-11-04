@@ -16,14 +16,14 @@ export function useModules() {
   };
 }
 
-/** Sends you to the dashboard if the Module is switched off, instead of showing its page. */
+/** Sends you to Today if the Module is switched off, instead of showing its page. */
 export function ModuleGate({ module, children }: { module: ModuleKey; children: React.ReactNode }) {
   const router = useRouter();
   const { ready, isEnabled } = useModules();
   const enabled = isEnabled(module);
 
   useEffect(() => {
-    if (ready && !enabled) router.replace("/dashboard");
+    if (ready && !enabled) router.replace("/today");
   }, [ready, enabled, router]);
 
   if (!ready || !enabled) return null;

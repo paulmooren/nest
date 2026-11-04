@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 
-import { DEFAULT_VAULT_CATEGORIES, FALLBACK_VAULT_CATEGORY } from "@/lib/vault";
+import { DEFAULT_VAULT_CATEGORIES, FALLBACK_VAULT_CATEGORY, VAULT_EXPIRY_WARNING_DAYS } from "@/lib/vault";
 
 export type VaultCtx = { prisma: PrismaClient; householdId: string; userId: string };
 
@@ -28,5 +28,16 @@ export async function ensureVaultCategories(prisma: PrismaClient, householdId: s
       isFallback: name === FALLBACK_VAULT_CATEGORY,
     })),
     skipDuplicates: true,
+  });
+}
+
+/** Entries the Member can edit (Shared or their own) that expire within the warning window, soonest first. */
+export function expiringEntries(ctx: VaultCtx) {
+  const horizon = new Date();
+  horizon.setDate(horizon.getDate() + VAULT_EXPIRY_WARNING_DAYS);
+  return ctx.prisma.vaultEntry.findMany({
+    where: { ...editable(ctx), expiresOn: { not: null, lte: horizon } },
+    orderBy: { expiresOn: "asc" },
+    select: { id: true, title: true, expiresOn: true, expiryLabel: true },
   });
 }

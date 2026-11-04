@@ -6,12 +6,11 @@ import Link from "next/link";
 import { trpc } from "@/trpc/react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageBody, PageHeader } from "@/components/ui/page-header";
-import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
-import { DashboardSummary } from "@/components/dashboard/dashboard-summary";
-import { MissingStatementsCard } from "@/components/dashboard/missing-statements-card";
-import { OnboardingWizard } from "@/components/dashboard/onboarding-wizard";
-import { ShoppingCard } from "@/components/dashboard/shopping-card";
-import { TasksSnapshot } from "@/components/dashboard/tasks-snapshot";
+import { Inbox } from "@/components/today/inbox";
+import { OnboardingWizard } from "@/components/today/onboarding-wizard";
+import { ShoppingCard } from "@/components/today/shopping-card";
+import { TodayLoading } from "@/components/today/today-skeleton";
+import { TodosCard } from "@/components/today/todos-card";
 import { useModules } from "@/components/use-modules";
 
 function greeting() {
@@ -21,14 +20,13 @@ function greeting() {
   return "Good evening";
 }
 
-export function DashboardView() {
+export function TodayView() {
   const { data: accounts, isLoading } = trpc.account.list.useQuery();
   const { data: me } = trpc.user.me.useQuery();
   const { ready, isEnabled } = useModules();
   const finance = isEnabled("finance");
   const tasks = isEnabled("tasks");
   const shopping = isEnabled("shopping");
-  const vault = isEnabled("vault");
 
   // Decided once, from the account count at first load — a mid-wizard mutation (e.g. creating the first account in
   // step 1) must not yank the wizard away just because the live count changed.
@@ -50,7 +48,7 @@ export function DashboardView() {
     return (
       <>
         <PageHeader title={title} />
-        <DashboardSkeleton />
+        <TodayLoading />
       </>
     );
   }
@@ -64,7 +62,7 @@ export function DashboardView() {
     );
   }
 
-  if (!finance && !tasks && !shopping && !vault) {
+  if (!finance && !tasks && !shopping && !isEnabled("vault")) {
     return (
       <>
         <PageHeader title={title} />
@@ -83,18 +81,17 @@ export function DashboardView() {
     );
   }
 
-  // The two working lists sit side by side on a wide screen; on a phone Tasks comes first.
+  // The Inbox opens the page; the two working lists sit side by side on a wide screen, Todos first on a phone.
   return (
     <>
       <PageHeader title={title} />
       <PageBody>
-        <DashboardSummary tasks={tasks} shopping={shopping} vault={vault} />
-        {finance && <MissingStatementsCard />}
+        <Inbox />
         <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
           {shopping && <ShoppingCard />}
-          {(tasks || vault) && (
+          {tasks && (
             <div className="max-lg:order-first">
-              <TasksSnapshot showTasks={tasks} showVault={vault} />
+              <TodosCard />
             </div>
           )}
         </div>

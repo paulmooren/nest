@@ -22,7 +22,7 @@ export function HouseholdSetupForm() {
     // Everything loaded so far belongs to a Member without a household.
     void utils.invalidate();
     router.refresh();
-    router.push("/dashboard");
+    router.push("/today");
   };
   const create = trpc.household.create.useMutation({ onSuccess: done });
   const join = trpc.household.join.useMutation({ onSuccess: done });

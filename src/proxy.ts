@@ -15,7 +15,7 @@ export default function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL("/signin", req.nextUrl.origin));
   }
   if (isLoggedIn && isAuthPage) {
-    return NextResponse.redirect(new URL("/dashboard", req.nextUrl.origin));
+    return NextResponse.redirect(new URL("/today", req.nextUrl.origin));
   }
 }
 

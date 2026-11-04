@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   async redirects() {
     return [
+      { source: "/dashboard", destination: "/today", permanent: false },
       { source: "/finance", destination: "/finance/budgets", permanent: false },
       { source: "/tasks", destination: "/tasks/todos", permanent: false },
       { source: "/transactions", destination: "/finance/transactions", permanent: false },

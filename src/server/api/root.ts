@@ -13,6 +13,7 @@ import { wishlistRouter } from "@/server/api/routers/wishlist";
 import { vaultRouter } from "@/server/api/routers/vault";
 import { reminderRouter } from "@/server/api/routers/reminder";
 import { notificationRouter } from "@/server/api/routers/notification";
+import { inboxRouter } from "@/server/api/routers/inbox";
 import { demoRouter } from "@/server/api/routers/demo";
 import { budgetGroupRouter } from "@/server/api/routers/budget-group";
 
@@ -31,6 +32,7 @@ export const appRouter = createTRPCRouter({
   vault: vaultRouter,
   reminder: reminderRouter,
   notification: notificationRouter,
+  inbox: inboxRouter,
   demo: demoRouter,
   budgetGroup: budgetGroupRouter,
 });

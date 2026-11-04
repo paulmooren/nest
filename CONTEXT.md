@@ -132,8 +132,8 @@ The record that a Reminder was done: when, and by which Member. Anyone in the Ho
 _Avoid_: Check-in, log entry
 
 **Notification**:
-The one daily message a Member gets on their phone listing what is due for them today, with a single nudge once something is 2 days overdue. Overdue Reminders after that stay red in the app but do not notify again.
-_Avoid_: Alert, ping
+The daily message a Member gets on their phone listing what is due for them today, with a single nudge once something is 2 days overdue. Overdue Reminders after that stay red in the app but do not notify again. One more Notification is sent once, on the 1st of the month, for each Financial account still missing last month's Statement import. The daily message also mentions a Vault Entry about to expire, once at 60 days and once at 14 days ahead. Nothing else notifies; Suggestions and Budgeted amount approvals are in-app only.
+_Avoid_: Alert, ping, Inbox item (that is the in-app list, not the phone message)
 
 ### Vault
 
@@ -167,6 +167,20 @@ _Avoid_: Preset, form
 **Pinned**:
 An Entry marked for quick access at the top of the Vault.
 _Avoid_: Favorite (that is a Shopping term), starred
+
+### Home
+
+**Today**:
+The home page of the app. The Inbox comes first, followed by a short glance at each Module that has something to show. It replaces the former Dashboard.
+_Avoid_: Dashboard, home screen
+
+**Inbox**:
+The list at the top of the home page of everything that needs a Member now — something with a deadline, or waiting on a decision. It has no read or dismissed state: an Inbox item stays until the thing behind it is dealt with, and then it is gone. Open Todos and the Shopping list never appear in it.
+_Avoid_: Notification centre, feed, alerts
+
+**Inbox item**:
+One row in the Inbox: a Reminder due or overdue, a missing Statement import for last month, a Vault Entry about to expire, a Suggestion waiting to be confirmed, or a Budgeted amount change waiting for approval. Each leads to the place where it is dealt with. A Member sees only their own Inbox items and Household-wide ones: a Personal account's missing Statement import shows only to its owner, and Suggestions only to theirs. Items are listed most urgent first, each labelled with its kind. With none, the Inbox says "You're all caught up".
+_Avoid_: Notification (that is the phone message), alert, task
 
 ### Showing the app
 

@@ -19,7 +19,7 @@ import type { ModuleKey } from "@/lib/modules"
 
 // `modules` ties an item to Household-switchable Modules (shown if any is on); items without one are always shown.
 const ALL_NAV_ITEMS: (NavItem & { modules?: ModuleKey[] })[] = [
-  { href: "/dashboard", label: "Dashboard", icon: <HomeIcon /> },
+  { href: "/today", label: "Today", icon: <HomeIcon /> },
   { href: "/finance", label: "Finance", icon: <WalletIcon />, modules: ["finance"] },
   { href: "/tasks", label: "Tasks", icon: <ListChecksIcon />, modules: ["tasks"] },
   { href: "/lists", label: "Lists", icon: <ListIcon />, modules: ["shopping", "wishlist"] },
@@ -31,7 +31,10 @@ export function NavShell({ userName, children }: { userName: string; children: R
   const pathname = usePathname()
   const { data: me } = trpc.user.me.useQuery()
   const { isEnabled } = useModules()
-  const items = ALL_NAV_ITEMS.filter((item) => !item.modules || item.modules.some(isEnabled))
+  const { data: inboxCount } = trpc.inbox.count.useQuery()
+  const items = ALL_NAV_ITEMS.filter((item) => !item.modules || item.modules.some(isEnabled)).map((item) =>
+    item.href === "/today" ? { ...item, count: inboxCount } : item,
+  )
   const inSettings = pathname === "/settings" || pathname.startsWith("/settings/")
   // The phone's top bar names the section you are in. Every page also has its own <h1>, which is what is read out.
   const section = [...items, { href: "/settings", label: "Settings" }].find(

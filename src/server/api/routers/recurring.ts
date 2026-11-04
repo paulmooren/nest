@@ -168,7 +168,7 @@ async function detectFor(ctx: Ctx): Promise<DetectedItem[]> {
 }
 
 /** Suggestions not already added or rejected (those are remembered by their match key). */
-async function openSuggestions(ctx: Ctx) {
+export async function openSuggestions(ctx: Ctx) {
   const [detected, existing] = await Promise.all([
     detectFor(ctx),
     ctx.prisma.recurringItem.findMany({
@@ -182,6 +182,28 @@ async function openSuggestions(ctx: Ctx) {
     existing.flatMap((e) => (e.matchKey ? [] : [e.name, e.detectedName])).filter((n): n is string => !!n).map(normalize),
   );
   return detected.filter((d) => !keys.has(d.matchKey) && !names.has(normalize(d.name)));
+}
+
+/** Active items the Member may edit whose Payments now propose a different Budgeted amount (see ADR 0004). */
+export async function pendingProposals(ctx: Ctx) {
+  const items = await ctx.prisma.recurringItem.findMany({
+    where: { householdId: ctx.householdId, status: "ACTIVE", OR: [{ ownerId: null }, { ownerId: ctx.userId }] },
+    select: { id: true, name: true, ownerId: true, basis: true, amount: true, keptAmount: true },
+  });
+  if (items.length === 0) return [];
+  const payments = await paymentsByItem(ctx, items.map((i) => i.id));
+  const pending: { id: string; name: string; ownerId: string | null; amount: number; proposal: number }[] = [];
+  for (const item of items) {
+    const amount = Number(item.amount);
+    const { proposal } = reviewAmount({
+      basis: item.basis,
+      amount,
+      keptAmount: item.keptAmount === null ? null : Number(item.keptAmount),
+      payments: (payments.get(item.id) ?? []).filter((p) => !p.excluded).map((p) => p.amount),
+    });
+    if (proposal !== null) pending.push({ id: item.id, name: item.name, ownerId: item.ownerId, amount, proposal });
+  }
+  return pending;
 }
 
 /** A name no other item in the household has: "FNZ Bank SE", then "FNZ Bank SE · €500", then numbered. */
