@@ -8,6 +8,7 @@ import { recomputeNetWorthSnapshot } from "@/server/api/net-worth";
 import { suggestCategoryId } from "@/lib/categorize";
 import { MAX_MERCHANT_LENGTH, cleanMerchant, normalizeIban } from "@/lib/csv";
 import { planImport } from "@/lib/import-match";
+import { todayInHousehold } from "@/lib/schedule";
 import { attachRecurringTransactions } from "@/server/api/recurring-match";
 
 type Ctx = { householdId: string; userId: string; prisma: PrismaClient };
@@ -403,6 +404,8 @@ export const transactionRouter = createTRPCRouter({
         ...plan.update.map((u) => ctx.prisma.transaction.update({ where: { id: u.id }, data: u.data })),
         ctx.prisma.transaction.deleteMany({ where: { id: { in: plan.remove }, householdId: ctx.householdId } }),
       ]);
+      // A statement was handed in: its 90 days start again from today (ADR 0011).
+      await ctx.prisma.financialAccount.update({ where: { id: account.id }, data: { lastImportedOn: todayInHousehold() } });
       await recomputeNetWorthSnapshot(ctx.prisma, ctx.householdId);
       // New payments from a known recurring party become occurrences of that item.
       await attachRecurringTransactions(ctx.prisma, ctx.householdId);
