@@ -165,7 +165,7 @@ function ShoppingLists() {
                     e.preventDefault();
                     add(suggestion);
                   }}
-                  className="block min-h-11 w-full px-3.5 text-left text-base hover:bg-muted md:text-sm"
+                  className="block min-h-11 w-full px-3.5 text-left text-base decoration-foreground/60 decoration-1 underline-offset-4 hover:underline md:text-sm"
                 >
                   {suggestion}
                 </button>

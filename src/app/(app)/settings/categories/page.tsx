@@ -71,7 +71,7 @@ export default function CategoriesSettingsPage() {
                   categoryActions.update({ id: c.id, name: e.target.value });
                 }
               }}
-              className="min-w-0 flex-1 border-transparent bg-transparent shadow-none hover:bg-muted focus-visible:bg-background"
+              className="min-w-0 flex-1 border-transparent bg-transparent shadow-none hover:border-input focus-visible:bg-background"
             />
             <Button variant="ghost" onClick={() => categoryActions.remove({ id: c.id })} aria-label={`Delete ${c.name}`}>
               Delete

@@ -63,7 +63,7 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
                   defaultValue={c.name}
                   maxLength={40}
                   aria-label={`Rename ${c.name}`}
-                  className="border-transparent bg-transparent shadow-none hover:bg-muted focus-visible:bg-background"
+                  className="border-transparent bg-transparent shadow-none hover:border-input focus-visible:bg-background"
                   onBlur={(e) => {
                     const next = e.target.value.trim();
                     if (next && next !== c.name) rename.mutate({ id: c.id, name: next });
