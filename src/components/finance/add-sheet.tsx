@@ -2,7 +2,9 @@
 
 import { ChevronRightIcon, DownloadIcon, PencilLineIcon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { ROW_TITLE_HOVER } from "@/components/ui/row";
 
 /**
  * The first step of the Budget page's one add action: two ways to get a Recurring item onto the page. Typing one in
@@ -53,13 +55,13 @@ function Choice({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex min-h-16 w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+      className="group/row flex min-h-16 w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left disabled:pointer-events-none disabled:opacity-50"
     >
       <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] border bg-muted text-muted-foreground [&_svg]:size-4">
         {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-base font-medium md:text-sm">{title}</span>
+        <span className={cn("block text-base font-medium md:text-sm", ROW_TITLE_HOVER)}>{title}</span>
         <span className="block text-sm text-muted-foreground md:text-xs">{detail}</span>
       </span>
       <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />

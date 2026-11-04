@@ -9,6 +9,7 @@ import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { Item } from "@/components/finance/budget-types";
+import { ROW_TITLE_HOVER } from "@/components/ui/row";
 import { useIsPhone } from "@/components/use-media-query";
 
 /**
@@ -81,7 +82,7 @@ export function BudgetRow({
           className={cn("flex min-w-0 flex-1 items-center gap-3 rounded-xl py-3 text-left focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none", compact ? "min-h-12" : "min-h-14")}
         >
           <span className="min-w-0 flex-1">
-            <span className={cn("block text-base font-medium md:text-sm", "decoration-foreground/60 decoration-1 underline-offset-4 group-hover/row:underline group-focus-within/row:underline")}>{item.name}</span>
+            <span className={cn("block text-base font-medium md:text-sm", ROW_TITLE_HOVER)}>{item.name}</span>
             <span className="block text-sm text-muted-foreground md:text-xs">{meta}</span>
           </span>
           <span className="shrink-0 text-base font-semibold tabular-nums md:text-sm">{formatEUR(item.amount)}</span>

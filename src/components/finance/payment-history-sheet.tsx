@@ -106,7 +106,7 @@ export function PaymentHistorySheet({ itemId, onClose }: { itemId: string; onClo
                   }}
                   className={cn(
                     "flex min-h-14 items-center gap-3 rounded-xl border px-3.5 py-3 transition-colors",
-                    active ? "border-foreground" : "hover:bg-muted",
+                    active ? "border-foreground" : "hover:border-foreground/40",
                     data.canEdit ? "cursor-pointer" : "opacity-70"
                   )}
                 >

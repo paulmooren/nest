@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { AddChip, ChoiceChips } from "@/components/ui/choice-chips";
 import { ConfirmDelete } from "@/components/ui/confirm-delete";
 import { EmptyState } from "@/components/ui/empty-state";
-import { RowList } from "@/components/ui/row";
+import { ROW_TITLE_HOVER, RowList } from "@/components/ui/row";
 import { Section } from "@/components/ui/section";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddSheet } from "@/components/finance/add-sheet";
@@ -267,10 +267,10 @@ function Budgets() {
         <button
           type="button"
           onClick={() => setReviewing(true)}
-          className="flex min-h-14 w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors hover:bg-muted"
+          className="group/row flex min-h-14 w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left"
         >
           <span className="min-w-0 flex-1">
-            <span className="block text-base font-medium md:text-sm">
+            <span className={cn("block text-base font-medium md:text-sm", ROW_TITLE_HOVER)}>
               {mine.length} recurring item{mine.length === 1 ? "" : "s"} found
             </span>
             <span className="block text-sm text-muted-foreground md:text-xs">Review suggestions from your transactions</span>

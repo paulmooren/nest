@@ -8,7 +8,7 @@ import { monthlyOf, type Entry } from "@/lib/budget-scope";
 import { formatEUR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { AccountTypeIcon } from "@/components/account-type-icon";
-import { RowList } from "@/components/ui/row";
+import { ROW_TITLE_HOVER, RowList } from "@/components/ui/row";
 import type { Item } from "@/components/finance/budget-types";
 import { ExpenseSections, type BudgetGroup } from "@/components/finance/expense-sections";
 import { SortableList } from "@/components/sortable-list";
@@ -82,7 +82,7 @@ export function AccountSection({
           <span className="block size-4">{account ? <AccountTypeIcon type={account.type} /> : <WalletIcon className="size-4" />}</span>
         </span>
         <span className="min-w-0 flex-1">
-          <span className={cn("block text-base font-medium md:text-sm", "decoration-foreground/60 decoration-1 underline-offset-4 group-hover/row:underline group-focus-within/row:underline")}>{account?.name ?? "No account"}</span>
+          <span className={cn("block text-base font-medium md:text-sm", ROW_TITLE_HOVER)}>{account?.name ?? "No account"}</span>
           <span className="block truncate text-sm text-muted-foreground md:text-xs">{meta}</span>
         </span>
         <ChevronDownIcon className={cn("size-4 shrink-0 text-muted-foreground transition-transform group-hover:text-foreground", open && "rotate-180")} aria-hidden />

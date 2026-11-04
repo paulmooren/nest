@@ -21,6 +21,13 @@ export function RowList({ className, ...props }: React.ComponentProps<"ul">) {
   )
 }
 
+/**
+ * How a tappable row answers a hover or keyboard focus: its title underlines, nothing else moves or fills. Put
+ * `group/row` on the hoverable element and this on the title.
+ */
+export const ROW_TITLE_HOVER =
+  "decoration-foreground/60 decoration-1 underline-offset-4 group-hover/row:underline group-focus-visible/row:underline"
+
 type RowProps = {
   /** Check, avatar or category dot. */
   leading?: React.ReactNode
@@ -65,6 +72,7 @@ export function Row({
   rowClassName,
   rowStyle,
 }: RowProps) {
+  const interactive = !!(onClick || href)
   const inner = (
     <>
       {leading && <span className="flex shrink-0 items-center">{leading}</span>}
@@ -72,6 +80,7 @@ export function Row({
         <span
           className={cn(
             "block text-base font-medium md:text-sm",
+            interactive && ROW_TITLE_HOVER,
             done && "text-muted-foreground line-through"
           )}
         >
@@ -85,11 +94,10 @@ export function Row({
       {chevron && <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />}
     </>
   )
-  const interactive = !!(onClick || href)
   const main = cn(
     "flex min-h-14 w-full min-w-0 flex-1 items-center gap-3 py-3 text-left",
     check ? "pr-0 md:pr-5" : "px-0 md:px-5",
-    interactive && "transition-colors hover:bg-muted active:bg-muted",
+    interactive && "group/row active:opacity-70",
     className
   )
 

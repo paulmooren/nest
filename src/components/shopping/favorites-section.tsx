@@ -94,7 +94,7 @@ export function FavoritesSection({
                     defaultValue={fav.name}
                     aria-label={`Name of favorite ${fav.name}`}
                     onBlur={(e) => e.target.value.trim() && e.target.value !== fav.name && onRename(fav.id, e.target.value.trim())}
-                    className="border-transparent bg-transparent shadow-none hover:bg-muted focus-visible:bg-background"
+                    className="border-transparent bg-transparent shadow-none hover:border-input focus-visible:bg-background"
                   />
                   <Button type="button" variant="ghost" size="icon" aria-label={`Remove ${fav.name} from favorites`} onClick={() => onRemove(fav.id)}>
                     <XIcon />

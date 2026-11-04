@@ -183,7 +183,7 @@ export function TxImportSheet({
             }}
             className={cn(
               "flex min-h-11 cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 text-center transition-colors",
-              dragging ? "border-foreground bg-muted" : "hover:bg-muted"
+              dragging ? "border-foreground bg-muted" : "hover:border-foreground/40"
             )}
           >
             <span className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
