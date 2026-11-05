@@ -8,7 +8,7 @@ import { trpc } from "@/trpc/react";
 import { useOptimisticMutation, type CacheEditor, type QueryPath } from "@/trpc/optimistic";
 
 /** What a change to a Recurring item alters on screen: the Budget view, the Transactions' recurring marks, the suggestions. */
-const ITEM_LISTS = ["recurring.list", "recurring.suggestions", "transaction.list", "inbox.list", "inbox.count"] as const satisfies readonly QueryPath[];
+const ITEM_LISTS = ["recurring.list", "recurring.suggestions", "transaction.list", "inbox.list", "notification.badge"] as const satisfies readonly QueryPath[];
 
 const itemScope = (v: { id?: string }) => (v.id ? `recurring:${v.id}` : undefined);
 const groupScope = (id: string | null | undefined) => (id ? `budget-group:${id}` : undefined);
@@ -162,7 +162,7 @@ export function useRecurringActions(historyOfItem?: string) {
 
   // "Update": take the proposed amount. "Keep": stay on the current one and stop asking about this figure.
   const acceptProposal = useOptimisticMutation("recurring.acceptProposal", {
-    lists: ["recurring.list", "inbox.list", "inbox.count"],
+    lists: ["recurring.list", "inbox.list", "notification.badge"],
     scope: itemScope,
     update: (v, cache) => {
       cache.update("inbox.list", (rows) => rows.filter((row) => row.id !== `amount:${v.id}`));
@@ -172,7 +172,7 @@ export function useRecurringActions(historyOfItem?: string) {
     },
   });
   const keepAmount = useOptimisticMutation("recurring.keepAmount", {
-    lists: ["recurring.list", "inbox.list", "inbox.count"],
+    lists: ["recurring.list", "inbox.list", "notification.badge"],
     scope: itemScope,
     update: (v, cache) => {
       cache.update("inbox.list", (rows) => rows.filter((row) => row.id !== `amount:${v.id}`));
@@ -224,7 +224,7 @@ export function useRecurringActions(historyOfItem?: string) {
 
   // "Not recurring": the suggestion goes away, and is remembered so it is not suggested again.
   const dismissSuggestions = useOptimisticMutation("recurring.dismissSuggestions", {
-    lists: ["recurring.suggestions", "inbox.list", "inbox.count"],
+    lists: ["recurring.suggestions", "inbox.list", "notification.badge"],
     scope: () => "recurring-suggestions",
     update: (v, cache) => cache.update("recurring.suggestions", (rows) => rows.filter((s) => !v.matchKeys.includes(s.matchKey))),
   });

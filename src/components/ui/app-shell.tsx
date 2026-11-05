@@ -18,8 +18,6 @@ export type NavItem = {
   href: string
   label: string
   icon?: React.ReactNode
-  /** How many things wait here. Shown as a number after the label; nothing at zero. */
-  count?: number
 }
 
 function NavLinks({
@@ -53,12 +51,6 @@ function NavLinks({
               {item.icon}
             </span>
             {item.label}
-            {!!item.count && (
-              <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1.5 text-xs font-semibold tabular-nums text-background">
-                {item.count}
-                <span className="sr-only"> waiting</span>
-              </span>
-            )}
           </Link>
         )
       })}
@@ -74,15 +66,15 @@ function NavLinks({
 export function AppShell({
   items,
   brand = "Nest",
-  account,
+  actions,
   badge,
   title,
   children,
 }: {
   items: NavItem[]
   brand?: string
-  /** Footer slot of the sidebar/drawer: the profile link, sign-out. */
-  account?: React.ReactNode
+  /** The top bar's right side, on desktop and phone: the bell and the profile link. */
+  actions?: React.ReactNode
   /** Beside the wordmark: the Demo marker. */
   badge?: React.ReactNode
   /** The phone's top bar shows this (the section you are in) instead of the wordmark. */
@@ -90,8 +82,6 @@ export function AppShell({
   children: React.ReactNode
 }) {
   const [open, setOpen] = React.useState(false)
-  // On a phone the links sit behind the burger, so a dot on it says that something is waiting inside.
-  const waiting = items.some((item) => !!item.count)
 
   return (
     <div className="flex min-h-dvh bg-sidebar">
@@ -101,37 +91,32 @@ export function AppShell({
           {badge}
         </div>
         <NavLinks items={items} />
-        <div className="flex-1" />
-        {account}
       </aside>
 
-      <div className="w-full min-w-0 md:ml-60 md:py-3 md:pr-3">
+      <div className="w-full min-w-0 md:ml-60 md:pr-3 md:pb-3">
+        <div className="hidden h-14 items-center justify-end gap-1 md:flex">{actions}</div>
         <header className="pt-safe sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background px-4 md:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger
               render={
-                <Button variant="ghost" size="icon" aria-label="Open menu" className="relative -ml-3.5" />
+                <Button variant="ghost" size="icon" aria-label="Open menu" className="-ml-3.5" />
               }
             >
               <MenuIcon />
-              {waiting && (
-                <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-destructive" aria-hidden />
-              )}
             </SheetTrigger>
             <SheetContent side="left" className="p-4">
               <SheetTitle className="sr-only">Menu</SheetTitle>
               <NavLinks items={items} onNavigate={() => setOpen(false)} />
-              <div className="flex-1" />
-              {account}
             </SheetContent>
           </Sheet>
           <span className="flex items-center gap-2">
             <span aria-hidden={title ? true : undefined} className="font-heading text-lg font-bold tracking-tight">{title ?? brand}</span>
             {badge}
           </span>
+          <span className="ml-auto flex items-center gap-1 [&_[data-slot=button]]:-mr-1">{actions}</span>
         </header>
 
-        <main className="min-h-[calc(100dvh-3.5rem)] bg-background px-4 pt-6 pb-28 md:min-h-[calc(100dvh-1.5rem)] md:rounded-3xl md:px-10 md:pt-9 md:pb-14">
+        <main className="min-h-[calc(100dvh-3.5rem)] bg-background px-4 pt-6 pb-28 md:min-h-[calc(100dvh-4.25rem)] md:rounded-3xl md:px-10 md:pt-9 md:pb-14">
           <div className="mx-auto max-w-[1180px]">{children}</div>
         </main>
       </div>

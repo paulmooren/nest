@@ -6,7 +6,7 @@ import Link from "next/link";
 import { trpc } from "@/trpc/react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageBody, PageHeader } from "@/components/ui/page-header";
-import { Inbox } from "@/components/today/inbox";
+import { Inbox } from "@/components/notifications/inbox";
 import { OnboardingWizard } from "@/components/today/onboarding-wizard";
 import { ShoppingCard } from "@/components/today/shopping-card";
 import { TodayLoading } from "@/components/today/today-skeleton";

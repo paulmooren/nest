@@ -11,11 +11,11 @@ const ACCOUNT_LISTS = [
   "dashboard.netWorthHistory",
   "dashboard.accountHistory",
   "inbox.list",
-  "inbox.count",
+  "notification.badge",
 ] as const satisfies readonly QueryPath[];
 
 /** What creating an account (which waits for the server) must refresh. */
-export const AFTER_ACCOUNT_CREATED = ["account.list", "dashboard.summary", "dashboard.netWorthHistory", "dashboard.accountHistory", "inbox.list", "inbox.count"] as const satisfies readonly QueryPath[];
+export const AFTER_ACCOUNT_CREATED = ["account.list", "dashboard.summary", "dashboard.netWorthHistory", "dashboard.accountHistory", "inbox.list", "notification.badge"] as const satisfies readonly QueryPath[];
 
 /** The two ways an IBAN can be refused, in the server's words, so the form can say so before anything is sent. */
 export function ibanProblem(raw: string | null | undefined, others: { iban: string | null }[]) {

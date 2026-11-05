@@ -14,6 +14,7 @@ import { trpc } from "@/trpc/react"
 import { Avatar } from "@/components/avatar"
 import { DemoBadge } from "@/components/demo-badge"
 import { AppShell, type NavItem } from "@/components/ui/app-shell"
+import { NotificationCentre } from "@/components/notifications/notification-centre"
 import { useModules } from "@/components/use-modules"
 import type { ModuleKey } from "@/lib/modules"
 
@@ -31,10 +32,7 @@ export function NavShell({ userName, children }: { userName: string; children: R
   const pathname = usePathname()
   const { data: me } = trpc.user.me.useQuery()
   const { isEnabled } = useModules()
-  const { data: inboxCount } = trpc.inbox.count.useQuery()
-  const items = ALL_NAV_ITEMS.filter((item) => !item.modules || item.modules.some(isEnabled)).map((item) =>
-    item.href === "/today" ? { ...item, count: inboxCount } : item,
-  )
+  const items = ALL_NAV_ITEMS.filter((item) => !item.modules || item.modules.some(isEnabled))
   const inSettings = pathname === "/settings" || pathname.startsWith("/settings/")
   // The phone's top bar names the section you are in. Every page also has its own <h1>, which is what is read out.
   const section = [...items, { href: "/settings", label: "Settings" }].find(
@@ -46,16 +44,18 @@ export function NavShell({ userName, children }: { userName: string; children: R
       items={items}
       title={section?.label}
       badge={<DemoBadge />}
-      account={
-        <Link
-          href="/settings"
-          aria-label="Your profile and settings"
-          aria-current={inSettings ? "page" : undefined}
-          className="flex min-h-12 items-center gap-2.5 rounded-xl border bg-background px-3 py-2.5 transition-colors hover:border-foreground/30 aria-[current=page]:border-foreground/30"
-        >
-          <Avatar name={userName} image={me?.image} size={28} />
-          <span className="min-w-0 flex-1 truncate text-sm font-medium">{userName}</span>
-        </Link>
+      actions={
+        <>
+          <NotificationCentre />
+          <Link
+            href="/settings"
+            aria-label={`Your profile and settings (${userName})`}
+            aria-current={inSettings ? "page" : undefined}
+            className="flex size-11 items-center justify-center rounded-full transition-colors hover:bg-muted aria-[current=page]:bg-muted md:size-9"
+          >
+            <Avatar name={userName} image={me?.image} size={28} />
+          </Link>
+        </>
       }
     >
       {children}

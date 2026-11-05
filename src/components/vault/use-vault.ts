@@ -12,7 +12,7 @@ export function useVaultActions() {
   const scope = (v: { id?: string }) => (v.id ? `vault:${v.id}` : undefined);
 
   const remove = useOptimisticMutation("vault.delete", {
-    lists: ["vault.list", "vault.expiringSoon", "inbox.list", "inbox.count"],
+    lists: ["vault.list", "vault.expiringSoon", "inbox.list", "notification.badge"],
     scope,
     update: (v, cache) => cache.update("vault.list", (rows) => rows.filter((e) => e.id !== v.id)),
   });
@@ -36,5 +36,5 @@ export function useVaultActions() {
 export function useRefreshVault() {
   const utils = trpc.useUtils();
   return () =>
-    Promise.all([utils.vault.list.invalidate(), utils.vault.get.invalidate(), utils.vault.expiringSoon.invalidate(), utils.inbox.list.invalidate(), utils.inbox.count.invalidate()]);
+    Promise.all([utils.vault.list.invalidate(), utils.vault.get.invalidate(), utils.vault.expiringSoon.invalidate(), utils.inbox.list.invalidate(), utils.notification.badge.invalidate()]);
 }

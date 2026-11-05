@@ -155,6 +155,4 @@ export async function inboxItems(ctx: Ctx): Promise<InboxItem[]> {
 
 export const inboxRouter = createTRPCRouter({
   list: householdProcedure.query(({ ctx }) => inboxItems(ctx)),
-  /** For the badge on the nav: how many items the Inbox holds. */
-  count: householdProcedure.query(async ({ ctx }) => (await inboxItems(ctx)).length),
 });
