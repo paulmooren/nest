@@ -21,7 +21,7 @@ export function useReminderActions() {
   const utils = trpc.useUtils();
   const [undo, setUndo] = useState<{ completionId: string; reminderId: string; title: string; next: string } | null>(null);
 
-  const lists = ["reminder.list", "inbox.list", "inbox.count"] as const;
+  const lists = ["reminder.list", "inbox.list", "notification.badge"] as const;
   const scope = (v: { id: string }) => `reminder:${v.id}`;
   const createMutation = useOptimisticMutation("reminder.create", {
     lists,

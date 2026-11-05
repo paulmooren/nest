@@ -6,8 +6,9 @@ import Link from "next/link";
 import { trpc } from "@/trpc/react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageBody, PageHeader } from "@/components/ui/page-header";
-import { Inbox } from "@/components/today/inbox";
 import { OnboardingWizard } from "@/components/today/onboarding-wizard";
+import { QuickAdd } from "@/components/today/quick-add";
+import { RemindersCard } from "@/components/today/reminders-card";
 import { ShoppingCard } from "@/components/today/shopping-card";
 import { TodayLoading } from "@/components/today/today-skeleton";
 import { TodosCard } from "@/components/today/todos-card";
@@ -62,7 +63,7 @@ export function TodayView() {
     );
   }
 
-  if (!finance && !tasks && !shopping && !isEnabled("vault")) {
+  if (!tasks && !shopping) {
     return (
       <>
         <PageHeader title={title} />
@@ -81,17 +82,19 @@ export function TodayView() {
     );
   }
 
-  // The Inbox opens the page; the two working lists sit side by side on a wide screen, Todos first on a phone.
+  // Quick add opens the page. Then the working lists: Todos and Reminders on one side, Groceries on the other, with
+  // the tasks first on a phone.
   return (
     <>
       <PageHeader title={title} />
       <PageBody>
-        <Inbox />
+        <QuickAdd />
         <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
           {shopping && <ShoppingCard />}
           {tasks && (
-            <div className="max-lg:order-first">
+            <div className="flex flex-col gap-8 max-lg:order-first">
               <TodosCard />
+              <RemindersCard />
             </div>
           )}
         </div>

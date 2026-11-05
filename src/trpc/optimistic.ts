@@ -55,7 +55,7 @@ type Config<P extends MutationPath> = {
   /**
    * Every list this change can alter: they are frozen while it saves (a refetch already on its way is cancelled),
    * put back as they were if it fails, and refetched quietly once the last pending change to them is done.
-   * Name the lists of other screens that show the same data too (the dashboard's totals, the shopping count …).
+   * Name the lists of other screens that show the same data too (the net-worth totals, the shopping count …).
    */
   lists: readonly QueryPath[];
   /** Shows the result on screen at once, by rewriting the cached lists. */

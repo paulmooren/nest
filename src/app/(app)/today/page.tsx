@@ -13,14 +13,12 @@ export default async function TodayPage() {
   await Promise.all([
     on("finance") && [
       loadQuery("account.list", undefined, () => caller.account.list()),
-      loadQuery("category.list", undefined, () => caller.category.list()),
     ],
-    on("shopping") && loadShoppingList("dashboard"),
+    on("shopping") && loadShoppingList("today"),
     on("tasks") && [
       loadQuery("task.list", undefined, () => caller.task.list()),
       loadQuery("reminder.list", undefined, () => caller.reminder.list()),
     ],
-    loadQuery("inbox.list", undefined, () => caller.inbox.list()),
   ].flat());
 
   return (

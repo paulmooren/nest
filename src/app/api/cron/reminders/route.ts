@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { HOUSEHOLD_TIME_ZONE, todayInHousehold } from "@/lib/schedule";
 import { buildDigests, digestMessage } from "@/server/reminder-digest";
-import { pushConfigured, sendToUser } from "@/server/push";
+import { pushConfigured } from "@/server/push";
+import { notifyUser, purgeOldEarlier } from "@/server/earlier";
 import { buildStatementPushes, markStatementsPushed, statementMessage } from "@/server/statement-push";
 
 /** The hour of the day, in the household's time zone, at which reminders go out. */
@@ -58,18 +59,20 @@ export async function GET(request: Request) {
   let people = 0;
   let devices = 0;
   for (const [userId, digest] of digests) {
-    const reached = await sendToUser(prisma, userId, digestMessage(digest));
+    const reached = await notifyUser(prisma, userId, digestMessage(digest));
     if (reached > 0) people += 1;
     devices += reached;
   }
   // The same once-a-day guard above covers this, so a retried run never sends it twice.
   let statementPeople = 0;
   for (const [userId, accounts] of statements) {
-    const reached = await sendToUser(prisma, userId, statementMessage(accounts));
+    const reached = await notifyUser(prisma, userId, statementMessage(accounts));
     if (reached > 0) statementPeople += 1;
     devices += reached;
   }
   // Each cycle is pushed once: later days only show it in the Inbox.
   await markStatementsPushed(prisma, cycles);
-  return NextResponse.json({ sent: true, people, statementPeople, devices });
+  // Earlier keeps 30 days (ADR 0012); the same once-a-day run clears the rest.
+  const purged = await purgeOldEarlier(prisma);
+  return NextResponse.json({ sent: true, people, statementPeople, devices, purged });
 }

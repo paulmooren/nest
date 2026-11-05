@@ -132,7 +132,7 @@ The record that a Reminder was done: when, and by which Member. Anyone in the Ho
 _Avoid_: Check-in, log entry
 
 **Notification**:
-The daily message a Member gets on their phone listing what is due for them today, with a single nudge once something is 2 days overdue. Overdue Reminders after that stay red in the app but do not notify again. One more Notification is sent once per cycle for each Financial account whose Statement import is due: 90 days after its last import (or after it was made), naming the dates to export, from the day of the last import to yesterday. A late import only makes the range longer, and the 90 days start again from the day it is imported. The daily message also mentions a Vault Entry about to expire, once at 60 days and once at 14 days ahead. Nothing else notifies; Suggestions and Budgeted amount approvals are in-app only.
+The daily message a Member gets on their phone listing what is due for them today, with a single nudge once something is 2 days overdue. Overdue Reminders after that stay red in the app but do not notify again. One more Notification is sent once per cycle for each Financial account whose Statement import is due: 90 days after its last import (or after it was made), naming the dates to export, from the day of the last import to yesterday. A late import only makes the range longer, and the 90 days start again from the day it is imported. The daily message also mentions a Vault Entry about to expire, once at 60 days and once at 14 days ahead. Nothing else notifies; Suggestions and Budgeted amount approvals are in-app only. Every Notification is also recorded in Earlier.
 _Avoid_: Alert, ping, Inbox item (that is the in-app list, not the phone message)
 
 ### Vault
@@ -171,12 +171,24 @@ _Avoid_: Favorite (that is a Shopping term), starred
 ### Home
 
 **Today**:
-The home page of the app. The Inbox comes first, followed by a short glance at each Module that has something to show. It replaces the former Dashboard.
+The home page of the app: a place to do small things without going to their pages. It opens with Quick add, followed by a short glance at the Todos, the main Shopping list and the Reminders due in the next 7 days. It replaces the former Dashboard, which only pointed to other pages.
 _Avoid_: Dashboard, home screen
 
+**Quick add**:
+One line at the top of Today that creates a Todo, a Shopping item or a Reminder without leaving the page. The kind is picked first (Todo is the default), and only kinds whose Module is on are offered. It never creates transactions or Vault Entries.
+_Avoid_: Add button, shortcut
+
+**Notification centre**:
+The panel behind the bell in the top bar, opened from any page. The Inbox is its top part and Earlier is below it. The bell's badge counts the Inbox items plus the unread entries in Earlier.
+_Avoid_: Notifications page, activity feed
+
+**Earlier**:
+The record of the Notifications sent to a Member, newest first, kept for 30 days and recorded whether or not their phone has push switched on. One entry per message sent. An entry is unread until the Member opens the Notification centre, and read once they close it. Nothing else is recorded here: not what a partner did, and not what the Member finished.
+_Avoid_: History, log, feed
+
 **Inbox**:
-The list at the top of the home page of everything that needs a Member now — something with a deadline, or waiting on a decision. It has no read or dismissed state: an Inbox item stays until the thing behind it is dealt with, and then it is gone. Open Todos and the Shopping list never appear in it.
-_Avoid_: Notification centre, feed, alerts
+The live list of everything that needs a Member now — something with a deadline, or waiting on a decision. It sits at the top of the Notification centre. It has no read or dismissed state: an Inbox item stays until the thing behind it is dealt with, and then it is gone. Open Todos and the Shopping list never appear in it.
+_Avoid_: Feed, alerts
 
 **Inbox item**:
 One row in the Inbox: a Reminder due or overdue, a Statement import that is due (90 days since the last one, with the dates it must cover), a Vault Entry about to expire, a Suggestion waiting to be confirmed, or a Budgeted amount change waiting for approval. Each leads to the place where it is dealt with. A Member sees only their own Inbox items and Household-wide ones: a Personal account's due Statement import shows only to its owner, and Suggestions only to theirs. Items are listed most urgent first, each labelled with its kind. With none, the Inbox says "You're all caught up".

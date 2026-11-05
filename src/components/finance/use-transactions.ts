@@ -14,7 +14,7 @@ const BALANCE_LISTS = [
   "dashboard.accountHistory",
   "budget.list",
   "inbox.list",
-  "inbox.count",
+  "notification.badge",
 ] as const satisfies readonly QueryPath[];
 
 /** What a bulk change that waits for the server (an import, "remove all") must refresh when it is done. */

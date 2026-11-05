@@ -14,7 +14,7 @@ export const DEFAULT_VAULT_CATEGORIES = [
 ] as const;
 export const FALLBACK_VAULT_CATEGORY = "Other";
 
-/** Dashboard shows an expiry this many days ahead, and any that has already passed. */
+/** The Inbox shows an expiry this many days ahead, and any that has already passed. */
 export const VAULT_EXPIRY_WARNING_DAYS = 60;
 /** The daily Notification mentions an Entry's date at exactly these many days ahead. */
 export const VAULT_NOTIFY_DAYS = [60, 14] as const;

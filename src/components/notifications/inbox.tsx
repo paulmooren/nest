@@ -9,7 +9,7 @@ import { Section } from "@/components/ui/section";
 import { useRecurringActions } from "@/components/finance/use-recurring";
 import { useReminderActions } from "@/components/reminders/use-reminders";
 import type { ReminderData } from "@/components/reminders/types";
-import { useStatementImport } from "@/components/today/use-statement-import";
+import { useStatementImport } from "@/components/notifications/use-statement-import";
 
 const KIND_LABEL = {
   reminder: "Reminder",
