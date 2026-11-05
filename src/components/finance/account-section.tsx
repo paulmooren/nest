@@ -4,8 +4,8 @@ import Link from "next/link";
 import { ChevronDownIcon, ChevronRightIcon, WalletIcon } from "lucide-react";
 
 import { ACCOUNT_TYPE_LABELS, ASSET_ACCOUNT_TYPES, type AccountType } from "@/lib/constants";
-import { monthlyOf, type Entry } from "@/lib/budget-scope";
-import { formatEUR } from "@/lib/format";
+import { monthlyOf, totalsOf, type Entry } from "@/lib/budget-scope";
+import { formatEUR, formatSignedEUR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { AccountTypeIcon } from "@/components/account-type-icon";
 import { ROW_TITLE_HOVER, RowList } from "@/components/ui/row";
@@ -68,6 +68,9 @@ export function AccountSection({
   const expenses = entries.filter((e) => e.side === "EXPENSE");
   const sum = (list: Entry<Item>[]) => list.reduce((s, e) => s + monthlyOf(e.item), 0);
 
+  // What this account gains or loses each month: its income minus its expenses (transfers between own accounts count on both sides).
+  const net = totalsOf(entries).left;
+
   const meta = account ? ACCOUNT_TYPE_LABELS[account.type as AccountType] : "Not linked to an account";
 
   return (
@@ -85,6 +88,12 @@ export function AccountSection({
           <span className={cn("block text-base font-medium md:text-sm", ROW_TITLE_HOVER)}>{account?.name ?? "No account"}</span>
           <span className="block truncate text-sm text-muted-foreground md:text-xs">{meta}</span>
         </span>
+        {entries.length > 0 && (
+          <span className={cn("shrink-0 text-base font-medium tabular-nums md:text-sm", net < 0 ? "text-destructive" : "text-success")}>
+            {formatSignedEUR(net)}
+            <span className="text-sm font-normal text-muted-foreground md:text-xs"> / mo</span>
+          </span>
+        )}
         <ChevronDownIcon className={cn("size-4 shrink-0 text-muted-foreground transition-transform group-hover:text-foreground", open && "rotate-180")} aria-hidden />
       </button>
 
