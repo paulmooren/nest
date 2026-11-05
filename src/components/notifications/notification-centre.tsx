@@ -70,8 +70,8 @@ export function NotificationCentre() {
       </SheetTrigger>
       <SheetContent
         initialFocus={bodyRef}
-        // A card floating over the page, detached from the edges, like a popover; on a phone it still fills the width.
-        className="gap-0 p-0 data-[side=right]:w-full data-[side=right]:sm:inset-y-auto data-[side=right]:sm:top-3 data-[side=right]:sm:right-3 data-[side=right]:sm:h-auto data-[side=right]:sm:max-h-[calc(100dvh-1.5rem)] data-[side=right]:sm:max-w-md data-[side=right]:sm:rounded-2xl data-[side=right]:sm:border data-[side=right]:sm:shadow-2xl"
+        // A card floating over the page, 12px off every edge but the left, as tall as the window; on a phone it fills the screen.
+        className="gap-0 p-0 data-[side=right]:w-full data-[side=right]:sm:inset-y-3 data-[side=right]:sm:right-3 data-[side=right]:sm:h-auto data-[side=right]:sm:max-w-md data-[side=right]:sm:rounded-2xl data-[side=right]:sm:border data-[side=right]:sm:shadow-2xl"
       >
         <SheetHeader className="border-b px-4 py-4 pr-14">
           <SheetTitle className="text-lg">Notifications</SheetTitle>
