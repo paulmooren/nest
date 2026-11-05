@@ -77,6 +77,7 @@ model User {
   ownedReminders      Reminder[]           @relation("ReminderOwner")
   completedReminders  ReminderCompletion[] @relation("ReminderCompletedBy")
   pushSubscriptions   PushSubscription[]
+  notifications       Notification[]
 
   @@map("users")
 }
@@ -639,6 +640,23 @@ model PushSubscription {
 
   @@index([userId])
   @@map("push_subscriptions")
+}
+
+// One row per Notification sent to a Member (the "Earlier" part of the Notification centre, ADR 0012). Written whether
+// or not their phone has push on; unread until the Member closes the panel; deleted after 30 days.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  url       String
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 
 // One row per day the daily reminder notifications were sent, so a retried or

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, householdProcedure, protectedProcedure } from "@/server/api/trpc";
+import { inboxItems } from "@/server/api/routers/inbox";
 import { pushConfigured, sendToUser } from "@/server/push";
 
 export const notificationRouter = createTRPCRouter({
@@ -35,6 +36,34 @@ export const notificationRouter = createTRPCRouter({
       await ctx.prisma.pushSubscription.deleteMany({ where: { endpoint: input.endpoint, userId: ctx.userId } });
       return { success: true };
     }),
+
+  /** Earlier: the Notifications sent to you, newest first (ADR 0012). */
+  earlier: protectedProcedure.query(({ ctx }) =>
+    ctx.prisma.notification.findMany({
+      where: { userId: ctx.userId },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: { id: true, title: true, body: true, url: true, createdAt: true, readAt: true },
+    }),
+  ),
+
+  /** Marks everything in Earlier read: called when the Notification centre closes. */
+  markEarlierRead: protectedProcedure.mutation(async ({ ctx }) => {
+    const { count } = await ctx.prisma.notification.updateMany({
+      where: { userId: ctx.userId, readAt: null },
+      data: { readAt: new Date() },
+    });
+    return { marked: count };
+  }),
+
+  /** The bell's number: Inbox items plus unread entries in Earlier. */
+  badge: householdProcedure.query(async ({ ctx }) => {
+    const [inbox, unread] = await Promise.all([
+      inboxItems(ctx),
+      ctx.prisma.notification.count({ where: { userId: ctx.userId, readAt: null } }),
+    ]);
+    return { inbox: inbox.length, unread, total: inbox.length + unread };
+  }),
 
   /** Sends one notification to all of your devices, so you can check it works. */
   sendTest: protectedProcedure.mutation(async ({ ctx }) => {
