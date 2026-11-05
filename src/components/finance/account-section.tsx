@@ -123,7 +123,7 @@ export function AccountSection({
             {account && (
               <Link
                 href={`/finance/accounts/${account.id}`}
-                className="inline-flex min-h-9 items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+                className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
               >
                 Balance history and transactions
                 <ChevronRightIcon className="size-4" aria-hidden />
