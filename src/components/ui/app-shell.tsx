@@ -94,7 +94,7 @@ export function AppShell({
       </aside>
 
       <div className="w-full min-w-0 md:ml-60 md:pr-3 md:pb-3">
-        <div className="hidden h-14 items-center justify-end gap-1 md:flex">{actions}</div>
+        <div className="sticky top-0 z-10 hidden h-14 items-center justify-end gap-1 bg-sidebar md:flex">{actions}</div>
         <header className="pt-safe sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background px-4 md:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger
