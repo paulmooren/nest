@@ -8,10 +8,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageBody, PageHeader } from "@/components/ui/page-header";
 import { OnboardingWizard } from "@/components/today/onboarding-wizard";
 import { QuickAdd } from "@/components/today/quick-add";
-import { RemindersCard } from "@/components/today/reminders-card";
-import { ShoppingCard } from "@/components/today/shopping-card";
+import { TodayLists } from "@/components/today/today-lists";
 import { TodayLoading } from "@/components/today/today-skeleton";
-import { TodosCard } from "@/components/today/todos-card";
 import { useModules } from "@/components/use-modules";
 
 function greeting() {
@@ -82,22 +80,13 @@ export function TodayView() {
     );
   }
 
-  // Quick add opens the page. Then the working lists: Todos and Reminders on one side, Groceries on the other, with
-  // the tasks first on a phone.
+  // Quick add opens the page, then the lists as one card of collapsible sections.
   return (
     <>
       <PageHeader title={title} />
       <PageBody>
         <QuickAdd />
-        <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
-          {shopping && <ShoppingCard />}
-          {tasks && (
-            <div className="flex flex-col gap-8 max-lg:order-first">
-              <TodosCard />
-              <RemindersCard />
-            </div>
-          )}
-        </div>
+        <TodayLists tasks={tasks} shopping={shopping} />
       </PageBody>
     </>
   );
