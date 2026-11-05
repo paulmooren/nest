@@ -132,7 +132,7 @@ The record that a Reminder was done: when, and by which Member. Anyone in the Ho
 _Avoid_: Check-in, log entry
 
 **Notification**:
-The daily message a Member gets on their phone listing what is due for them today, with a single nudge once something is 2 days overdue. Overdue Reminders after that stay red in the app but do not notify again. One more Notification is sent once per cycle for each Financial account whose Statement import is due: 90 days after its last import (or after it was made), naming the dates to export, from the day of the last import to yesterday. A late import only makes the range longer, and the 90 days start again from the day it is imported. The daily message also mentions a Vault Entry about to expire, once at 60 days and once at 14 days ahead. Nothing else notifies; Suggestions and Budgeted amount approvals are in-app only.
+The daily message a Member gets on their phone listing what is due for them today, with a single nudge once something is 2 days overdue. Overdue Reminders after that stay red in the app but do not notify again. One more Notification is sent once per cycle for each Financial account whose Statement import is due: 90 days after its last import (or after it was made), naming the dates to export, from the day of the last import to yesterday. A late import only makes the range longer, and the 90 days start again from the day it is imported. The daily message also mentions a Vault Entry about to expire, once at 60 days and once at 14 days ahead. Nothing else notifies; Suggestions and Budgeted amount approvals are in-app only. Every Notification is also recorded in Earlier.
 _Avoid_: Alert, ping, Inbox item (that is the in-app list, not the phone message)
 
 ### Vault

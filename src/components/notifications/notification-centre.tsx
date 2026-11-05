@@ -62,7 +62,7 @@ export function NotificationCentre() {
         {total > 0 && (
           <span
             aria-hidden
-            className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[0.65rem] leading-none font-semibold text-white tabular-nums md:top-1 md:right-1"
+            className="absolute top-1.5 right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-destructive px-1 text-xs leading-none font-semibold text-white tabular-nums md:top-1 md:right-1"
           >
             {total > 9 ? "9+" : total}
           </span>

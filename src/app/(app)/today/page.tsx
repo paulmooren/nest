@@ -14,7 +14,7 @@ export default async function TodayPage() {
     on("finance") && [
       loadQuery("account.list", undefined, () => caller.account.list()),
     ],
-    on("shopping") && loadShoppingList("dashboard"),
+    on("shopping") && loadShoppingList("today"),
     on("tasks") && [
       loadQuery("task.list", undefined, () => caller.task.list()),
       loadQuery("reminder.list", undefined, () => caller.reminder.list()),

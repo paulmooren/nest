@@ -70,7 +70,7 @@ export type StatementResult =
 
 /**
  * Reads a bank statement CSV in one go, with the same column guessing the
- * manual importer starts from. Used by the dashboard's one-click import,
+ * manual importer starts from. Used by the Inbox's one-click import,
  * which has no mapping screen — if nothing usable comes out, the caller falls
  * back to the full importer.
  */
