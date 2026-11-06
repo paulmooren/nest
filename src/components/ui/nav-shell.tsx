@@ -7,6 +7,7 @@ import {
   ListIcon,
   ListChecksIcon,
   LockKeyholeIcon,
+  NotebookPenIcon,
   WalletIcon,
 } from "lucide-react"
 
@@ -25,6 +26,7 @@ const ALL_NAV_ITEMS: (NavItem & { modules?: ModuleKey[] })[] = [
   { href: "/tasks", label: "Tasks", icon: <ListChecksIcon />, modules: ["tasks"] },
   { href: "/lists", label: "Lists", icon: <ListIcon />, modules: ["shopping", "wishlist"] },
   { href: "/vault", label: "Vault", icon: <LockKeyholeIcon />, modules: ["vault"] },
+  { href: "/notes", label: "Notes", icon: <NotebookPenIcon />, modules: ["notes"] },
 ]
 
 /** The signed-in app frame: navigation filtered by the Household's Modules, and the way into Settings. */

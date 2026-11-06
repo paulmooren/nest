@@ -74,6 +74,7 @@ model User {
   ownedWishes         Wish[]               @relation("WishOwner")
   claimedWishes       Wish[]               @relation("WishClaimer")
   ownedVaultEntries   VaultEntry[]         @relation("VaultEntryOwner")
+  ownedNotebooks      Notebook[]           @relation("NotebookOwner")
   ownedReminders      Reminder[]           @relation("ReminderOwner")
   completedReminders  ReminderCompletion[] @relation("ReminderCompletedBy")
   pushSubscriptions   PushSubscription[]
@@ -108,6 +109,7 @@ model Household {
   wishes            Wish[]
   vaultEntries      VaultEntry[]
   vaultCategories   VaultCategory[]
+  notebooks         Notebook[]
   reminders         Reminder[]
 
   @@map("households")
@@ -666,4 +668,42 @@ model NotificationRun {
   createdAt DateTime @default(now())
 
   @@map("notification_runs")
+}
+
+// Shared (ownerId null): every member sees and edits it. Personal: only the owner edits it; the rest of the
+// household can read it only while visibleToHousehold is on (off by default). A Note takes its ownership from its
+// Notebook. isStarter marks the Personal "Notes" Notebook each member gets, which can't be deleted.
+model Notebook {
+  id                 String   @id @default(cuid())
+  householdId        String
+  ownerId            String?
+  visibleToHousehold Boolean  @default(false)
+  isStarter          Boolean  @default(false)
+  name               String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  owner     User?     @relation("NotebookOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  notes     Note[]
+
+  @@index([householdId])
+  @@map("notebooks")
+}
+
+// `body` is Markdown (headings, bullet lists, checkboxes). `updatedAt` doubles as the version a save is checked
+// against, so two people can't silently overwrite each other.
+model Note {
+  id         String   @id @default(cuid())
+  notebookId String
+  title      String   @default("")
+  body       String   @default("")
+  pinned     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  notebook Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+
+  @@index([notebookId])
+  @@map("notes")
 }
