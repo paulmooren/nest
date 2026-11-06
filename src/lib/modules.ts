@@ -28,6 +28,11 @@ export const MODULES = [
     label: "Vault",
     description: "Important numbers and notes — passports, policies, accounts — kept encrypted.",
   },
+  {
+    key: "notes",
+    label: "Notes",
+    description: "Things worth writing down and coming back to — achievements, ideas, anything you don't want to forget.",
+  },
 ] as const;
 
 export type ModuleKey = (typeof MODULES)[number]["key"];

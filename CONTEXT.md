@@ -168,6 +168,16 @@ _Avoid_: Preset, form
 An Entry marked for quick access at the top of the Vault.
 _Avoid_: Favorite (that is a Shopping term), starred
 
+### Notes
+
+**Note**:
+A piece of writing a Member wants to keep and come back to: a title and a body (headings, bullet lists and checkboxes) they can open and edit, showing when it was created and last edited. Can be Pinned to the top of its Notebook. Lives in one Notebook and is Shared or Personal as that Notebook is. Not a Vault Entry, which keeps IDs, numbers and documents.
+_Avoid_: Memo, document, entry (that is a Vault term), log
+
+**Notebook**:
+A named group of Notes, Shared or Personal like a Shopping list, with Visibility if Personal. A Note is in exactly one Notebook and takes its ownership from it. Each Household starts with a Personal Notebook called "Notes", hidden from the rest of the Household and not deletable. Deleting any other Notebook deletes its Notes.
+_Avoid_: Folder, tag, category, collection
+
 ### Home
 
 **Today**:
