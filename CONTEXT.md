@@ -178,6 +178,30 @@ _Avoid_: Memo, document, entry (that is a Vault term), log
 A named group of Notes, Shared or Personal like a Shopping list, with Visibility if Personal. A Note is in exactly one Notebook and takes its ownership from it. Each Household starts with a Personal Notebook called "Notes", hidden from the rest of the Household and not deletable. Deleting any other Notebook deletes its Notes.
 _Avoid_: Folder, tag, category, collection
 
+### Movies & Series
+
+**Title**:
+One film or series a Household wants to watch or has watched: a name, a Kind (Movie or Series) and a Status (Want to watch, Watching, Watched). Each Member rates it separately (5 stars, half steps) and may leave a short note; the date it was watched is recorded. Lives in one Watchlist. The entry, not a text field called "title".
+_Avoid_: Movie (alone — excludes series), film, show, entry (that is a Vault term)
+
+**Watchlist**:
+A named group of Titles, Shared or Personal with Visibility if Personal, exactly like a Cookbook. A Title is in exactly one Watchlist and takes its ownership from it. Each Household starts with a Shared Watchlist called "Watchlist", not deletable. Deleting another Watchlist asks where its Titles go (default: "Watchlist") or offers to delete them, with a warning when Personal Titles would become Shared.
+_Avoid_: Queue, Shopping list
+
+### Recipes
+
+**Recipe**:
+A way to cook something, kept in one Cookbook: a name, Ingredients, steps, a servings number, an optional photo and an optional source link. Can be typed in or imported from a web page into an editable draft. Its Ingredients can be added to a Shopping list.
+_Avoid_: Dish, meal, document
+
+**Ingredient**:
+One free-text line of a Recipe ("200 g flour"). Not split into amount, unit and name. Added to a Shopping list, the whole line becomes the Shopping item's name.
+_Avoid_: Product, item
+
+**Cookbook**:
+A named group of Recipes that Members create (Baking, Weeknight dinners), Shared (the default; every Member may edit) or Personal with Visibility, like a Notebook. A Recipe is in exactly one Cookbook and takes its ownership from it. Each Household starts with a Shared Cookbook called "Recipes", not deletable. Deleting another Cookbook asks where its Recipes go (default: "Recipes") or offers to delete them, with a warning when Personal Recipes would become Shared.
+_Avoid_: Folder, tag, category, collection
+
 ### Home
 
 **Today**:

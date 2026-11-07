@@ -29,6 +29,11 @@ export const MODULES = [
     description: "Important numbers and notes — passports, policies, accounts — kept encrypted.",
   },
   {
+    key: "recipes",
+    label: "Recipes",
+    description: "Recipes kept in cookbooks, with ingredients you can add to a shopping list.",
+  },
+  {
     key: "notes",
     label: "Notes",
     description: "Things worth writing down and coming back to — achievements, ideas, anything you don't want to forget.",

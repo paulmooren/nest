@@ -75,6 +75,7 @@ model User {
   claimedWishes       Wish[]               @relation("WishClaimer")
   ownedVaultEntries   VaultEntry[]         @relation("VaultEntryOwner")
   ownedNotebooks      Notebook[]           @relation("NotebookOwner")
+  ownedCookbooks      Cookbook[]           @relation("CookbookOwner")
   ownedReminders      Reminder[]           @relation("ReminderOwner")
   completedReminders  ReminderCompletion[] @relation("ReminderCompletedBy")
   pushSubscriptions   PushSubscription[]
@@ -110,6 +111,7 @@ model Household {
   vaultEntries      VaultEntry[]
   vaultCategories   VaultCategory[]
   notebooks         Notebook[]
+  cookbooks         Cookbook[]
   reminders         Reminder[]
 
   @@map("households")
@@ -706,4 +708,45 @@ model Note {
 
   @@index([notebookId])
   @@map("notes")
+}
+
+// Shared (ownerId null): every member sees and edits it. Personal: only the owner edits it; the rest of the
+// household can read it while visibleToHousehold is on (the default, unlike Notebooks). A Recipe takes its
+// ownership from its Cookbook. isStarter marks the Shared "Recipes" Cookbook each household has, which can't be
+// deleted.
+model Cookbook {
+  id                 String   @id @default(cuid())
+  householdId        String
+  ownerId            String?
+  visibleToHousehold Boolean  @default(true)
+  isStarter          Boolean  @default(false)
+  name               String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  owner     User?     @relation("CookbookOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  recipes   Recipe[]
+
+  @@index([householdId])
+  @@map("cookbooks")
+}
+
+// `ingredients` is free text, one Ingredient per line. `steps` is plain text. `updatedAt` doubles as the version a
+// save is checked against, so two people can't silently overwrite each other.
+model Recipe {
+  id          String   @id @default(cuid())
+  cookbookId  String
+  name        String
+  ingredients String   @default("")
+  steps       String   @default("")
+  servings    Int?
+  sourceUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cookbook Cookbook @relation(fields: [cookbookId], references: [id], onDelete: Cascade)
+
+  @@index([cookbookId])
+  @@map("recipes")
 }

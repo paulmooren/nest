@@ -446,6 +446,48 @@ export async function seedDemo(prisma: PrismaClient, now: Date = new Date()) {
   });
 
   lap("wishlists");
+  // ── Recipes ──────────────────────────────────────────────────────────────
+  const [recipesBook, bakingBook, alexBook] = await Promise.all([
+    prisma.cookbook.create({ data: { householdId, createdAt: stamp(), ownerId: null, isStarter: true, name: "Recipes" }, select: { id: true } }),
+    prisma.cookbook.create({ data: { householdId, createdAt: stamp(), ownerId: null, name: "Baking" }, select: { id: true } }),
+    // A Personal cookbook, visible to Sam but editable only by Alex.
+    prisma.cookbook.create({ data: { householdId, createdAt: stamp(), ownerId: alex, name: "Alex's experiments" }, select: { id: true } }),
+  ]);
+  await prisma.recipe.createMany({
+    data: [
+      {
+        cookbookId: recipesBook.id,
+        name: "Tomato soup",
+        servings: 4,
+        ingredients: "800 g ripe tomatoes\n1 onion\n2 cloves garlic\n500 ml vegetable stock\n2 tbsp olive oil\nSalt and pepper",
+        steps: "Soften the onion and garlic in the oil.\nAdd the chopped tomatoes and stock and simmer for 20 minutes.\nBlend until smooth and season.",
+      },
+      {
+        cookbookId: recipesBook.id,
+        name: "Pasta al limone",
+        servings: 2,
+        ingredients: "200 g spaghetti\n1 lemon\n40 g parmesan\n30 g butter\nBlack pepper",
+        steps: "Cook the pasta until just done and keep a cup of the water.\nMelt the butter with lemon zest and juice.\nToss everything with parmesan and a splash of pasta water.",
+        sourceUrl: "https://example.com/pasta-al-limone",
+      },
+      {
+        cookbookId: bakingBook.id,
+        name: "Banana bread",
+        servings: 8,
+        ingredients: "3 ripe bananas\n200 g flour\n100 g sugar\n2 eggs\n80 g butter\n1 tsp baking powder",
+        steps: "Mash the bananas and mix with melted butter, sugar and eggs.\nFold in the flour and baking powder.\nBake at 175 °C for 50 minutes.",
+      },
+      {
+        cookbookId: alexBook.id,
+        name: "Sourdough focaccia",
+        servings: 6,
+        ingredients: "500 g bread flour\n400 ml water\n100 g active starter\n10 g salt\nOlive oil",
+        steps: "Mix everything and rest for 30 minutes.\nStretch and fold three times over two hours.\nProve overnight in the fridge, dimple and bake at 230 °C for 25 minutes.",
+      },
+    ].map((r) => ({ ...r, createdAt: stamp() })),
+  });
+
+  lap("recipes");
   // ── Vault: made-up values, encrypted like real ones ──────────────────────
   const enc = (v: string) => encryptValue(v, householdId);
   await ensureVaultCategories(prisma, householdId);
