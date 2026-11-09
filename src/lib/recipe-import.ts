@@ -4,6 +4,10 @@ export type ImportedRecipe = {
   servings: number | null;
   ingredients: string[];
   steps: string[];
+  /** Prep and cooking together, when the page says. */
+  totalMinutes: number | null;
+  /** The page's own photo of the dish. */
+  imageUrl: string | null;
 };
 
 const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", deg: "°", frac12: "½", frac14: "¼", frac34: "¾" };
@@ -78,6 +82,24 @@ function readServings(value: Json): number | null {
   return null;
 }
 
+/** Minutes in an ISO 8601 duration such as "PT1H30M" or "P0DT45M". */
+function readMinutes(value: Json): number | null {
+  if (typeof value !== "string") return null;
+  const m = /^P(?:(\d+)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:\d+(?:\.\d+)?S)?)?$/i.exec(value.trim());
+  if (!m) return null;
+  const minutes = Math.round(Number(m[1] ?? 0) * 1440 + Number(m[2] ?? 0) * 60 + Number(m[3] ?? 0));
+  return minutes >= 1 && minutes <= 6000 ? minutes : null;
+}
+
+/** The first https image in a string, a list, or an ImageObject. */
+function readImage(value: Json): string | null {
+  for (const item of asArray(value)) {
+    const url = typeof item === "string" ? item : isObject(item) ? item.url ?? item.contentUrl : null;
+    if (typeof url === "string" && /^https:\/\//i.test(url.trim()) && url.length <= 1000) return url.trim();
+  }
+  return null;
+}
+
 /** Reads the schema.org Recipe in a page's JSON-LD, or null when the page has none. */
 export function parseRecipeHtml(html: string): ImportedRecipe | null {
   const scripts = html.matchAll(/<script\b[^>]*type\s*=\s*["']?application\/ld\+json["']?[^>]*>([\s\S]*?)<\/script>/gi);
@@ -94,7 +116,15 @@ export function parseRecipeHtml(html: string): ImportedRecipe | null {
     const ingredients = asArray(recipe.recipeIngredient ?? recipe.ingredients).map(clean).filter(Boolean);
     const steps = readSteps(recipe.recipeInstructions);
     if (!name && ingredients.length === 0 && steps.length === 0) continue;
-    return { name, servings: readServings(recipe.recipeYield), ingredients, steps };
+    const prepAndCook = (readMinutes(recipe.prepTime) ?? 0) + (readMinutes(recipe.cookTime) ?? 0);
+    return {
+      name,
+      servings: readServings(recipe.recipeYield),
+      ingredients,
+      steps,
+      totalMinutes: readMinutes(recipe.totalTime) ?? (prepAndCook > 0 ? prepAndCook : null),
+      imageUrl: readImage(recipe.image),
+    };
   }
   return null;
 }

@@ -1,8 +1,10 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { TRPCClientError } from "@trpc/client";
+import { CalendarPlusIcon, ChefHatIcon, ShoppingBasketIcon } from "lucide-react";
 
 import { trpc } from "@/trpc/react";
 import { Avatar } from "@/components/avatar";
@@ -11,11 +13,22 @@ import { ConfirmDelete } from "@/components/ui/confirm-delete";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageBody, PageHeader } from "@/components/ui/page-header";
 import { useDelayed } from "@/components/use-delayed";
-import { ModuleGate } from "@/components/use-modules";
+import { ModuleGate, useModules } from "@/components/use-modules";
+import { PlanRecipeSheet } from "@/components/recipes/meal-plan";
 import { RecipeEditor } from "@/components/recipes/recipe-editor";
-import { IngredientList, RecipesBackLink, RecipesBones, Steps } from "@/components/recipes/recipes-ui";
+import {
+  IngredientList,
+  RecipePhoto,
+  RecipesBackLink,
+  RecipesBones,
+  SECTION_HEADING,
+  ServingsStepper,
+  Steps,
+} from "@/components/recipes/recipes-ui";
+import { AddToShoppingSheet } from "@/components/recipes/shopping-sheet";
 import { useRefreshRecipes } from "@/components/recipes/use-recipes";
 import { showToast } from "@/components/toast";
+import { formatMinutes, parseIngredients, scaleIngredient } from "@/lib/recipes";
 
 export default function RecipePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -31,6 +44,7 @@ const isConflict = (e: unknown) => e instanceof TRPCClientError && e.data?.code 
 function RecipeDetail({ id }: { id: string }) {
   const router = useRouter();
   const refresh = useRefreshRecipes();
+  const { isEnabled } = useModules();
   const { data: recipe, error } = trpc.recipes.get.useQuery({ id }, { retry: false });
   const { data: cookbooks } = trpc.recipes.listCookbooks.useQuery();
   const { data: me } = trpc.user.me.useQuery();
@@ -45,8 +59,13 @@ function RecipeDetail({ id }: { id: string }) {
   const [editing, setEditing] = useState(false);
   const [conflict, setConflict] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [shopping, setShopping] = useState(false);
+  const [planning, setPlanning] = useState(false);
+  // The servings being cooked for; null until changed, meaning "as written".
+  const [wanted, setWanted] = useState<number | null>(null);
 
   const update = trpc.recipes.update.useMutation();
+  const importFromUrl = trpc.recipes.importFromUrl.useMutation();
   const remove = trpc.recipes.delete.useMutation({ onSuccess: refresh });
 
   if (error) {
@@ -79,10 +98,13 @@ function RecipeDetail({ id }: { id: string }) {
               steps: recipe.steps,
               servings: recipe.servings,
               sourceUrl: recipe.sourceUrl,
+              totalMinutes: recipe.totalMinutes,
+              imageUrl: recipe.imageUrl,
             }}
             cookbooks={editable}
             pending={update.isPending}
             error={conflict}
+            onImport={(url) => importFromUrl.mutateAsync({ url })}
             onCancel={() => {
               setEditing(false);
               setConflict(null);
@@ -118,6 +140,18 @@ function RecipeDetail({ id }: { id: string }) {
         ? `${owner.user.name || owner.user.email}'s`
         : "Personal";
 
+  const servings = wanted ?? recipe.servings;
+  const factor = recipe.servings && servings ? servings / recipe.servings : 1;
+  const lines = parseIngredients(recipe.ingredients).map((l) => scaleIngredient(l, factor));
+  const steps = parseIngredients(recipe.steps);
+  const cookHref = `/lists/recipes/${id}/cook${wanted && wanted !== recipe.servings ? `?servings=${wanted}` : ""}`;
+  const cooked =
+    recipe.cookedCount === 0
+      ? null
+      : `Cooked ${recipe.cookedCount === 1 ? "once" : `${recipe.cookedCount} times`}${
+          recipe.lastCookedAt ? `, last on ${new Date(recipe.lastCookedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : ""
+        }`;
+
   return (
     <>
       <RecipesBackLink />
@@ -132,14 +166,47 @@ function RecipeDetail({ id }: { id: string }) {
               )}
               {whose}
             </span>
-            {recipe.servings && <span>{recipe.servings} servings</span>}
+            {recipe.totalMinutes && <span>{formatMinutes(recipe.totalMinutes)}</span>}
+            {cooked && <span>{cooked}</span>}
             {!canEdit && <span>Visible to you</span>}
           </span>
         }
       />
       <PageBody>
+        {recipe.imageUrl && <RecipePhoto src={recipe.imageUrl} className="h-48 w-full max-w-3xl rounded-2xl md:h-64" />}
+
         <div className="flex flex-wrap items-center gap-2">
-          {canEdit && <Button onClick={() => setEditing(true)}>Edit</Button>}
+          <Button size="lg" render={<Link href={cookHref} />} nativeButton={false}>
+            <ChefHatIcon /> Start cooking
+          </Button>
+          {isEnabled("shopping") && lines.length > 0 && (
+            <Button size="lg" variant="outline" onClick={() => setShopping(true)}>
+              <ShoppingBasketIcon /> Add to shopping list
+            </Button>
+          )}
+          <Button size="lg" variant="outline" onClick={() => setPlanning(true)}>
+            <CalendarPlusIcon /> Plan
+          </Button>
+        </div>
+
+        <section aria-label="Ingredients" className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className={SECTION_HEADING}>Ingredients</h2>
+            {recipe.servings && servings && <ServingsStepper value={servings} onChange={setWanted} />}
+          </div>
+          <IngredientList lines={lines} />
+        </section>
+        <section aria-label="Steps" className="flex flex-col gap-3">
+          <h2 className={SECTION_HEADING}>Steps</h2>
+          <Steps steps={steps} />
+        </section>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {canEdit && (
+            <Button variant="outline" onClick={() => setEditing(true)}>
+              Edit
+            </Button>
+          )}
           {recipe.sourceUrl && (
             <Button variant="outline" render={<a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer" />} nativeButton={false}>
               Open source
@@ -151,17 +218,10 @@ function RecipeDetail({ id }: { id: string }) {
             </Button>
           )}
         </div>
-
-        <section aria-label="Ingredients" className="flex flex-col gap-2">
-          <h2 className="text-xs font-semibold tracking-[0.09em] text-muted-foreground uppercase">Ingredients</h2>
-          <IngredientList text={recipe.ingredients} />
-        </section>
-        <section aria-label="Steps" className="flex flex-col gap-2">
-          <h2 className="text-xs font-semibold tracking-[0.09em] text-muted-foreground uppercase">Steps</h2>
-          <Steps text={recipe.steps} />
-        </section>
       </PageBody>
 
+      {shopping && <AddToShoppingSheet groups={[{ lines }]} onClose={() => setShopping(false)} />}
+      {planning && <PlanRecipeSheet recipe={{ id, name: recipe.name }} onClose={() => setPlanning(false)} />}
       <ConfirmDelete
         open={confirmingDelete}
         onOpenChange={setConfirmingDelete}

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { keepPreviousData } from "@tanstack/react-query";
-import { PlusIcon, SettingsIcon } from "lucide-react";
+import { PlusIcon, SettingsIcon, ShuffleIcon } from "lucide-react";
 import type { inferRouterOutputs } from "@trpc/server";
 
 import type { AppRouter } from "@/server/api/root";
@@ -16,11 +17,13 @@ import { Input } from "@/components/ui/input";
 import { Row, RowList } from "@/components/ui/row";
 import { ListsPage } from "@/components/lists/lists-page";
 import { useDelayed } from "@/components/use-delayed";
-import { ModuleGate } from "@/components/use-modules";
+import { ModuleGate, useModules } from "@/components/use-modules";
 import { CookbookSettingsSheet, DeleteCookbookSheet, NewCookbookSheet } from "@/components/recipes/cookbook-sheets";
-import { RecipesBones } from "@/components/recipes/recipes-ui";
+import { MealPlan } from "@/components/recipes/meal-plan";
+import { RecipePhoto, RecipesBones } from "@/components/recipes/recipes-ui";
 import { useRefreshRecipes } from "@/components/recipes/use-recipes";
 import { newId } from "@/lib/client-id";
+import { formatMinutes } from "@/lib/recipes";
 
 export default function RecipesPage() {
   return (
@@ -32,8 +35,28 @@ export default function RecipesPage() {
 
 type Recipe = inferRouterOutputs<AppRouter>["recipes"]["list"][number];
 
+/** Ways to narrow the list when deciding what to cook. */
+type Idea = "all" | "quick" | "new" | "again";
+const QUICK_MINUTES = 30;
+const AGAIN_DAYS = 30;
+
+function matchesIdea(recipe: Recipe, idea: Idea, now: number): boolean {
+  switch (idea) {
+    case "quick":
+      return recipe.totalMinutes !== null && recipe.totalMinutes <= QUICK_MINUTES;
+    case "new":
+      return recipe.cookedCount === 0;
+    case "again":
+      return recipe.lastCookedAt !== null && now - new Date(recipe.lastCookedAt).getTime() > AGAIN_DAYS * 86_400_000;
+    default:
+      return true;
+  }
+}
+
 function Recipes() {
+  const router = useRouter();
   const refresh = useRefreshRecipes();
+  const { isEnabled } = useModules();
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   useEffect(() => {
@@ -42,15 +65,21 @@ function Recipes() {
   }, [query]);
 
   const { data: recipes } = trpc.recipes.list.useQuery(search ? { query: search } : undefined, { placeholderData: keepPreviousData });
+  // The Meal plan picks from every Recipe, whatever is being searched for.
+  const { data: everyRecipe } = trpc.recipes.list.useQuery();
   const { data: cookbooks } = trpc.recipes.listCookbooks.useQuery();
   const { data: me } = trpc.user.me.useQuery();
   const { data: household } = trpc.household.current.useQuery();
   const showSkeleton = useDelayed(!recipes || !cookbooks || !me);
 
   const [cookbookId, setCookbookId] = useState("all");
+  const [idea, setIdea] = useState<Idea>("all");
+  const [link, setLink] = useState("");
   const [creating, setCreating] = useState(false);
   const [settings, setSettings] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Read once, when the page opens: "not cooked lately" does not need to change by the second.
+  const [openedAt] = useState(() => Date.now());
 
   const createCookbook = trpc.recipes.createCookbook.useMutation({ onSuccess: refresh });
   const renameCookbook = trpc.recipes.renameCookbook.useMutation({ onSuccess: refresh });
@@ -64,9 +93,10 @@ function Recipes() {
   const selected = cookbooks?.find((c) => c.id === cookbookId);
   // New recipes go in the Cookbook being looked at when it is yours or shared, otherwise the starter one.
   const target = selected && (selected.ownerId === null || selected.ownerId === me?.id) ? selected : starter;
+  const newHref = (extra = "") => `/lists/recipes/new${target ? `?cookbook=${target.id}` : "?"}${extra}`;
 
   const newRecipe = (
-    <Button render={<Link href={target ? `/lists/recipes/new?cookbook=${target.id}` : "/lists/recipes/new"} />} nativeButton={false}>
+    <Button render={<Link href={newHref()} />} nativeButton={false}>
       <PlusIcon /> New recipe
     </Button>
   );
@@ -76,27 +106,41 @@ function Recipes() {
   }
 
   const searching = search !== "";
-  const visible = cookbookId === "all" ? recipes : recipes.filter((r) => r.cookbookId === cookbookId);
+  const inCookbook = cookbookId === "all" ? recipes : recipes.filter((r) => r.cookbookId === cookbookId);
+  const visible = inCookbook.filter((r) => matchesIdea(r, idea, openedAt));
   const counts = new Map<string, number>();
   for (const r of recipes) counts.set(r.cookbookId, (counts.get(r.cookbookId) ?? 0) + 1);
   const cookbookName = new Map(cookbooks.map((c) => [c.id, c.name]));
   const mine = !!selected && (selected.ownerId === null || selected.ownerId === me.id);
   const destinations = cookbooks.filter((c) => c.id !== selected?.id && (c.ownerId === null || c.ownerId === me.id));
+  const linkOk = /^https?:\/\/\S+$/i.test(link.trim());
 
   const row = (recipe: Recipe) => {
     const cb = cookbooks.find((c) => c.id === recipe.cookbookId);
     const owner = multiMember && cb?.ownerId ? members.find((m) => m.user.id === cb.ownerId) : undefined;
-    const meta = [cookbookId === "all" || searching ? cookbookName.get(recipe.cookbookId) : undefined, recipe.excerpt || undefined]
+    const meta = [
+      cookbookId === "all" || searching ? cookbookName.get(recipe.cookbookId) : undefined,
+      recipe.totalMinutes ? formatMinutes(recipe.totalMinutes) : undefined,
+      recipe.excerpt || undefined,
+    ]
       .filter(Boolean)
       .join(" · ");
     return (
       <Row
         key={recipe.id}
         href={`/lists/recipes/${recipe.id}`}
-        leading={owner ? <Avatar name={owner.user.name || owner.user.email} image={owner.user.image} size={24} /> : undefined}
+        leading={
+          recipe.imageUrl ? (
+            <RecipePhoto src={recipe.imageUrl} className="size-11 rounded-lg" />
+          ) : owner ? (
+            <Avatar name={owner.user.name || owner.user.email} image={owner.user.image} size={24} />
+          ) : undefined
+        }
         title={recipe.name}
         meta={meta || undefined}
-        trailing={recipe.servings ? <span className="text-sm text-muted-foreground md:text-xs">{recipe.servings} servings</span> : undefined}
+        trailing={
+          recipe.cookedCount > 0 ? <span className="text-sm text-muted-foreground md:text-xs">Cooked {recipe.cookedCount}×</span> : undefined
+        }
       />
     );
   };
@@ -104,26 +148,72 @@ function Recipes() {
   return (
     <>
       <ListsPage actions={newRecipe}>
-        <div className="flex flex-col gap-3">
+        <form
+          className="flex items-center gap-2 md:max-w-xl"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (linkOk) router.push(newHref(`&url=${encodeURIComponent(link.trim())}`));
+          }}
+        >
           <Input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search names, ingredients and steps"
-            aria-label="Search Recipes"
-            className="md:max-w-md"
+            type="url"
+            inputMode="url"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="Paste a recipe link to add it"
+            aria-label="Recipe link to add"
+            className="flex-1"
           />
-          <ChoiceChips
-            label="Filter by cookbook"
-            value={cookbookId}
-            onChange={setCookbookId}
-            options={[
-              { value: "all", label: "All" },
-              ...cookbooks.map((c) => ({ value: c.id, label: `${c.name} ${searching ? (counts.get(c.id) ?? 0) : c.recipeCount}` })),
-            ]}
-            trailing={<AddChip onClick={() => setCreating(true)}>New cookbook</AddChip>}
-          />
-        </div>
+          <Button type="submit" variant="outline" disabled={!linkOk}>
+            Add
+          </Button>
+        </form>
+
+        {(everyRecipe?.length ?? 0) > 0 && <MealPlan recipes={everyRecipe ?? []} canShop={isEnabled("shopping")} />}
+
+        {(recipes.length > 0 || searching) && (
+          <div className="flex flex-col gap-3">
+            <Input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search names, ingredients and steps"
+              aria-label="Search Recipes"
+              className="md:max-w-md"
+            />
+            <ChoiceChips
+              label="Filter by cookbook"
+              value={cookbookId}
+              onChange={setCookbookId}
+              options={[
+                { value: "all", label: "All" },
+                ...cookbooks.map((c) => ({ value: c.id, label: `${c.name} ${searching ? (counts.get(c.id) ?? 0) : c.recipeCount}` })),
+              ]}
+              trailing={<AddChip onClick={() => setCreating(true)}>New cookbook</AddChip>}
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <ChoiceChips<Idea>
+                label="What to cook"
+                value={idea}
+                onChange={setIdea}
+                options={[
+                  { value: "all", label: "Anything" },
+                  { value: "quick", label: `Under ${QUICK_MINUTES} min` },
+                  { value: "new", label: "Not cooked yet" },
+                  { value: "again", label: "Not cooked lately" },
+                ]}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={visible.length === 0}
+                onClick={() => router.push(`/lists/recipes/${visible[Math.floor(Math.random() * visible.length)].id}`)}
+              >
+                <ShuffleIcon /> Surprise me
+              </Button>
+            </div>
+          </div>
+        )}
 
         {selected && (
           <div className="flex items-start justify-between gap-3">
@@ -146,12 +236,26 @@ function Recipes() {
         )}
 
         {recipes.length === 0 && !searching && (
-          <EmptyState title="No recipes yet. Add the ones you cook again and again, and send their ingredients to your shopping list." action={newRecipe} />
+          <EmptyState
+            title="No recipes yet. Paste a link above and Nest reads the recipe for you, or write one down yourself."
+            action={newRecipe}
+          />
         )}
         {recipes.length === 0 && searching && (
           <EmptyState title="Nothing matches. Search looks in names, ingredients and steps of every cookbook you can see." />
         )}
-        {recipes.length > 0 && visible.length === 0 && <EmptyState title="No recipes in this cookbook yet." action={newRecipe} />}
+        {recipes.length > 0 && inCookbook.length === 0 && <EmptyState title="No recipes in this cookbook yet." action={newRecipe} />}
+        {inCookbook.length > 0 && visible.length === 0 && (
+          <EmptyState
+            title={
+              idea === "quick"
+                ? `Nothing here takes under ${QUICK_MINUTES} minutes. Recipes need a time filled in to show up.`
+                : idea === "new"
+                  ? "You've cooked everything here at least once."
+                  : "Nothing here has gone uncooked for a month."
+            }
+          />
+        )}
         {visible.length > 0 && (
           <section aria-label={searching ? `${visible.length} recipes` : "Recipes"}>
             <RowList>{visible.map(row)}</RowList>

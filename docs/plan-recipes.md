@@ -53,3 +53,11 @@ Terms follow `CONTEXT.md` (Recipe, Ingredient, Cookbook). Movies & Series ships 
 ## Open decisions
 
 - Photos in the existing Vault bucket (planned) or a separate bucket and env vars.
+
+## Built beyond the first plan (2026-11-09)
+
+- Adding: paste a link on the Recipes page, import on the editor, paste a recipe as text, and (Android) share a page to Nest from the browser. Imports also bring the time and the page's photo (shown from the source site, not copied).
+- Shopping: "Add to shopping list" with the servings chosen on the Recipe; "Shop for the plan" for every Planned meal.
+- Cook mode: gather Ingredients, one step at a time, the Ingredients each step uses, timers from the times in a step, screen kept on, marks the Recipe as Cooked.
+- Deciding: Meal plan for the next seven days, filters (under 30 min, not cooked yet, not cooked lately) and "Surprise me".
+- Still open: uploading your own photo (needs the storage decision above).

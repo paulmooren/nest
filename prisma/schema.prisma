@@ -112,6 +112,7 @@ model Household {
   vaultCategories   VaultCategory[]
   notebooks         Notebook[]
   cookbooks         Cookbook[]
+  plannedMeals      PlannedMeal[]
   reminders         Reminder[]
 
   @@map("households")
@@ -735,18 +736,42 @@ model Cookbook {
 // `ingredients` is free text, one Ingredient per line. `steps` is plain text. `updatedAt` doubles as the version a
 // save is checked against, so two people can't silently overwrite each other.
 model Recipe {
-  id          String   @id @default(cuid())
-  cookbookId  String
-  name        String
-  ingredients String   @default("")
-  steps       String   @default("")
-  servings    Int?
-  sourceUrl   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String    @id @default(cuid())
+  cookbookId   String
+  name         String
+  ingredients  String    @default("")
+  steps        String    @default("")
+  servings     Int?
+  sourceUrl    String?
+  // Prep and cooking together.
+  totalMinutes Int?
+  // A photo on someone else's site (from an import); shown as it is, never copied.
+  imageUrl     String?
+  // Cooked: how often Cook mode was finished for this Recipe, and when last.
+  cookedCount  Int       @default(0)
+  lastCookedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  cookbook Cookbook @relation(fields: [cookbookId], references: [id], onDelete: Cascade)
+  cookbook     Cookbook      @relation(fields: [cookbookId], references: [id], onDelete: Cascade)
+  plannedMeals PlannedMeal[]
 
   @@index([cookbookId])
   @@map("recipes")
+}
+
+// The Meal plan: a Recipe put on a day. Household-wide; a Member only sees the Planned meals whose Recipe they can
+// see.
+model PlannedMeal {
+  id          String   @id @default(cuid())
+  householdId String
+  recipeId    String
+  day         DateTime @db.Date
+  createdAt   DateTime @default(now())
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  recipe    Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([householdId, day])
+  @@map("planned_meals")
 }

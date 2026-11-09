@@ -7,6 +7,7 @@ import { editableCookbooks, ensureStarterCookbook, readableCookbooks } from "@/s
 import { fetchPublicPage, FetchError } from "@/server/fetch-public-url";
 import { parseRecipeHtml } from "@/lib/recipe-import";
 import {
+  RECIPE_MINUTES_MAX,
   ingredientsExcerpt,
   RECIPE_INGREDIENTS_MAX,
   RECIPE_NAME_MAX,
@@ -26,7 +27,17 @@ const recipeInput = z.object({
     .max(500)
     .refine((v) => v === "" || /^https?:\/\//i.test(v), "The link must start with http:// or https://")
     .nullable(),
+  totalMinutes: z.number().int().min(1).max(RECIPE_MINUTES_MAX).nullable(),
+  imageUrl: z
+    .string()
+    .trim()
+    .max(1000)
+    .refine((v) => v === "" || /^https:\/\//i.test(v), "The photo link must start with https://")
+    .nullable(),
 });
+
+const dayInput = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const toDay = (day: string) => new Date(`${day}T00:00:00.000Z`);
 
 const NOT_YOURS = "That Cookbook doesn't exist, or you can't edit it.";
 
@@ -147,7 +158,19 @@ export const recipesRouter = createTRPCRouter({
             : {}),
         },
         orderBy: { name: "asc" },
-        select: { id: true, cookbookId: true, name: true, ingredients: true, servings: true, updatedAt: true },
+        select: {
+          id: true,
+          cookbookId: true,
+          name: true,
+          ingredients: true,
+          servings: true,
+          totalMinutes: true,
+          imageUrl: true,
+          cookedCount: true,
+          lastCookedAt: true,
+          createdAt: true,
+          updatedAt: true,
+        },
         take: 500,
       });
       return rows.map(({ ingredients, ...r }) => ({ ...r, excerpt: ingredientsExcerpt(ingredients) }));
@@ -172,7 +195,7 @@ export const recipesRouter = createTRPCRouter({
     const { id, ...data } = input;
     return rejectDuplicateId(() =>
       ctx.prisma.recipe.create({
-        data: { id, ...data, sourceUrl: data.sourceUrl || null },
+        data: { id, ...data, sourceUrl: data.sourceUrl || null, imageUrl: data.imageUrl || null },
         select: { id: true, updatedAt: true },
       }),
     );
@@ -200,7 +223,7 @@ export const recipesRouter = createTRPCRouter({
       const now = new Date();
       const result = await ctx.prisma.recipe.updateMany({
         where: { id, updatedAt: expectedUpdatedAt },
-        data: { ...data, sourceUrl: data.sourceUrl || null, updatedAt: now },
+        data: { ...data, sourceUrl: data.sourceUrl || null, imageUrl: data.imageUrl || null, updatedAt: now },
       });
       if (result.count === 0) {
         throw new TRPCError({ code: "CONFLICT", message: "Someone else changed this Recipe since you opened it." });
@@ -233,8 +256,104 @@ export const recipesRouter = createTRPCRouter({
         servings: recipe.servings,
         ingredients: recipe.ingredients.join("\n").slice(0, RECIPE_INGREDIENTS_MAX),
         steps: recipe.steps.join("\n").slice(0, RECIPE_STEPS_MAX),
+        totalMinutes: recipe.totalMinutes,
+        imageUrl: recipe.imageUrl,
       };
     }),
+
+  /**
+   * Records that a Recipe was cooked: one more time, last cooked now. Anyone who can see the Recipe may. It leaves
+   * the edit time alone, so it never trips the edit-conflict check of an open editor.
+   */
+  markCooked: householdProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    const result = await ctx.prisma.$executeRaw`
+      UPDATE "recipes" SET "cookedCount" = "cookedCount" + 1, "lastCookedAt" = NOW()
+      WHERE "id" = ${input.id}
+        AND "cookbookId" IN (
+          SELECT "id" FROM "cookbooks"
+          WHERE "householdId" = ${ctx.householdId}
+            AND ("ownerId" IS NULL OR "ownerId" = ${ctx.userId} OR "visibleToHousehold" = true)
+        )`;
+    if (result === 0) throw new TRPCError({ code: "NOT_FOUND" });
+    return { success: true };
+  }),
+
+  /**
+   * Puts Ingredient lines on a Shopping list the Member can use, each as one Shopping item. Lines already open on
+   * that list (same name, whatever the capitals) are skipped.
+   */
+  addToShopping: householdProcedure
+    .input(z.object({ listId: z.string(), lines: z.array(z.string().trim().min(1).max(300)).min(1).max(200) }))
+    .mutation(async ({ ctx, input }) => {
+      const list = await ctx.prisma.shoppingList.findFirst({
+        where: { id: input.listId, householdId: ctx.householdId, OR: [{ ownerId: null }, { ownerId: ctx.userId }] },
+        select: { id: true, name: true },
+      });
+      if (!list) throw new TRPCError({ code: "NOT_FOUND" });
+      const open = await ctx.prisma.shoppingItem.findMany({
+        where: { listId: list.id, clearedAt: null, checkedAt: null },
+        select: { name: true },
+      });
+      const seen = new Set(open.map((i) => i.name.toLowerCase()));
+      const names: string[] = [];
+      for (const line of input.lines) {
+        const name = line.slice(0, 120);
+        if (seen.has(name.toLowerCase())) continue;
+        seen.add(name.toLowerCase());
+        names.push(name);
+      }
+      if (names.length > 0) {
+        const now = Date.now();
+        await ctx.prisma.shoppingItem.createMany({
+          // Spaced a millisecond apart so the list keeps the Recipe's order.
+          data: names.map((name, i) => ({ listId: list.id, name, addedById: ctx.userId, createdAt: new Date(now + i) })),
+        });
+      }
+      return { added: names.length, skipped: input.lines.length - names.length, listName: list.name };
+    }),
+
+  // ── Meal plan ───────────────────────────────────────────────────────────
+  /** The Planned meals from `from` for `days` days, oldest first, with what is needed to show and shop for them. */
+  plan: householdProcedure
+    .input(z.object({ from: dayInput, days: z.number().int().min(1).max(31) }))
+    .query(async ({ ctx, input }) => {
+      const from = toDay(input.from);
+      const to = new Date(from.getTime() + input.days * 86_400_000);
+      const meals = await ctx.prisma.plannedMeal.findMany({
+        where: { householdId: ctx.householdId, day: { gte: from, lt: to }, recipe: { cookbook: readableCookbooks(ctx) } },
+        orderBy: [{ day: "asc" }, { createdAt: "asc" }],
+        select: { id: true, day: true, recipe: { select: { id: true, name: true, ingredients: true, imageUrl: true } } },
+      });
+      return meals.map((m) => ({ id: m.id, day: m.day.toISOString().slice(0, 10), recipe: m.recipe }));
+    }),
+
+  planMeal: householdProcedure
+    .input(z.object({ recipeId: z.string(), day: dayInput }))
+    .mutation(async ({ ctx, input }) => {
+      const recipe = await ctx.prisma.recipe.findFirst({
+        where: { id: input.recipeId, cookbook: readableCookbooks(ctx) },
+        select: { id: true },
+      });
+      if (!recipe) throw new TRPCError({ code: "NOT_FOUND" });
+      const day = toDay(input.day);
+      const existing = await ctx.prisma.plannedMeal.findFirst({
+        where: { householdId: ctx.householdId, recipeId: recipe.id, day },
+        select: { id: true },
+      });
+      if (existing) return existing;
+      return ctx.prisma.plannedMeal.create({
+        data: { householdId: ctx.householdId, recipeId: recipe.id, day },
+        select: { id: true },
+      });
+    }),
+
+  unplanMeal: householdProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    const result = await ctx.prisma.plannedMeal.deleteMany({
+      where: { id: input.id, householdId: ctx.householdId, recipe: { cookbook: readableCookbooks(ctx) } },
+    });
+    if (result.count === 0) throw new TRPCError({ code: "NOT_FOUND" });
+    return { success: true };
+  }),
 
   delete: householdProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
     const result = await ctx.prisma.recipe.deleteMany({ where: { id: input.id, cookbook: editableCookbooks(ctx) } });

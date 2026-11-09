@@ -459,6 +459,9 @@ export async function seedDemo(prisma: PrismaClient, now: Date = new Date()) {
         cookbookId: recipesBook.id,
         name: "Tomato soup",
         servings: 4,
+        totalMinutes: 35,
+        cookedCount: 6,
+        lastCookedAt: daysFromToday(-9),
         ingredients: "800 g ripe tomatoes\n1 onion\n2 cloves garlic\n500 ml vegetable stock\n2 tbsp olive oil\nSalt and pepper",
         steps: "Soften the onion and garlic in the oil.\nAdd the chopped tomatoes and stock and simmer for 20 minutes.\nBlend until smooth and season.",
       },
@@ -466,6 +469,9 @@ export async function seedDemo(prisma: PrismaClient, now: Date = new Date()) {
         cookbookId: recipesBook.id,
         name: "Pasta al limone",
         servings: 2,
+        totalMinutes: 20,
+        cookedCount: 2,
+        lastCookedAt: daysFromToday(-52),
         ingredients: "200 g spaghetti\n1 lemon\n40 g parmesan\n30 g butter\nBlack pepper",
         steps: "Cook the pasta until just done and keep a cup of the water.\nMelt the butter with lemon zest and juice.\nToss everything with parmesan and a splash of pasta water.",
         sourceUrl: "https://example.com/pasta-al-limone",
@@ -474,6 +480,7 @@ export async function seedDemo(prisma: PrismaClient, now: Date = new Date()) {
         cookbookId: bakingBook.id,
         name: "Banana bread",
         servings: 8,
+        totalMinutes: 65,
         ingredients: "3 ripe bananas\n200 g flour\n100 g sugar\n2 eggs\n80 g butter\n1 tsp baking powder",
         steps: "Mash the bananas and mix with melted butter, sugar and eggs.\nFold in the flour and baking powder.\nBake at 175 °C for 50 minutes.",
       },
@@ -481,10 +488,18 @@ export async function seedDemo(prisma: PrismaClient, now: Date = new Date()) {
         cookbookId: alexBook.id,
         name: "Sourdough focaccia",
         servings: 6,
+        totalMinutes: 180,
+        cookedCount: 1,
+        lastCookedAt: daysFromToday(-20),
         ingredients: "500 g bread flour\n400 ml water\n100 g active starter\n10 g salt\nOlive oil",
         steps: "Mix everything and rest for 30 minutes.\nStretch and fold three times over two hours.\nProve overnight in the fridge, dimple and bake at 230 °C for 25 minutes.",
       },
     ].map((r) => ({ ...r, createdAt: stamp() })),
+  });
+  // The Meal plan: two dinners this week.
+  const planned = await prisma.recipe.findMany({ where: { cookbookId: recipesBook.id }, orderBy: { name: "asc" }, select: { id: true } });
+  await prisma.plannedMeal.createMany({
+    data: planned.map((r, i) => ({ householdId, recipeId: r.id, day: daysFromToday(i * 2), createdAt: stamp() })),
   });
 
   lap("recipes");
