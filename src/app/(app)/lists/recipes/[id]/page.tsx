@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { TRPCClientError } from "@trpc/client";
@@ -28,7 +28,8 @@ import {
 import { AddToShoppingSheet } from "@/components/recipes/shopping-sheet";
 import { useRefreshRecipes } from "@/components/recipes/use-recipes";
 import { showToast } from "@/components/toast";
-import { formatMinutes, parseIngredients, scaleIngredient } from "@/lib/recipes";
+import { shrinkImageFile } from "@/lib/image";
+import { formatMinutes, parseIngredients, RECIPE_PHOTO_MAX_BYTES, recipePhotoSrc, scaleIngredient } from "@/lib/recipes";
 
 export default function RecipePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -67,6 +68,31 @@ function RecipeDetail({ id }: { id: string }) {
   const update = trpc.recipes.update.useMutation();
   const importFromUrl = trpc.recipes.importFromUrl.useMutation();
   const remove = trpc.recipes.delete.useMutation({ onSuccess: refresh });
+  const removePhoto = trpc.recipes.removePhoto.useMutation({ onSuccess: refresh });
+  const photoInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  /** Shrinks a phone photo, sends it, and shows it. */
+  async function uploadPhoto(raw: File) {
+    setUploading(true);
+    try {
+      const file = await shrinkImageFile(raw, RECIPE_PHOTO_MAX_BYTES);
+      const body = new FormData();
+      body.set("recipeId", id);
+      body.set("file", file);
+      const res = await fetch("/api/recipes/photos", { method: "POST", body });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        showToast(data?.error ?? "Couldn't upload that photo");
+        return;
+      }
+      await refresh();
+    } catch {
+      showToast("Couldn't upload that photo");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   if (error) {
     return (
@@ -144,6 +170,7 @@ function RecipeDetail({ id }: { id: string }) {
   const factor = recipe.servings && servings ? servings / recipe.servings : 1;
   const lines = parseIngredients(recipe.ingredients).map((l) => scaleIngredient(l, factor));
   const steps = parseIngredients(recipe.steps);
+  const photo = recipePhotoSrc(recipe);
   const cookHref = `/lists/recipes/${id}/cook${wanted && wanted !== recipe.servings ? `?servings=${wanted}` : ""}`;
   const cooked =
     recipe.cookedCount === 0
@@ -173,7 +200,7 @@ function RecipeDetail({ id }: { id: string }) {
         }
       />
       <PageBody>
-        {recipe.imageUrl && <RecipePhoto src={recipe.imageUrl} className="h-48 w-full max-w-3xl rounded-2xl md:h-64" />}
+        {photo && <RecipePhoto src={photo} className="h-48 w-full max-w-3xl rounded-2xl md:h-64" />}
 
         <div className="flex flex-wrap items-center gap-2">
           <Button size="lg" render={<Link href={cookHref} />} nativeButton={false}>
@@ -206,6 +233,31 @@ function RecipeDetail({ id }: { id: string }) {
             <Button variant="outline" onClick={() => setEditing(true)}>
               Edit
             </Button>
+          )}
+          {canEdit && (
+            <>
+              <input
+                ref={photoInput}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                aria-label="Choose a photo for this recipe"
+                tabIndex={-1}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) void uploadPhoto(file);
+                }}
+              />
+              <Button variant="outline" disabled={uploading} onClick={() => photoInput.current?.click()}>
+                {uploading ? "Uploading…" : recipe.photoKey ? "Change photo" : "Add your photo"}
+              </Button>
+              {recipe.photoKey && (
+                <Button variant="outline" disabled={removePhoto.isPending} onClick={() => removePhoto.mutate({ id })}>
+                  Remove your photo
+                </Button>
+              )}
+            </>
           )}
           {recipe.sourceUrl && (
             <Button variant="outline" render={<a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer" />} nativeButton={false}>

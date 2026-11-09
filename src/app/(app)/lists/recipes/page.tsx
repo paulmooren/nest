@@ -23,7 +23,7 @@ import { MealPlan } from "@/components/recipes/meal-plan";
 import { RecipePhoto, RecipesBones } from "@/components/recipes/recipes-ui";
 import { useRefreshRecipes } from "@/components/recipes/use-recipes";
 import { newId } from "@/lib/client-id";
-import { formatMinutes } from "@/lib/recipes";
+import { formatMinutes, recipePhotoSrc } from "@/lib/recipes";
 
 export default function RecipesPage() {
   return (
@@ -115,6 +115,7 @@ function Recipes() {
   const row = (recipe: Recipe) => {
     const cb = cookbooks.find((c) => c.id === recipe.cookbookId);
     const owner = multiMember && cb?.ownerId ? members.find((m) => m.user.id === cb.ownerId) : undefined;
+    const photo = recipePhotoSrc(recipe);
     const meta = [
       cookbookId === "all" || searching ? cookbookName.get(recipe.cookbookId) : undefined,
       recipe.totalMinutes ? formatMinutes(recipe.totalMinutes) : undefined,
@@ -127,8 +128,8 @@ function Recipes() {
         key={recipe.id}
         href={`/lists/recipes/${recipe.id}`}
         leading={
-          recipe.imageUrl ? (
-            <RecipePhoto src={recipe.imageUrl} className="size-11 rounded-lg" />
+          photo ? (
+            <RecipePhoto src={photo} className="size-11 rounded-lg" />
           ) : owner ? (
             <Avatar name={owner.user.name || owner.user.email} image={owner.user.image} size={24} />
           ) : undefined

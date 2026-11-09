@@ -19,6 +19,17 @@ export function ingredientsExcerpt(text: string, max = 120): string {
 }
 
 export const RECIPE_MINUTES_MAX = 6_000;
+export const RECIPE_PHOTO_MAX_BYTES = 4 * 1024 * 1024;
+export const RECIPE_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+
+/**
+ * Where a Recipe's photo is: the Member's own upload when there is one (its key in the address, so a new photo is
+ * a new address), otherwise the photo on the site it was imported from, otherwise none.
+ */
+export function recipePhotoSrc(recipe: { id: string; photoKey: string | null; imageUrl: string | null }): string | null {
+  if (recipe.photoKey) return `/api/recipes/photos/${recipe.id}?v=${encodeURIComponent(recipe.photoKey.split("/").pop() ?? "")}`;
+  return recipe.imageUrl;
+}
 
 /** "45 min", "1 h", "1 h 30 min". */
 export function formatMinutes(minutes: number): string {

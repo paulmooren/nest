@@ -60,4 +60,4 @@ Terms follow `CONTEXT.md` (Recipe, Ingredient, Cookbook). Movies & Series ships 
 - Shopping: "Add to shopping list" with the servings chosen on the Recipe; "Shop for the plan" for every Planned meal.
 - Cook mode: gather Ingredients, one step at a time, the Ingredients each step uses, timers from the times in a step, screen kept on, marks the Recipe as Cooked.
 - Deciding: Meal plan for the next seven days, filters (under 30 min, not cooked yet, not cooked lately) and "Surprise me".
-- Still open: uploading your own photo (needs the storage decision above).
+- Your own photo (2026-11-10): uploaded from the Recipe page into the Vault's file storage under `recipes/`, not encrypted, served only to Members who can see the Recipe.

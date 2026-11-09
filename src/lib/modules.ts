@@ -34,6 +34,11 @@ export const MODULES = [
     description: "Recipes kept in cookbooks, with ingredients you can add to a shopping list.",
   },
   {
+    key: "movies",
+    label: "Movies & Series",
+    description: "Watchlists of films and series, with everyone's own rating.",
+  },
+  {
     key: "notes",
     label: "Notes",
     description: "Things worth writing down and coming back to — achievements, ideas, anything you don't want to forget.",

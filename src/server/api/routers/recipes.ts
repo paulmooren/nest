@@ -5,6 +5,7 @@ import { createTRPCRouter, householdProcedure } from "@/server/api/trpc";
 import { clientIdSchema, rejectDuplicateId } from "@/server/api/client-id";
 import { editableCookbooks, ensureStarterCookbook, readableCookbooks } from "@/server/recipes-access";
 import { fetchPublicPage, FetchError } from "@/server/fetch-public-url";
+import { deleteFile } from "@/server/vault-storage";
 import { parseRecipeHtml } from "@/lib/recipe-import";
 import {
   RECIPE_MINUTES_MAX,
@@ -129,7 +130,12 @@ export const recipesRouter = createTRPCRouter({
           ctx.prisma.cookbook.delete({ where: { id: cookbook.id } }),
         ]);
       } else {
+        const photos = await ctx.prisma.recipe.findMany({
+          where: { cookbookId: cookbook.id, photoKey: { not: null } },
+          select: { photoKey: true },
+        });
         await ctx.prisma.cookbook.delete({ where: { id: cookbook.id } });
+        await Promise.all(photos.map((p) => deleteFile(p.photoKey!)));
       }
       return { success: true };
     }),
@@ -166,6 +172,7 @@ export const recipesRouter = createTRPCRouter({
           servings: true,
           totalMinutes: true,
           imageUrl: true,
+          photoKey: true,
           cookedCount: true,
           lastCookedAt: true,
           createdAt: true,
@@ -322,7 +329,7 @@ export const recipesRouter = createTRPCRouter({
       const meals = await ctx.prisma.plannedMeal.findMany({
         where: { householdId: ctx.householdId, day: { gte: from, lt: to }, recipe: { cookbook: readableCookbooks(ctx) } },
         orderBy: [{ day: "asc" }, { createdAt: "asc" }],
-        select: { id: true, day: true, recipe: { select: { id: true, name: true, ingredients: true, imageUrl: true } } },
+        select: { id: true, day: true, recipe: { select: { id: true, name: true, ingredients: true } } },
       });
       return meals.map((m) => ({ id: m.id, day: m.day.toISOString().slice(0, 10), recipe: m.recipe }));
     }),
@@ -356,8 +363,27 @@ export const recipesRouter = createTRPCRouter({
   }),
 
   delete: householdProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
-    const result = await ctx.prisma.recipe.deleteMany({ where: { id: input.id, cookbook: editableCookbooks(ctx) } });
-    if (result.count === 0) throw new TRPCError({ code: "NOT_FOUND" });
+    const recipe = await ctx.prisma.recipe.findFirst({
+      where: { id: input.id, cookbook: editableCookbooks(ctx) },
+      select: { id: true, photoKey: true },
+    });
+    if (!recipe) throw new TRPCError({ code: "NOT_FOUND" });
+    await ctx.prisma.recipe.delete({ where: { id: recipe.id } });
+    if (recipe.photoKey) await deleteFile(recipe.photoKey);
+    return { success: true };
+  }),
+
+  /** Takes the Member's own photo off a Recipe; a photo from the import, if any, shows again. */
+  removePhoto: householdProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    const recipe = await ctx.prisma.recipe.findFirst({
+      where: { id: input.id, cookbook: editableCookbooks(ctx) },
+      select: { id: true, photoKey: true },
+    });
+    if (!recipe) throw new TRPCError({ code: "NOT_FOUND" });
+    if (recipe.photoKey) {
+      await ctx.prisma.$executeRaw`UPDATE "recipes" SET "photoKey" = NULL WHERE "id" = ${recipe.id}`;
+      await deleteFile(recipe.photoKey);
+    }
     return { success: true };
   }),
 });

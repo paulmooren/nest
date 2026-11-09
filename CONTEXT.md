@@ -181,17 +181,21 @@ _Avoid_: Folder, tag, category, collection
 ### Movies & Series
 
 **Title**:
-One film or series a Household wants to watch or has watched: a name, a Kind (Movie or Series) and a Status (Want to watch, Watching, Watched). Each Member rates it separately (5 stars, half steps) and may leave a short note; the date it was watched is recorded. Lives in one Watchlist. The entry, not a text field called "title".
+One film or series a Household wants to watch or has watched: a name, a Kind (Movie or Series) and a Status (Want to watch, Watching, Watched). When it was found at TMDB it also has a year, a running time, a short description and a poster. Becoming Watched records the date. Lives in one Watchlist. The entry, not a text field called "title".
 _Avoid_: Movie (alone — excludes series), film, show, entry (that is a Vault term)
 
 **Watchlist**:
-A named group of Titles, Shared or Personal with Visibility if Personal, exactly like a Cookbook. A Title is in exactly one Watchlist and takes its ownership from it. Each Household starts with a Shared Watchlist called "Watchlist", not deletable. Deleting another Watchlist asks where its Titles go (default: "Watchlist") or offers to delete them, with a warning when Personal Titles would become Shared.
+A named group of Titles, Shared (the default; every Member may edit) or Personal with Visibility, exactly like a Cookbook; a Personal Watchlist is visible to the Household unless its owner hides it. A Title is in exactly one Watchlist and takes its ownership from it. Each Household starts with a Shared Watchlist called "Watchlist", not deletable. Deleting another Watchlist asks where its Titles go (default: "Watchlist") or offers to delete them, with a warning when Personal Titles would become Shared.
 _Avoid_: Queue, Shopping list
+
+**Rating**:
+What one Member thought of a Title: half a star to five stars, and optionally a short note. Every Member has their own, and any Member who can see the Title can give one, whoever owns its Watchlist. The list shows the average.
+_Avoid_: Review, score, Priority
 
 ### Recipes
 
 **Recipe**:
-A way to cook something, kept in one Cookbook: a name, Ingredients, steps, and optionally servings, a time, a photo and a source link. It can be typed in, pasted as text, or imported from a web page; an import only fills in a draft, and nothing is kept until the Member saves. Its Ingredients can be added to a Shopping list, and it can be followed in Cook mode.
+A way to cook something, kept in one Cookbook: a name, Ingredients, steps, and optionally servings, a time, a photo (the Member's own, or the one on the page it was imported from) and a source link. It can be typed in, pasted as text, or imported from a web page; an import only fills in a draft, and nothing is kept until the Member saves. Its Ingredients can be added to a Shopping list, and it can be followed in Cook mode.
 _Avoid_: Dish, meal (a Planned meal is a Recipe on a day), document
 
 **Ingredient**:
@@ -199,7 +203,7 @@ One free-text line of a Recipe ("200 g flour"). Not split into amount, unit and 
 _Avoid_: Product, item
 
 **Cookbook**:
-A named group of Recipes that Members create (Baking, Weeknight dinners), Shared (the default; every Member may edit) or Personal with Visibility, like a Notebook. A Recipe is in exactly one Cookbook and takes its ownership from it. Each Household starts with a Shared Cookbook called "Recipes", not deletable. Deleting another Cookbook asks where its Recipes go (default: "Recipes") or offers to delete them, with a warning when Personal Recipes would become Shared.
+A named group of Recipes that Members create (Baking, Weeknight dinners), Shared (the default; every Member may edit) or Personal with Visibility, like a Notebook, except that a Personal Cookbook is visible to the Household unless its owner hides it. A Recipe is in exactly one Cookbook and takes its ownership from it. Each Household starts with a Shared Cookbook called "Recipes", not deletable. Deleting another Cookbook asks where its Recipes go (default: "Recipes") or offers to delete them, with a warning when Personal Recipes would become Shared.
 _Avoid_: Folder, tag, category, collection
 
 **Cook mode**:

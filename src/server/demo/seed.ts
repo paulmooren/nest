@@ -503,6 +503,36 @@ export async function seedDemo(prisma: PrismaClient, now: Date = new Date()) {
   });
 
   lap("recipes");
+  // ── Movies & Series ──────────────────────────────────────────────────────
+  const [watchlist, samList] = await Promise.all([
+    prisma.watchlist.create({ data: { householdId, createdAt: stamp(), ownerId: null, isStarter: true, name: "Watchlist" }, select: { id: true } }),
+    // A Personal watchlist, visible to Alex but editable only by Sam.
+    prisma.watchlist.create({ data: { householdId, createdAt: stamp(), ownerId: sam, name: "Sam's documentaries" }, select: { id: true } }),
+  ]);
+  const title = (watchlistId: string, name: string, kind: "MOVIE" | "SERIES", year: number, status: "WANT" | "WATCHING" | "WATCHED", runtimeMinutes: number, watchedDaysAgo?: number) =>
+    prisma.title.create({
+      data: { watchlistId, name, kind, year, status, runtimeMinutes, createdAt: stamp(), watchedAt: watchedDaysAgo === undefined ? null : daysFromToday(-watchedDaysAgo) },
+      select: { id: true },
+    });
+  // Made-up titles: the Demo never calls TMDB.
+  const [harbour, lighthouse] = await Promise.all([
+    title(watchlist.id, "The Last Harbour", "MOVIE", 2024, "WATCHED", 118, 12),
+    title(watchlist.id, "Lighthouse Road", "SERIES", 2025, "WATCHED", 48, 40),
+    title(watchlist.id, "North of Nowhere", "SERIES", 2026, "WATCHING", 52),
+    title(watchlist.id, "A Quiet Winter", "MOVIE", 2023, "WANT", 101),
+    title(watchlist.id, "Paper Kites", "MOVIE", 2025, "WANT", 94),
+    title(samList.id, "Salt and Stone", "MOVIE", 2022, "WANT", 87),
+  ]);
+  await prisma.titleRating.createMany({
+    data: [
+      { titleId: harbour.id, userId: alex, halfStars: 8, note: "Slow start, great ending." },
+      { titleId: harbour.id, userId: sam, halfStars: 6 },
+      { titleId: lighthouse.id, userId: alex, halfStars: 9 },
+      { titleId: lighthouse.id, userId: sam, halfStars: 10, note: "Best thing we watched this year." },
+    ],
+  });
+
+  lap("movies");
   // ── Vault: made-up values, encrypted like real ones ──────────────────────
   const enc = (v: string) => encryptValue(v, householdId);
   await ensureVaultCategories(prisma, householdId);
