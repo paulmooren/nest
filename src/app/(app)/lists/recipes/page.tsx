@@ -74,7 +74,6 @@ function Recipes() {
 
   const [cookbookId, setCookbookId] = useState("all");
   const [idea, setIdea] = useState<Idea>("all");
-  const [link, setLink] = useState("");
   const [creating, setCreating] = useState(false);
   const [settings, setSettings] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -93,10 +92,9 @@ function Recipes() {
   const selected = cookbooks?.find((c) => c.id === cookbookId);
   // New recipes go in the Cookbook being looked at when it is yours or shared, otherwise the starter one.
   const target = selected && (selected.ownerId === null || selected.ownerId === me?.id) ? selected : starter;
-  const newHref = (extra = "") => `/lists/recipes/new${target ? `?cookbook=${target.id}` : "?"}${extra}`;
 
   const newRecipe = (
-    <Button render={<Link href={newHref()} />} nativeButton={false}>
+    <Button render={<Link href={target ? `/lists/recipes/new?cookbook=${target.id}` : "/lists/recipes/new"} />} nativeButton={false}>
       <PlusIcon /> New recipe
     </Button>
   );
@@ -113,7 +111,6 @@ function Recipes() {
   const cookbookName = new Map(cookbooks.map((c) => [c.id, c.name]));
   const mine = !!selected && (selected.ownerId === null || selected.ownerId === me.id);
   const destinations = cookbooks.filter((c) => c.id !== selected?.id && (c.ownerId === null || c.ownerId === me.id));
-  const linkOk = /^https?:\/\/\S+$/i.test(link.trim());
 
   const row = (recipe: Recipe) => {
     const cb = cookbooks.find((c) => c.id === recipe.cookbookId);
@@ -148,27 +145,6 @@ function Recipes() {
   return (
     <>
       <ListsPage actions={newRecipe}>
-        <form
-          className="flex items-center gap-2 md:max-w-xl"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (linkOk) router.push(newHref(`&url=${encodeURIComponent(link.trim())}`));
-          }}
-        >
-          <Input
-            type="url"
-            inputMode="url"
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            placeholder="Paste a recipe link to add it"
-            aria-label="Recipe link to add"
-            className="flex-1"
-          />
-          <Button type="submit" variant="outline" disabled={!linkOk}>
-            Add
-          </Button>
-        </form>
-
         {(everyRecipe?.length ?? 0) > 0 && <MealPlan recipes={everyRecipe ?? []} canShop={isEnabled("shopping")} />}
 
         {(recipes.length > 0 || searching) && (
@@ -237,7 +213,7 @@ function Recipes() {
 
         {recipes.length === 0 && !searching && (
           <EmptyState
-            title="No recipes yet. Paste a link above and Nest reads the recipe for you, or write one down yourself."
+            title="No recipes yet. Start a new recipe and paste a link: Nest reads the recipe for you. Or write one down yourself."
             action={newRecipe}
           />
         )}
