@@ -41,7 +41,9 @@ export async function uploadAttachment(entryId: string, file: File): Promise<str
     const res = await fetch("/api/vault/attachments", { method: "POST", body });
     if (res.ok) return null;
     const data = (await res.json().catch(() => null)) as { error?: string } | null;
-    return data?.error ?? `Couldn't upload ${file.name}.`;
+    if (data?.error) return data.error;
+    if (res.status === 413) return `${file.name} is too large to upload.`;
+    return `Couldn't upload ${file.name} (error ${res.status}).`;
   } catch {
     return `Couldn't upload ${file.name}.`;
   }

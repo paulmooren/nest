@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
@@ -43,20 +44,27 @@ export async function POST(request: Request) {
   if (!(ATTACHMENT_TYPES as readonly string[]).includes(file.type)) return fail("Only PDF, JPEG, PNG or WebP files.", 400);
   if (file.size > ATTACHMENT_MAX_BYTES) return fail("Files can be at most 4 MB.", 400);
 
-  const bytes = Buffer.from(await file.arrayBuffer());
   const id = crypto.randomUUID();
   const storageKey = `${householdId}/${entry.id}/${id}`;
-  await putFile(storageKey, encryptBytes(bytes, householdId));
-  const attachment = await prisma.vaultAttachment.create({
-    data: {
-      id,
-      entryId: entry.id,
-      name: file.name.slice(0, 120) || "file",
-      contentType: file.type,
-      size: file.size,
-      storageKey,
-    },
-    select: { id: true, name: true, contentType: true, size: true },
-  });
-  return NextResponse.json(attachment);
+  try {
+    const bytes = Buffer.from(await file.arrayBuffer());
+    await putFile(storageKey, encryptBytes(bytes, householdId));
+    const attachment = await prisma.vaultAttachment.create({
+      data: {
+        id,
+        entryId: entry.id,
+        name: file.name.slice(0, 120) || "file",
+        contentType: file.type,
+        size: file.size,
+        storageKey,
+      },
+      select: { id: true, name: true, contentType: true, size: true },
+    });
+    return NextResponse.json(attachment);
+  } catch (error) {
+    // Always answer with JSON so the browser can show a reason instead of a bare "couldn't upload".
+    console.error("Vault attachment upload failed", error);
+    const message = error instanceof TRPCError ? error.message : "The server couldn't store this file. Try again.";
+    return fail(message, 500);
+  }
 }
