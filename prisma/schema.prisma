@@ -76,6 +76,8 @@ model User {
   ownedVaultEntries   VaultEntry[]         @relation("VaultEntryOwner")
   ownedNotebooks      Notebook[]           @relation("NotebookOwner")
   ownedCookbooks      Cookbook[]           @relation("CookbookOwner")
+  ownedWatchlists     Watchlist[]          @relation("WatchlistOwner")
+  titleRatings        TitleRating[]
   ownedReminders      Reminder[]           @relation("ReminderOwner")
   completedReminders  ReminderCompletion[] @relation("ReminderCompletedBy")
   pushSubscriptions   PushSubscription[]
@@ -113,6 +115,7 @@ model Household {
   notebooks         Notebook[]
   cookbooks         Cookbook[]
   plannedMeals      PlannedMeal[]
+  watchlists        Watchlist[]
   reminders         Reminder[]
 
   @@map("households")
@@ -745,6 +748,8 @@ model Recipe {
   sourceUrl    String?
   // Prep and cooking together.
   totalMinutes Int?
+  // The Member's own photo, in file storage under this key. Shown in place of imageUrl when both are there.
+  photoKey     String?
   // A photo on someone else's site (from an import); shown as it is, never copied.
   imageUrl     String?
   // Cooked: how often Cook mode was finished for this Recipe, and when last.
@@ -774,4 +779,74 @@ model PlannedMeal {
 
   @@index([householdId, day])
   @@map("planned_meals")
+}
+
+// Same ownership rules as a Cookbook. isStarter marks the Shared "Watchlist" each household has.
+model Watchlist {
+  id                 String   @id @default(cuid())
+  householdId        String
+  ownerId            String?
+  visibleToHousehold Boolean  @default(true)
+  isStarter          Boolean  @default(false)
+  name               String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  owner     User?     @relation("WatchlistOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  titles    Title[]
+
+  @@index([householdId])
+  @@map("watchlists")
+}
+
+enum TitleKind {
+  MOVIE
+  SERIES
+}
+
+enum TitleStatus {
+  WANT
+  WATCHING
+  WATCHED
+}
+
+// A film or series. year, runtimeMinutes, overview, posterUrl and tmdbId come from TMDB when it was found there;
+// the poster is shown from TMDB's own image server.
+model Title {
+  id             String      @id @default(cuid())
+  watchlistId    String
+  name           String
+  kind           TitleKind   @default(MOVIE)
+  status         TitleStatus @default(WANT)
+  year           Int?
+  runtimeMinutes Int?
+  overview       String?
+  posterUrl      String?
+  tmdbId         Int?
+  watchedAt      DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  watchlist Watchlist     @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+  ratings   TitleRating[]
+
+  @@index([watchlistId])
+  @@map("titles")
+}
+
+// One Member's rating of a Title: halfStars 1-10 is half a star to five stars.
+model TitleRating {
+  id        String   @id @default(cuid())
+  titleId   String
+  userId    String
+  halfStars Int?
+  note      String?
+  updatedAt DateTime @updatedAt
+
+  title Title @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([titleId, userId])
+  @@map("title_ratings")
 }

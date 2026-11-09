@@ -10,13 +10,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { TextField } from "@/components/ui/text-field";
 
+/** The words for the two kinds of collection these sheets serve: a Cookbook of Recipes, a Watchlist of Titles. */
+const WORDS = {
+  cookbook: { one: "cookbook", example: "e.g. Baking", item: "recipe", items: "recipes" },
+  watchlist: { one: "watchlist", example: "e.g. Christmas films", item: "title", items: "titles" },
+} as const;
+export type CollectionKind = keyof typeof WORDS;
+
 /** Make a new Cookbook: a name, and whether the household shares it (the default) or it stays yours. */
-export function NewCookbookSheet({ onCreate, onClose }: { onCreate: (name: string, shared: boolean) => void; onClose: () => void }) {
+export function NewCookbookSheet({
+  kind = "cookbook",
+  onCreate,
+  onClose,
+}: {
+  kind?: CollectionKind;
+  onCreate: (name: string, shared: boolean) => void;
+  onClose: () => void;
+}) {
+  const w = WORDS[kind];
   const [name, setName] = useState("");
   const [shared, setShared] = useState(true);
 
   return (
-    <ResponsiveSheet open onOpenChange={(open) => !open && onClose()} title="New cookbook">
+    <ResponsiveSheet open onOpenChange={(open) => !open && onClose()} title={`New ${w.one}`}>
       <form
         className="flex flex-col gap-5"
         onSubmit={(e) => {
@@ -26,7 +42,7 @@ export function NewCookbookSheet({ onCreate, onClose }: { onCreate: (name: strin
           onClose();
         }}
       >
-        <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="e.g. Baking" autoFocus />
+        <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder={w.example} autoFocus />
         <Field id="cookbook-owner" label="Who edits it">
           <ChoiceChips
             label="Who edits it"
@@ -39,7 +55,7 @@ export function NewCookbookSheet({ onCreate, onClose }: { onCreate: (name: strin
           />
         </Field>
         <Button type="submit" size="lg" disabled={!name.trim()}>
-          Create cookbook
+          Create {w.one}
         </Button>
       </form>
     </ResponsiveSheet>
@@ -57,6 +73,7 @@ type SettingsCookbook = {
 
 /** Rename, show to the household, or delete the Cookbook on screen. */
 export function CookbookSettingsSheet({
+  kind = "cookbook",
   cookbook,
   mine,
   multiMember,
@@ -65,6 +82,7 @@ export function CookbookSettingsSheet({
   onDelete,
   onClose,
 }: {
+  kind?: CollectionKind;
   cookbook: SettingsCookbook;
   /** Shared, or yours — only then can it be changed. */
   mine: boolean;
@@ -74,6 +92,7 @@ export function CookbookSettingsSheet({
   onDelete: () => void;
   onClose: () => void;
 }) {
+  const w = WORDS[kind];
   const [name, setName] = useState(cookbook.name);
   const [visible, setVisible] = useState(cookbook.visibleToHousehold);
   const canRename = mine && !cookbook.isStarter;
@@ -87,7 +106,7 @@ export function CookbookSettingsSheet({
     <ResponsiveSheet
       open
       onOpenChange={(open) => !open && close()}
-      title="Cookbook settings"
+      title={`${w.one.charAt(0).toUpperCase()}${w.one.slice(1)} settings`}
       description={cookbook.ownerId === null ? "Shared — everyone in your household can edit it." : "Personal — only its owner can edit it."}
     >
       <form
@@ -117,7 +136,7 @@ export function CookbookSettingsSheet({
           </Button>
           {mine && !cookbook.isStarter && (
             <Button type="button" variant="outline" size="lg" className="text-destructive" onClick={onDelete}>
-              Delete cookbook
+              Delete {w.one}
             </Button>
           )}
         </div>
@@ -131,17 +150,20 @@ export function CookbookSettingsSheet({
  * (the starter by default) or delete them. Moving Personal Recipes into a Shared Cookbook is called out.
  */
 export function DeleteCookbookSheet({
+  kind = "cookbook",
   cookbook,
   destinations,
   onConfirm,
   onClose,
 }: {
+  kind?: CollectionKind;
   cookbook: SettingsCookbook;
   /** Cookbooks the Member can edit, other than this one. */
   destinations: { id: string; name: string; ownerId: string | null; isStarter: boolean }[];
   onConfirm: (moveTo: string | null) => Promise<unknown> | void;
   onClose: () => void;
 }) {
+  const w = WORDS[kind];
   const fallback = destinations.find((d) => d.isStarter) ?? destinations[0];
   const [choice, setChoice] = useState<string>(cookbook.recipeCount === 0 ? "delete" : (fallback?.id ?? "delete"));
   const [busy, setBusy] = useState(false);
@@ -168,12 +190,12 @@ export function DeleteCookbookSheet({
         }}
       >
         {cookbook.recipeCount === 0 ? (
-          <p className="text-sm text-muted-foreground">It has no recipes.</p>
+          <p className="text-sm text-muted-foreground">It has no {w.items}.</p>
         ) : (
           <>
             <Field
               id="delete-cookbook-choice"
-              label={`What happens to its ${cookbook.recipeCount} ${cookbook.recipeCount === 1 ? "recipe" : "recipes"}?`}
+              label={`What happens to its ${cookbook.recipeCount} ${cookbook.recipeCount === 1 ? w.item : w.items}?`}
             >
               <Select items={items} value={choice} onValueChange={(v) => v && setChoice(v)}>
                 <SelectTrigger id="delete-cookbook-choice" className="w-full">
@@ -190,14 +212,14 @@ export function DeleteCookbookSheet({
             </Field>
             {exposes && (
               <p role="alert" className="text-sm text-destructive">
-                {target?.name} is Shared. These Personal recipes would become visible to, and editable by, everyone in your household.
+                {target?.name} is Shared. These Personal {w.items} would become visible to, and editable by, everyone in your household.
               </p>
             )}
-            {choice === "delete" && <p className="text-sm text-destructive">The recipes are deleted. This can&apos;t be undone.</p>}
+            {choice === "delete" && <p className="text-sm text-destructive">The {w.items} are deleted. This can&apos;t be undone.</p>}
           </>
         )}
         <Button type="submit" size="lg" variant="destructive" disabled={busy}>
-          {busy ? "Deleting…" : "Delete cookbook"}
+          {busy ? "Deleting…" : `Delete ${w.one}`}
         </Button>
       </form>
     </ResponsiveSheet>

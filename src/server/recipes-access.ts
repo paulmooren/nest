@@ -1,20 +1,15 @@
 import type { PrismaClient } from "@prisma/client";
 
 import { STARTER_COOKBOOK } from "@/lib/recipes";
+import { editableBy, readableBy } from "@/server/ownership";
 
 type Who = { householdId: string; userId: string };
 
 /** Cookbooks that are Shared, yours, or a housemate's Personal one they've left visible. */
-export const readableCookbooks = (ctx: Who) => ({
-  householdId: ctx.householdId,
-  OR: [{ ownerId: null }, { ownerId: ctx.userId }, { ownerId: { not: null }, visibleToHousehold: true }],
-});
+export const readableCookbooks = readableBy;
 
 /** Cookbooks that are Shared, or yours — visibility never grants edit rights. */
-export const editableCookbooks = (ctx: Who) => ({
-  householdId: ctx.householdId,
-  OR: [{ ownerId: null }, { ownerId: ctx.userId }],
-});
+export const editableCookbooks = editableBy;
 
 /** Every Household has one Shared "Recipes" Cookbook; made the first time anyone opens Recipes. */
 export async function ensureStarterCookbook(prisma: PrismaClient, ctx: Who) {

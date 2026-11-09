@@ -9,6 +9,7 @@ const TABS: { href: string; label: string; module: ModuleKey }[] = [
   { href: "/lists/shopping", label: "Shopping", module: "shopping" },
   { href: "/lists/wishlist", label: "Wishlist", module: "wishlist" },
   { href: "/lists/recipes", label: "Recipes", module: "recipes" },
+  { href: "/lists/movies", label: "Movies & Series", module: "movies" },
 ];
 
 /** What every Lists page shares: the title, the page's own actions, then tabs (when both Modules are on) and the body. */
