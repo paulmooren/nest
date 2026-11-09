@@ -24,7 +24,7 @@ const ALL_NAV_ITEMS: (NavItem & { modules?: ModuleKey[] })[] = [
   { href: "/today", label: "Today", icon: <HomeIcon /> },
   { href: "/finance", label: "Finance", icon: <WalletIcon />, modules: ["finance"] },
   { href: "/tasks", label: "Tasks", icon: <ListChecksIcon />, modules: ["tasks"] },
-  { href: "/lists", label: "Lists", icon: <ListIcon />, modules: ["shopping", "wishlist"] },
+  { href: "/lists", label: "Lists", icon: <ListIcon />, modules: ["shopping", "wishlist", "recipes"] },
   { href: "/vault", label: "Vault", icon: <LockKeyholeIcon />, modules: ["vault"] },
   { href: "/notes", label: "Notes", icon: <NotebookPenIcon />, modules: ["notes"] },
 ]

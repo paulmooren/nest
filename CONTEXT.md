@@ -178,6 +178,46 @@ _Avoid_: Memo, document, entry (that is a Vault term), log
 A named group of Notes, Shared or Personal like a Shopping list, with Visibility if Personal. A Note is in exactly one Notebook and takes its ownership from it. Each Household starts with a Personal Notebook called "Notes", hidden from the rest of the Household and not deletable. Deleting any other Notebook deletes its Notes.
 _Avoid_: Folder, tag, category, collection
 
+### Movies & Series
+
+**Title**:
+One film or series a Household wants to watch or has watched: a name, a Kind (Movie or Series) and a Status (Want to watch, Watching, Watched). Each Member rates it separately (5 stars, half steps) and may leave a short note; the date it was watched is recorded. Lives in one Watchlist. The entry, not a text field called "title".
+_Avoid_: Movie (alone — excludes series), film, show, entry (that is a Vault term)
+
+**Watchlist**:
+A named group of Titles, Shared or Personal with Visibility if Personal, exactly like a Cookbook. A Title is in exactly one Watchlist and takes its ownership from it. Each Household starts with a Shared Watchlist called "Watchlist", not deletable. Deleting another Watchlist asks where its Titles go (default: "Watchlist") or offers to delete them, with a warning when Personal Titles would become Shared.
+_Avoid_: Queue, Shopping list
+
+### Recipes
+
+**Recipe**:
+A way to cook something, kept in one Cookbook: a name, Ingredients, steps, and optionally servings, a time, a photo and a source link. It can be typed in, pasted as text, or imported from a web page; an import only fills in a draft, and nothing is kept until the Member saves. Its Ingredients can be added to a Shopping list, and it can be followed in Cook mode.
+_Avoid_: Dish, meal (a Planned meal is a Recipe on a day), document
+
+**Ingredient**:
+One free-text line of a Recipe ("200 g flour"). Not split into amount, unit and name, but an amount at the start of the line follows the servings being cooked for. Added to a Shopping list, the whole line becomes the Shopping item's name.
+_Avoid_: Product, item
+
+**Cookbook**:
+A named group of Recipes that Members create (Baking, Weeknight dinners), Shared (the default; every Member may edit) or Personal with Visibility, like a Notebook. A Recipe is in exactly one Cookbook and takes its ownership from it. Each Household starts with a Shared Cookbook called "Recipes", not deletable. Deleting another Cookbook asks where its Recipes go (default: "Recipes") or offers to delete them, with a warning when Personal Recipes would become Shared.
+_Avoid_: Folder, tag, category, collection
+
+**Cook mode**:
+Following a Recipe one step at a time, in large type, with the screen kept on. It starts with gathering the Ingredients, shows with each step the Ingredients that step uses, and offers a timer for each time a step mentions. Finishing the last step marks the Recipe as Cooked.
+_Avoid_: Kitchen mode, presentation, wizard
+
+**Cooked**:
+The record that a Recipe was made: how many times, and when last. Any Member who can see the Recipe can add to it. It is what "Not cooked yet" and "Not cooked lately" go by.
+_Avoid_: Completion (that is a Reminder term), made, done
+
+**Meal plan**:
+The Household's Recipes put on days, shown for the next seven. One plan for the whole Household; a Member only sees the Planned meals whose Recipe they can see. "Shop for the plan" adds the Ingredients of everything planned to a Shopping list.
+_Avoid_: Menu, schedule (that is a Reminder term), calendar
+
+**Planned meal**:
+One Recipe on one day of the Meal plan. A day can hold several.
+_Avoid_: Meal (alone), slot
+
 ### Home
 
 **Today**:

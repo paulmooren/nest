@@ -75,6 +75,7 @@ model User {
   claimedWishes       Wish[]               @relation("WishClaimer")
   ownedVaultEntries   VaultEntry[]         @relation("VaultEntryOwner")
   ownedNotebooks      Notebook[]           @relation("NotebookOwner")
+  ownedCookbooks      Cookbook[]           @relation("CookbookOwner")
   ownedReminders      Reminder[]           @relation("ReminderOwner")
   completedReminders  ReminderCompletion[] @relation("ReminderCompletedBy")
   pushSubscriptions   PushSubscription[]
@@ -110,6 +111,8 @@ model Household {
   vaultEntries      VaultEntry[]
   vaultCategories   VaultCategory[]
   notebooks         Notebook[]
+  cookbooks         Cookbook[]
+  plannedMeals      PlannedMeal[]
   reminders         Reminder[]
 
   @@map("households")
@@ -706,4 +709,69 @@ model Note {
 
   @@index([notebookId])
   @@map("notes")
+}
+
+// Shared (ownerId null): every member sees and edits it. Personal: only the owner edits it; the rest of the
+// household can read it while visibleToHousehold is on (the default, unlike Notebooks). A Recipe takes its
+// ownership from its Cookbook. isStarter marks the Shared "Recipes" Cookbook each household has, which can't be
+// deleted.
+model Cookbook {
+  id                 String   @id @default(cuid())
+  householdId        String
+  ownerId            String?
+  visibleToHousehold Boolean  @default(true)
+  isStarter          Boolean  @default(false)
+  name               String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  owner     User?     @relation("CookbookOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  recipes   Recipe[]
+
+  @@index([householdId])
+  @@map("cookbooks")
+}
+
+// `ingredients` is free text, one Ingredient per line. `steps` is plain text. `updatedAt` doubles as the version a
+// save is checked against, so two people can't silently overwrite each other.
+model Recipe {
+  id           String    @id @default(cuid())
+  cookbookId   String
+  name         String
+  ingredients  String    @default("")
+  steps        String    @default("")
+  servings     Int?
+  sourceUrl    String?
+  // Prep and cooking together.
+  totalMinutes Int?
+  // A photo on someone else's site (from an import); shown as it is, never copied.
+  imageUrl     String?
+  // Cooked: how often Cook mode was finished for this Recipe, and when last.
+  cookedCount  Int       @default(0)
+  lastCookedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  cookbook     Cookbook      @relation(fields: [cookbookId], references: [id], onDelete: Cascade)
+  plannedMeals PlannedMeal[]
+
+  @@index([cookbookId])
+  @@map("recipes")
+}
+
+// The Meal plan: a Recipe put on a day. Household-wide; a Member only sees the Planned meals whose Recipe they can
+// see.
+model PlannedMeal {
+  id          String   @id @default(cuid())
+  householdId String
+  recipeId    String
+  day         DateTime @db.Date
+  createdAt   DateTime @default(now())
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  recipe    Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([householdId, day])
+  @@map("planned_meals")
 }
