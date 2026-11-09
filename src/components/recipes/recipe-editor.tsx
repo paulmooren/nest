@@ -31,6 +31,7 @@ export function RecipeEditor({
   onSubmit,
   onCancel,
   onReload,
+  onImport,
 }: {
   initial: RecipeValues;
   cookbooks: { id: string; name: string }[];
@@ -40,6 +41,8 @@ export function RecipeEditor({
   onSubmit: (values: RecipeValues) => void;
   onCancel: () => void;
   onReload?: () => void;
+  /** When given, an "Import from link" button reads the Source link into the fields below. Nothing is saved. */
+  onImport?: (url: string) => Promise<{ name: string; servings: number | null; ingredients: string; steps: string }>;
 }) {
   const [name, setName] = useState(initial.name);
   const [cookbookId, setCookbookId] = useState(initial.cookbookId);
@@ -52,6 +55,26 @@ export function RecipeEditor({
   const servingsOk = servingsNumber === null || (Number.isInteger(servingsNumber) && servingsNumber >= 1 && servingsNumber <= RECIPE_SERVINGS_MAX);
   const url = sourceUrl.trim();
   const urlOk = url === "" || /^https?:\/\//i.test(url);
+  const [importing, setImporting] = useState(false);
+  const [importNote, setImportNote] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function runImport() {
+    if (!onImport || !url || !urlOk) return;
+    setImporting(true);
+    setImportNote(null);
+    try {
+      const draft = await onImport(url);
+      if (draft.name) setName(draft.name);
+      setServings(draft.servings === null ? "" : String(draft.servings));
+      setIngredients(draft.ingredients);
+      setSteps(draft.steps);
+      setImportNote({ ok: true, text: "Filled in from the link. Check it, then save." });
+    } catch (e) {
+      setImportNote({ ok: false, text: e instanceof Error && e.message ? e.message : "Couldn't import that link." });
+    } finally {
+      setImporting(false);
+    }
+  }
 
   return (
     <form
@@ -98,14 +121,32 @@ export function RecipeEditor({
           onChange={(e) => setServings(e.target.value)}
           placeholder="e.g. 4"
         />
-        <TextField
-          label="Source link"
-          type="url"
-          value={sourceUrl}
-          onChange={(e) => setSourceUrl(e.target.value)}
-          maxLength={500}
-          placeholder="https://"
-        />
+        <div className="flex flex-col gap-2">
+          <div className="flex items-end gap-2">
+            <TextField
+              label="Source link"
+              type="url"
+              value={sourceUrl}
+              onChange={(e) => {
+                setSourceUrl(e.target.value);
+                setImportNote(null);
+              }}
+              maxLength={500}
+              placeholder="https://"
+              fieldClassName="flex-1"
+            />
+            {onImport && (
+              <Button type="button" variant="outline" size="lg" disabled={!url || !urlOk || importing} onClick={runImport}>
+                {importing ? "Importing…" : "Import from link"}
+              </Button>
+            )}
+          </div>
+          {importNote && (
+            <p role={importNote.ok ? "status" : "alert"} className={importNote.ok ? "text-sm text-muted-foreground" : "text-sm text-destructive"}>
+              {importNote.text}
+            </p>
+          )}
+        </div>
       </div>
 
       <Field id="recipe-ingredients" label="Ingredients" hint="One per line, e.g. 200 g flour.">

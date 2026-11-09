@@ -28,6 +28,7 @@ function NewRecipe() {
   const { data: cookbooks } = trpc.recipes.listCookbooks.useQuery();
   const { data: me } = trpc.user.me.useQuery();
   const create = trpc.recipes.create.useMutation();
+  const importFromUrl = trpc.recipes.importFromUrl.useMutation();
   const refresh = useRefreshRecipes();
   const [saving, setSaving] = useState(false);
 
@@ -46,6 +47,7 @@ function NewRecipe() {
           cookbooks={editable}
           pending={saving}
           submitLabel="Save recipe"
+          onImport={(url) => importFromUrl.mutateAsync({ url })}
           onCancel={() => router.push("/lists/recipes")}
           onSubmit={async (values) => {
             setSaving(true);

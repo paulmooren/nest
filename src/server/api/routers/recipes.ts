@@ -4,6 +4,8 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, householdProcedure } from "@/server/api/trpc";
 import { clientIdSchema, rejectDuplicateId } from "@/server/api/client-id";
 import { editableCookbooks, ensureStarterCookbook, readableCookbooks } from "@/server/recipes-access";
+import { fetchPublicPage, FetchError } from "@/server/fetch-public-url";
+import { parseRecipeHtml } from "@/lib/recipe-import";
 import {
   ingredientsExcerpt,
   RECIPE_INGREDIENTS_MAX,
@@ -204,6 +206,34 @@ export const recipesRouter = createTRPCRouter({
         throw new TRPCError({ code: "CONFLICT", message: "Someone else changed this Recipe since you opened it." });
       }
       return { id, updatedAt: now };
+    }),
+
+  /**
+   * Reads the recipe on a web page into a draft for the editor. Nothing is saved. A page with no recipe data, or one
+   * that can't be fetched, is a BAD_REQUEST with a message fit to show.
+   */
+  importFromUrl: householdProcedure
+    .input(z.object({ url: z.string().trim().min(1).max(500) }))
+    .mutation(async ({ input }) => {
+      let html: string;
+      try {
+        html = await fetchPublicPage(input.url);
+      } catch (e) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: e instanceof FetchError ? e.message : "Couldn't reach that page." });
+      }
+      const recipe = parseRecipeHtml(html);
+      if (!recipe) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "That page doesn't share its recipe in a way Nest can read. Type it in instead; the link stays.",
+        });
+      }
+      return {
+        name: recipe.name.slice(0, RECIPE_NAME_MAX),
+        servings: recipe.servings,
+        ingredients: recipe.ingredients.join("\n").slice(0, RECIPE_INGREDIENTS_MAX),
+        steps: recipe.steps.join("\n").slice(0, RECIPE_STEPS_MAX),
+      };
     }),
 
   delete: householdProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
