@@ -181,7 +181,7 @@ _Avoid_: Folder, tag, category, collection
 ### Movies & Series
 
 **Title**:
-One film or series a Household wants to watch or has watched: a name, a Kind (Movie or Series) and a Status (Want to watch, Watching, Watched). When it was found at TMDB it also has a year, a running time, a short description and a poster. Becoming Watched records the date. Lives in one Watchlist. The entry, not a text field called "title".
+One film or series a Household wants to watch or has watched: a name, a Kind (Movie or Series) and a Status (Want to watch, Watching, Watched). When it was found at TMDB it also has a year, a running time, a short description and a poster. Becoming Watched records the date. A Series can also keep the season and episode it has got to. Lives in one Watchlist. The entry, not a text field called "title".
 _Avoid_: Movie (alone — excludes series), film, show, entry (that is a Vault term)
 
 **Watchlist**:

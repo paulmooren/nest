@@ -19,7 +19,7 @@ import { CookbookSettingsSheet, DeleteCookbookSheet, NewCookbookSheet } from "@/
 import { RecipePhoto, RecipesBones } from "@/components/recipes/recipes-ui";
 import { showToast } from "@/components/toast";
 import { newId } from "@/lib/client-id";
-import { averageHalfStars, KIND_LABEL, STATUS_LABEL, STATUSES, type TitleKind, type TitleStatus } from "@/lib/movies";
+import { averageHalfStars, KIND_LABEL, progressLabel, STATUS_LABEL, STATUSES, type TitleKind, type TitleStatus } from "@/lib/movies";
 import { formatMinutes } from "@/lib/recipes";
 
 export default function MoviesPage() {
@@ -98,7 +98,9 @@ function Movies() {
 
   const row = (t: TitleRow) => {
     const average = averageHalfStars(t.ratings);
-    const meta = [KIND_LABEL[t.kind], t.year, t.runtimeMinutes ? formatMinutes(t.runtimeMinutes) : null].filter(Boolean).join(" · ");
+    const meta = [KIND_LABEL[t.kind], t.year, t.status === "WATCHING" ? progressLabel(t) : null, t.runtimeMinutes ? formatMinutes(t.runtimeMinutes) : null]
+      .filter(Boolean)
+      .join(" · ");
     return (
       <Row
         key={t.id}

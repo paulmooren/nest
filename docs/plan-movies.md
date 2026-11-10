@@ -9,7 +9,8 @@ Terms follow `CONTEXT.md` (Title, Watchlist, Rating). Built 2026-11-10 on the pa
 - A Title is added by typing its name. With `TMDB_API_KEY` set, matches from TMDB are offered and choosing one keeps its year, running time, description and poster with the Title, so the list never depends on TMDB afterwards. Without the key, or when TMDB is down, the name is added as typed, as a Movie or a Series.
 - Status: Want to watch, Watching, Watched. Becoming Watched records the date.
 - Rating: each Member's own, half a star to five, with a note. Any Member who can see a Title can rate it.
-- Not built: season and episode progress, where to stream, recommendations.
+- A Series keeps the season and episode it has got to (2026-11-10); noting progress on one not started makes it Watching.
+- Not built: where to stream, recommendations.
 
 ## Setup
 
