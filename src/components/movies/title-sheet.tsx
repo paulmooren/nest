@@ -12,12 +12,24 @@ import { ChoiceChips } from "@/components/ui/choice-chips";
 import { ConfirmDelete } from "@/components/ui/confirm-delete";
 import { Field } from "@/components/ui/field";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import { TextField } from "@/components/ui/text-field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { showToast } from "@/components/toast";
 import { StarPicker, Stars } from "@/components/movies/stars";
 import { SECTION_HEADING } from "@/components/recipes/recipes-ui";
-import { KIND_LABEL, progressLabel, RATING_NOTE_MAX, STATUS_LABEL, STATUSES, type TitleStatus } from "@/lib/movies";
+import {
+  KIND_LABEL,
+  progressLabel,
+  RATING_NOTE_MAX,
+  STARTER_MOVIES,
+  STARTER_SERIES,
+  STATUS_LABEL,
+  STATUSES,
+  TITLE_NAME_MAX,
+  type TitleKind,
+  type TitleStatus,
+} from "@/lib/movies";
 
 export type TitleRow = inferRouterOutputs<AppRouter>["movies"]["list"][number];
 type Member = { user: { id: string; name: string | null; email: string; image?: string | null } };
@@ -222,5 +234,86 @@ function Counter({ label, value, max, onChange }: { label: string; value: number
         <PlusIcon />
       </Button>
     </div>
+  );
+}
+
+type AddableWatchlist = { id: string; name: string; isStarter: boolean };
+
+/**
+ * Add a Title: its name, whether it is a Movie or a Series, and the Watchlist it goes on. Opened from a Watchlist it
+ * starts on that one; otherwise a Movie starts on "Movies" and a Series on "Series", and follows the kind until
+ * the Member picks a Watchlist themself.
+ */
+export function AddTitleSheet({
+  watchlists,
+  current,
+  onAdd,
+  onClose,
+}: {
+  /** Watchlists the Member can edit. */
+  watchlists: AddableWatchlist[];
+  /** The Watchlist being looked at, when it is one of them. */
+  current?: AddableWatchlist;
+  onAdd: (input: { name: string; kind: TitleKind; watchlistId: string }) => Promise<unknown>;
+  onClose: () => void;
+}) {
+  const starterFor = (k: TitleKind) => watchlists.find((w) => w.isStarter && w.name === (k === "MOVIE" ? STARTER_MOVIES : STARTER_SERIES));
+  const [name, setName] = useState("");
+  const [kind, setKind] = useState<TitleKind>(current?.isStarter && current.name === STARTER_SERIES ? "SERIES" : "MOVIE");
+  // The Watchlist the Member chose; until they do, it is the one being looked at, or the starter for the kind.
+  const [chosen, setChosen] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const watchlistId = chosen ?? (current && !current.isStarter ? current.id : (starterFor(kind)?.id ?? current?.id ?? watchlists[0]?.id ?? ""));
+  const items = watchlists.map((w) => ({ value: w.id, label: w.name }));
+
+  return (
+    <ResponsiveSheet open onOpenChange={(open) => !open && onClose()} title="Add a film or series">
+      <form
+        className="flex flex-col gap-5"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          if (!name.trim() || !watchlistId) return;
+          setBusy(true);
+          try {
+            await onAdd({ name: name.trim(), kind, watchlistId });
+            onClose();
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} maxLength={TITLE_NAME_MAX} autoFocus />
+        <Field id="title-kind" label="Kind">
+          <ChoiceChips<TitleKind>
+            label="Kind"
+            value={kind}
+            onChange={setKind}
+            options={[
+              { value: "MOVIE", label: KIND_LABEL.MOVIE },
+              { value: "SERIES", label: KIND_LABEL.SERIES },
+            ]}
+          />
+        </Field>
+        {items.length > 1 && (
+          <Field id="new-title-watchlist" label="Watchlist">
+            <Select items={items} value={watchlistId} onValueChange={(v) => v && setChosen(v)}>
+              <SelectTrigger id="new-title-watchlist" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {items.map((w) => (
+                  <SelectItem key={w.value} value={w.value}>
+                    {w.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        )}
+        <Button type="submit" size="lg" disabled={!name.trim() || !watchlistId || busy}>
+          {busy ? "Adding…" : "Add"}
+        </Button>
+      </form>
+    </ResponsiveSheet>
   );
 }

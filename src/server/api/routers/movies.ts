@@ -3,8 +3,8 @@ import { TRPCError } from "@trpc/server";
 
 import { createTRPCRouter, householdProcedure } from "@/server/api/trpc";
 import { clientIdSchema, rejectDuplicateId } from "@/server/api/client-id";
-import { editableWatchlists, ensureStarterWatchlist, readableWatchlists } from "@/server/movies-access";
-import { RATING_NOTE_MAX, TITLE_NAME_MAX } from "@/lib/movies";
+import { editableWatchlists, ensureStarterWatchlists, readableWatchlists } from "@/server/movies-access";
+import { RATING_NOTE_MAX, STARTER_MOVIES, TITLE_NAME_MAX } from "@/lib/movies";
 
 const kind = z.enum(["MOVIE", "SERIES"]);
 const status = z.enum(["WANT", "WATCHING", "WATCHED"]);
@@ -12,15 +12,16 @@ const NOT_YOURS = "That Watchlist doesn't exist, or you can't edit it.";
 
 export const moviesRouter = createTRPCRouter({
   // ── Watchlists ──────────────────────────────────────────────────────────
-  /** Watchlists you can see, the starter first, with how many Titles each holds. */
+  /** Watchlists you can see, the two starters first (Movies, then Series), with how many Titles each holds. */
   listWatchlists: householdProcedure.query(async ({ ctx }) => {
-    await ensureStarterWatchlist(ctx.prisma, ctx);
+    await ensureStarterWatchlists(ctx.prisma, ctx);
     const rows = await ctx.prisma.watchlist.findMany({
       where: readableWatchlists(ctx),
       orderBy: { createdAt: "asc" },
       select: { id: true, name: true, ownerId: true, visibleToHousehold: true, isStarter: true, _count: { select: { titles: true } } },
     });
-    return rows.map(({ _count, ...w }) => ({ ...w, titleCount: _count.titles })).sort((a, b) => Number(b.isStarter) - Number(a.isStarter));
+    const rank = (w: { isStarter: boolean; name: string }) => (!w.isStarter ? 2 : w.name === STARTER_MOVIES ? 0 : 1);
+    return rows.map(({ _count, ...w }) => ({ ...w, titleCount: _count.titles })).sort((a, b) => rank(a) - rank(b));
   }),
 
   createWatchlist: householdProcedure
@@ -66,7 +67,7 @@ export const moviesRouter = createTRPCRouter({
         select: { id: true, isStarter: true },
       });
       if (!watchlist) throw new TRPCError({ code: "NOT_FOUND" });
-      if (watchlist.isStarter) throw new TRPCError({ code: "BAD_REQUEST", message: 'The "Watchlist" can\'t be deleted.' });
+      if (watchlist.isStarter) throw new TRPCError({ code: "BAD_REQUEST", message: "The Movies and Series Watchlists can't be deleted." });
       if (input.moveTo !== null) {
         const target =
           input.moveTo === watchlist.id

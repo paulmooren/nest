@@ -1,24 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { ClapperboardIcon, SettingsIcon, TvIcon } from "lucide-react";
+import { ClapperboardIcon, PlusIcon, SettingsIcon, TvIcon } from "lucide-react";
 
 import { trpc } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { AddChip, ChoiceChips } from "@/components/ui/choice-chips";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
 import { Row, RowList } from "@/components/ui/row";
 import { ListsPage } from "@/components/lists/lists-page";
 import { useDelayed } from "@/components/use-delayed";
 import { ModuleGate } from "@/components/use-modules";
 import { Stars } from "@/components/movies/stars";
-import { TitleSheet, type TitleRow } from "@/components/movies/title-sheet";
+import { AddTitleSheet, TitleSheet, type TitleRow } from "@/components/movies/title-sheet";
 import { CookbookSettingsSheet, DeleteCookbookSheet, NewCookbookSheet } from "@/components/recipes/cookbook-sheets";
 import { RecipesBones } from "@/components/recipes/recipes-ui";
 import { showToast } from "@/components/toast";
 import { newId } from "@/lib/client-id";
-import { averageHalfStars, KIND_LABEL, progressLabel, STATUS_LABEL, STATUSES, type TitleKind, type TitleStatus } from "@/lib/movies";
+import { cn } from "@/lib/utils";
+import { averageHalfStars, KIND_LABEL, progressLabel, STATUS_LABEL, STATUSES, type TitleStatus } from "@/lib/movies";
 
 export default function MoviesPage() {
   return (
@@ -44,8 +44,7 @@ function Movies() {
   const [settings, setSettings] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const [typed, setTyped] = useState("");
-
+  const [adding, setAdding] = useState(false);
   const create = trpc.movies.create.useMutation({ onSuccess: refresh });
   const createWatchlist = trpc.movies.createWatchlist.useMutation({ onSuccess: refresh });
   const renameWatchlist = trpc.movies.renameWatchlist.useMutation({ onSuccess: refresh });
@@ -54,13 +53,11 @@ function Movies() {
 
   if (!titles || !watchlists || !me) return <ListsPage>{showSkeleton && <RecipesBones />}</ListsPage>;
 
+
   const members = household?.members ?? [];
   const canEditList = (w?: { ownerId: string | null }) => !!w && (w.ownerId === null || w.ownerId === me.id);
   const editable = watchlists.filter(canEditList);
   const selected = watchlists.find((w) => w.id === watchlistId);
-  const starter = watchlists.find((w) => w.isStarter);
-  // New Titles go on the Watchlist being looked at when it is yours or shared, otherwise the starter one.
-  const target = canEditList(selected) ? selected : starter;
   const inList = watchlistId === "all" ? titles : titles.filter((t) => t.watchlistId === watchlistId);
   const visible = inList.filter((t) => t.status === status);
   const counts = new Map<TitleStatus, number>();
@@ -68,18 +65,12 @@ function Movies() {
   const open = titles.find((t) => t.id === openId);
   const destinations = editable.filter((w) => w.id !== selected?.id);
 
-  const name = typed.trim();
-  const add = async (kind: TitleKind) => {
-    if (!target || !name) return;
-    try {
-      await create.mutateAsync({ id: newId(), watchlistId: target.id, name, kind });
-      setTyped("");
-      setStatusFilter("WANT");
-      showToast(`${name} added to ${target.name}`);
-    } catch {
-      showToast("Couldn't add that title");
-    }
-  };
+  const addButton =
+    editable.length > 0 ? (
+      <Button onClick={() => setAdding(true)}>
+        <PlusIcon /> Film or series
+      </Button>
+    ) : undefined;
 
   const row = (t: TitleRow) => {
     const average = averageHalfStars(t.ratings);
@@ -102,31 +93,7 @@ function Movies() {
 
   return (
     <>
-      <ListsPage>
-        <form
-          className="flex flex-wrap items-center gap-2 md:max-w-xl"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void add("MOVIE");
-          }}
-        >
-          <Input
-            value={typed}
-            onChange={(e) => setTyped(e.target.value)}
-            placeholder="Add a film or series"
-            aria-label="Film or series to add"
-            maxLength={200}
-            disabled={!target}
-            className="min-w-48 flex-1"
-          />
-          <Button type="submit" variant="outline" disabled={!name || create.isPending}>
-            Add movie
-          </Button>
-          <Button type="button" variant="outline" disabled={!name || create.isPending} onClick={() => add("SERIES")}>
-            Add series
-          </Button>
-        </form>
-
+      <ListsPage actions={addButton}>
         <div className="flex flex-col gap-3">
           <ChoiceChips
             label="Filter by watchlist"
@@ -135,12 +102,7 @@ function Movies() {
             options={[{ value: "all", label: "All" }, ...watchlists.map((w) => ({ value: w.id, label: `${w.name} ${w.titleCount}` }))]}
             trailing={<AddChip onClick={() => setCreating(true)}>New watchlist</AddChip>}
           />
-          <ChoiceChips<TitleStatus>
-            label="Status"
-            value={status}
-            onChange={setStatusFilter}
-            options={STATUSES.map((s) => ({ value: s, label: `${STATUS_LABEL[s]} ${counts.get(s) ?? 0}` }))}
-          />
+          <StatusFilter value={status} onChange={setStatusFilter} counts={counts} />
         </div>
 
         {selected && (
@@ -167,7 +129,7 @@ function Movies() {
           <EmptyState
             title={
               titles.length === 0
-                ? "Nothing to watch yet. Type a film or series above to add it."
+                ? "Nothing to watch yet. Add a film or a series you want to see."
                 : status === "WANT"
                   ? "Nothing waiting to be watched here."
                   : status === "WATCHING"
@@ -183,6 +145,23 @@ function Movies() {
 
       </ListsPage>
 
+      {adding && (
+        <AddTitleSheet
+          watchlists={editable}
+          current={canEditList(selected) ? selected : undefined}
+          onClose={() => setAdding(false)}
+          onAdd={async (input) => {
+            try {
+              await create.mutateAsync({ id: newId(), ...input });
+              setStatusFilter("WANT");
+              showToast(`${input.name} added to ${watchlists.find((w) => w.id === input.watchlistId)?.name ?? "the watchlist"}`);
+            } catch (e) {
+              showToast("Couldn't add that title");
+              throw e;
+            }
+          }}
+        />
+      )}
       {open && (
         <TitleSheet
           key={open.id}
@@ -234,5 +213,35 @@ function Movies() {
         />
       )}
     </>
+  );
+}
+
+/**
+ * Which Titles to show: one strip with three segments, each with its count. It is a filter on the list below, so
+ * it is drawn as one control rather than as chips, which on this page mean "which Watchlist".
+ */
+function StatusFilter({ value, onChange, counts }: { value: TitleStatus; onChange: (status: TitleStatus) => void; counts: Map<TitleStatus, number> }) {
+  return (
+    <div role="radiogroup" aria-label="Status" className="flex w-full rounded-xl bg-muted p-1 md:w-fit">
+      {STATUSES.map((s) => {
+        const active = s === value;
+        return (
+          <button
+            key={s}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(s)}
+            className={cn(
+              "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-1.5 text-sm font-medium whitespace-nowrap transition-colors md:flex-none md:px-4",
+              active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {STATUS_LABEL[s]}
+            <span className={cn("text-xs tabular-nums", active ? "text-muted-foreground" : "text-muted-foreground/70")}>{counts.get(s) ?? 0}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
