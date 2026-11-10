@@ -514,7 +514,7 @@ export async function seedDemo(prisma: PrismaClient, now: Date = new Date()) {
       data: { watchlistId, name, kind, year, status, runtimeMinutes, createdAt: stamp(), watchedAt: watchedDaysAgo === undefined ? null : daysFromToday(-watchedDaysAgo) },
       select: { id: true },
     });
-  // Made-up titles: the Demo never calls TMDB.
+  // Made-up titles.
   const [harbour, lighthouse] = await Promise.all([
     title(watchlist.id, "The Last Harbour", "MOVIE", 2024, "WATCHED", 118, 12),
     title(watchlist.id, "Lighthouse Road", "SERIES", 2025, "WATCHED", 48, 40),

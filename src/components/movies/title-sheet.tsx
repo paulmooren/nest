@@ -16,15 +16,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { showToast } from "@/components/toast";
 import { StarPicker, Stars } from "@/components/movies/stars";
-import { RecipePhoto, SECTION_HEADING } from "@/components/recipes/recipes-ui";
-import { formatMinutes } from "@/lib/recipes";
+import { SECTION_HEADING } from "@/components/recipes/recipes-ui";
 import { KIND_LABEL, progressLabel, RATING_NOTE_MAX, STATUS_LABEL, STATUSES, type TitleStatus } from "@/lib/movies";
 
 export type TitleRow = inferRouterOutputs<AppRouter>["movies"]["list"][number];
 type Member = { user: { id: string; name: string | null; email: string; image?: string | null } };
 
 /**
- * One Title, opened from the list: what it is, where it stands (Want to watch, Watching, Watched), your own rating
+ * One Title, opened from the list: where it stands (Want to watch, Watching, Watched), your own rating
  * and note, and what the others thought. Whoever can edit its Watchlist can also move or delete it.
  */
 export function TitleSheet({
@@ -56,9 +55,6 @@ export function TitleSheet({
   const [confirming, setConfirming] = useState(false);
 
   const others = title.ratings.filter((r) => r.userId !== meId && (r.halfStars !== null || r.note));
-  const facts = [KIND_LABEL[title.kind], title.year, title.runtimeMinutes ? formatMinutes(title.runtimeMinutes) + (title.kind === "SERIES" ? " an episode" : "") : null]
-    .filter(Boolean)
-    .join(" · ");
   const items = watchlists.map((w) => ({ value: w.id, label: w.name }));
   const noteChanged = note.trim() !== (mine?.note ?? "");
 
@@ -72,15 +68,8 @@ export function TitleSheet({
 
   return (
     <>
-      <ResponsiveSheet open onOpenChange={(open) => !open && onClose()} title={title.name} description={facts}>
+      <ResponsiveSheet open onOpenChange={(open) => !open && onClose()} title={title.name} description={KIND_LABEL[title.kind]}>
         <div className="flex flex-col gap-5">
-          {(title.posterUrl || title.overview) && (
-            <div className="flex gap-4">
-              {title.posterUrl && <RecipePhoto src={title.posterUrl} className="h-36 w-24 shrink-0 rounded-xl" />}
-              {title.overview && <p className="line-clamp-6 text-sm text-muted-foreground">{title.overview}</p>}
-            </div>
-          )}
-
           {canEdit ? (
             <ChoiceChips<TitleStatus>
               label="Status"

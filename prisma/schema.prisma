@@ -812,8 +812,8 @@ enum TitleStatus {
   WATCHED
 }
 
-// A film or series. year, runtimeMinutes, overview, posterUrl and tmdbId come from TMDB when it was found there;
-// the poster is shown from TMDB's own image server.
+// A film or series, typed in by name. year, runtimeMinutes, overview, posterUrl and tmdbId were for a TMDB lookup
+// that was removed on 2026-11-10; nothing reads or writes them now.
 model Title {
   id             String      @id @default(cuid())
   watchlistId    String

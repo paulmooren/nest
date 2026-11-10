@@ -4,7 +4,6 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, householdProcedure } from "@/server/api/trpc";
 import { clientIdSchema, rejectDuplicateId } from "@/server/api/client-id";
 import { editableWatchlists, ensureStarterWatchlist, readableWatchlists } from "@/server/movies-access";
-import { searchTmdb, tmdbAvailable, tmdbDetails } from "@/server/tmdb";
 import { RATING_NOTE_MAX, TITLE_NAME_MAX } from "@/lib/movies";
 
 const kind = z.enum(["MOVIE", "SERIES"]);
@@ -97,11 +96,6 @@ export const moviesRouter = createTRPCRouter({
         name: true,
         kind: true,
         status: true,
-        year: true,
-        runtimeMinutes: true,
-        overview: true,
-        posterUrl: true,
-        tmdbId: true,
         watchedAt: true,
         season: true,
         episode: true,
@@ -111,66 +105,30 @@ export const moviesRouter = createTRPCRouter({
     }),
   ),
 
-  /** Whether films and series can be looked up, and what matches the words typed. */
-  search: householdProcedure.input(z.object({ query: z.string().trim().min(2).max(100) })).query(async ({ input }) => {
-    if (!tmdbAvailable()) return { available: false as const, hits: [] };
-    try {
-      return { available: true as const, hits: await searchTmdb(input.query) };
-    } catch {
-      // TMDB is down or the key is wrong: typing the Title in by hand still works.
-      return { available: false as const, hits: [] };
-    }
-  }),
-
-  /**
-   * Adds a Title. With `tmdbId` its year, running time, overview and poster are fetched and kept, so the list never
-   * depends on TMDB afterwards; without, it is just the name, kind and year typed.
-   */
+  /** Adds a Title: the name as typed, and whether it is a Movie or a Series. */
   create: householdProcedure
-    .input(
-      z.object({
-        id: clientIdSchema,
-        watchlistId: z.string(),
-        name: z.string().trim().min(1).max(TITLE_NAME_MAX),
-        kind,
-        year: z.number().int().min(1870).max(2200).nullable().optional(),
-        tmdbId: z.number().int().positive().optional(),
-      }),
-    )
+    .input(z.object({ id: clientIdSchema, watchlistId: z.string(), name: z.string().trim().min(1).max(TITLE_NAME_MAX), kind }))
     .mutation(async ({ ctx, input }) => {
       const watchlist = await ctx.prisma.watchlist.findFirst({
         where: { id: input.watchlistId, ...editableWatchlists(ctx) },
         select: { id: true },
       });
       if (!watchlist) throw new TRPCError({ code: "BAD_REQUEST", message: NOT_YOURS });
-      let found: Awaited<ReturnType<typeof tmdbDetails>> | null = null;
-      if (input.tmdbId && tmdbAvailable()) found = await tmdbDetails(input.tmdbId, input.kind).catch(() => null);
       return rejectDuplicateId(() =>
         ctx.prisma.title.create({
-          data: {
-            id: input.id,
-            watchlistId: watchlist.id,
-            name: (found?.name || input.name).slice(0, TITLE_NAME_MAX),
-            kind: input.kind,
-            year: found?.year ?? input.year ?? null,
-            runtimeMinutes: found?.runtimeMinutes ?? null,
-            overview: found?.overview?.slice(0, 2000) ?? null,
-            posterUrl: found?.posterUrl ?? null,
-            tmdbId: found ? found.tmdbId : null,
-          },
+          data: { id: input.id, watchlistId: watchlist.id, name: input.name, kind: input.kind },
           select: { id: true },
         }),
       );
     }),
 
-  /** Change a Title's name, kind, year or Watchlist. */
+  /** Change a Title's name, kind or Watchlist. */
   update: householdProcedure
     .input(
       z.object({
         id: z.string(),
         name: z.string().trim().min(1).max(TITLE_NAME_MAX).optional(),
         kind: kind.optional(),
-        year: z.number().int().min(1870).max(2200).nullable().optional(),
         watchlistId: z.string().optional(),
       }),
     )

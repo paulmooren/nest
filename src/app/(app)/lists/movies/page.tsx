@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { keepPreviousData } from "@tanstack/react-query";
+import { useState } from "react";
 import { ClapperboardIcon, SettingsIcon, TvIcon } from "lucide-react";
 
 import { trpc } from "@/trpc/react";
@@ -16,11 +15,10 @@ import { ModuleGate } from "@/components/use-modules";
 import { Stars } from "@/components/movies/stars";
 import { TitleSheet, type TitleRow } from "@/components/movies/title-sheet";
 import { CookbookSettingsSheet, DeleteCookbookSheet, NewCookbookSheet } from "@/components/recipes/cookbook-sheets";
-import { RecipePhoto, RecipesBones } from "@/components/recipes/recipes-ui";
+import { RecipesBones } from "@/components/recipes/recipes-ui";
 import { showToast } from "@/components/toast";
 import { newId } from "@/lib/client-id";
 import { averageHalfStars, KIND_LABEL, progressLabel, STATUS_LABEL, STATUSES, type TitleKind, type TitleStatus } from "@/lib/movies";
-import { formatMinutes } from "@/lib/recipes";
 
 export default function MoviesPage() {
   return (
@@ -46,17 +44,7 @@ function Movies() {
   const [settings, setSettings] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // What is typed to add a Title, and the same a moment later, which is what is looked up.
   const [typed, setTyped] = useState("");
-  const [asked, setAsked] = useState("");
-  useEffect(() => {
-    const t = setTimeout(() => setAsked(typed.trim()), 300);
-    return () => clearTimeout(t);
-  }, [typed]);
-  const { data: found, isFetching: looking } = trpc.movies.search.useQuery(
-    { query: asked },
-    { enabled: asked.length >= 2, placeholderData: keepPreviousData, staleTime: 60_000 },
-  );
 
   const create = trpc.movies.create.useMutation({ onSuccess: refresh });
   const createWatchlist = trpc.movies.createWatchlist.useMutation({ onSuccess: refresh });
@@ -80,39 +68,30 @@ function Movies() {
   const open = titles.find((t) => t.id === openId);
   const destinations = editable.filter((w) => w.id !== selected?.id);
 
-  const add = async (input: { name: string; kind: TitleKind; tmdbId?: number; year?: number | null }) => {
-    if (!target) return;
+  const name = typed.trim();
+  const add = async (kind: TitleKind) => {
+    if (!target || !name) return;
     try {
-      await create.mutateAsync({ id: newId(), watchlistId: target.id, ...input });
+      await create.mutateAsync({ id: newId(), watchlistId: target.id, name, kind });
       setTyped("");
-      setAsked("");
       setStatusFilter("WANT");
-      showToast(`${input.name} added to ${target.name}`);
+      showToast(`${name} added to ${target.name}`);
     } catch {
       showToast("Couldn't add that title");
     }
   };
 
-  const hits = typed.trim().length >= 2 && asked === typed.trim() ? (found?.hits ?? []) : [];
-  const canLookUp = found?.available !== false;
-
   const row = (t: TitleRow) => {
     const average = averageHalfStars(t.ratings);
-    const meta = [KIND_LABEL[t.kind], t.year, t.status === "WATCHING" ? progressLabel(t) : null, t.runtimeMinutes ? formatMinutes(t.runtimeMinutes) : null]
-      .filter(Boolean)
-      .join(" · ");
+    const meta = [KIND_LABEL[t.kind], t.status === "WATCHING" ? progressLabel(t) : null].filter(Boolean).join(" · ");
     return (
       <Row
         key={t.id}
         onClick={() => setOpenId(t.id)}
         leading={
-          t.posterUrl ? (
-            <RecipePhoto src={t.posterUrl} className="h-14 w-10 rounded-md" />
-          ) : (
-            <span className="flex h-14 w-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
-              {t.kind === "MOVIE" ? <ClapperboardIcon className="size-4" aria-hidden /> : <TvIcon className="size-4" aria-hidden />}
-            </span>
-          )
+          <span className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+            {t.kind === "MOVIE" ? <ClapperboardIcon className="size-4" aria-hidden /> : <TvIcon className="size-4" aria-hidden />}
+          </span>
         }
         title={t.name}
         meta={meta}
@@ -124,47 +103,29 @@ function Movies() {
   return (
     <>
       <ListsPage>
-        <div className="flex flex-col gap-2 md:max-w-xl">
+        <form
+          className="flex flex-wrap items-center gap-2 md:max-w-xl"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void add("MOVIE");
+          }}
+        >
           <Input
-            type="search"
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
             placeholder="Add a film or series"
             aria-label="Film or series to add"
+            maxLength={200}
             disabled={!target}
+            className="min-w-48 flex-1"
           />
-          {typed.trim().length >= 2 && (
-            <ul aria-label="Titles to add" className="flex flex-col divide-y divide-border/70 rounded-2xl border bg-card px-3">
-              {hits.map((h) => (
-                <li key={`${h.kind}-${h.tmdbId}`}>
-                  <button
-                    type="button"
-                    disabled={create.isPending}
-                    className="flex min-h-14 w-full items-center gap-3 py-2 text-left"
-                    onClick={() => add({ name: h.name, kind: h.kind, tmdbId: h.tmdbId, year: h.year })}
-                  >
-                    {h.posterUrl ? <RecipePhoto src={h.posterUrl} className="h-12 w-8 shrink-0 rounded" /> : <span className="h-12 w-8 shrink-0 rounded bg-muted" />}
-                    <span className="min-w-0">
-                      <span className="block truncate text-base font-medium md:text-sm">{h.name}</span>
-                      <span className="block text-sm text-muted-foreground md:text-xs">{[KIND_LABEL[h.kind], h.year].filter(Boolean).join(" · ")}</span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-              <li className="flex flex-wrap items-center gap-2 py-3">
-                <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-                  {looking && canLookUp ? "Looking it up…" : hits.length > 0 ? "Not in the list? Add it as typed:" : `Add “${typed.trim()}” as typed:`}
-                </span>
-                <Button variant="outline" size="sm" disabled={create.isPending} onClick={() => add({ name: typed.trim(), kind: "MOVIE" })}>
-                  Movie
-                </Button>
-                <Button variant="outline" size="sm" disabled={create.isPending} onClick={() => add({ name: typed.trim(), kind: "SERIES" })}>
-                  Series
-                </Button>
-              </li>
-            </ul>
-          )}
-        </div>
+          <Button type="submit" variant="outline" disabled={!name || create.isPending}>
+            Add movie
+          </Button>
+          <Button type="button" variant="outline" disabled={!name || create.isPending} onClick={() => add("SERIES")}>
+            Add series
+          </Button>
+        </form>
 
         <div className="flex flex-col gap-3">
           <ChoiceChips
@@ -220,9 +181,6 @@ function Movies() {
           </section>
         )}
 
-        {titles.some((t) => t.tmdbId !== null) && (
-          <p className="text-xs text-muted-foreground">Film and series details come from TMDB. Nest uses the TMDB API but is not endorsed or certified by TMDB.</p>
-        )}
       </ListsPage>
 
       {open && (
