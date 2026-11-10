@@ -504,8 +504,9 @@ export async function seedDemo(prisma: PrismaClient, now: Date = new Date()) {
 
   lap("recipes");
   // ── Movies & Series ──────────────────────────────────────────────────────
-  const [watchlist, samList] = await Promise.all([
-    prisma.watchlist.create({ data: { householdId, createdAt: stamp(), ownerId: null, isStarter: true, name: "Watchlist" }, select: { id: true } }),
+  const [watchlist, seriesList, samList] = await Promise.all([
+    prisma.watchlist.create({ data: { householdId, createdAt: stamp(), ownerId: null, isStarter: true, name: "Movies" }, select: { id: true } }),
+    prisma.watchlist.create({ data: { householdId, createdAt: stamp(), ownerId: null, isStarter: true, name: "Series" }, select: { id: true } }),
     // A Personal watchlist, visible to Alex but editable only by Sam.
     prisma.watchlist.create({ data: { householdId, createdAt: stamp(), ownerId: sam, name: "Sam's documentaries" }, select: { id: true } }),
   ]);
@@ -514,11 +515,11 @@ export async function seedDemo(prisma: PrismaClient, now: Date = new Date()) {
       data: { watchlistId, name, kind, year, status, runtimeMinutes, createdAt: stamp(), watchedAt: watchedDaysAgo === undefined ? null : daysFromToday(-watchedDaysAgo) },
       select: { id: true },
     });
-  // Made-up titles: the Demo never calls TMDB.
+  // Made-up titles.
   const [harbour, lighthouse] = await Promise.all([
     title(watchlist.id, "The Last Harbour", "MOVIE", 2024, "WATCHED", 118, 12),
-    title(watchlist.id, "Lighthouse Road", "SERIES", 2025, "WATCHED", 48, 40),
-    title(watchlist.id, "North of Nowhere", "SERIES", 2026, "WATCHING", 52),
+    title(seriesList.id, "Lighthouse Road", "SERIES", 2025, "WATCHED", 48, 40),
+    title(seriesList.id, "North of Nowhere", "SERIES", 2026, "WATCHING", 52),
     title(watchlist.id, "A Quiet Winter", "MOVIE", 2023, "WANT", 101),
     title(watchlist.id, "Paper Kites", "MOVIE", 2025, "WANT", 94),
     title(samList.id, "Salt and Stone", "MOVIE", 2022, "WANT", 87),

@@ -181,11 +181,11 @@ _Avoid_: Folder, tag, category, collection
 ### Movies & Series
 
 **Title**:
-One film or series a Household wants to watch or has watched: a name, a Kind (Movie or Series) and a Status (Want to watch, Watching, Watched). When it was found at TMDB it also has a year, a running time, a short description and a poster. Becoming Watched records the date. A Series can also keep the season and episode it has got to. Lives in one Watchlist. The entry, not a text field called "title".
+One film or series a Household wants to watch or has watched: a name, a Kind (Movie or Series) and a Status (Want to watch, Watching, Watched). It is typed in by name; nothing is looked up about it. Becoming Watched records the date. A Series can also keep the season and episode it has got to. Lives in one Watchlist. The entry, not a text field called "title".
 _Avoid_: Movie (alone — excludes series), film, show, entry (that is a Vault term)
 
 **Watchlist**:
-A named group of Titles, Shared (the default; every Member may edit) or Personal with Visibility, exactly like a Cookbook; a Personal Watchlist is visible to the Household unless its owner hides it. A Title is in exactly one Watchlist and takes its ownership from it. Each Household starts with a Shared Watchlist called "Watchlist", not deletable. Deleting another Watchlist asks where its Titles go (default: "Watchlist") or offers to delete them, with a warning when Personal Titles would become Shared.
+A named group of Titles, Shared (the default; every Member may edit) or Personal with Visibility, exactly like a Cookbook; a Personal Watchlist is visible to the Household unless its owner hides it. A Title is in exactly one Watchlist and takes its ownership from it. Each Household starts with two Shared Watchlists, "Movies" and "Series", neither deletable. Deleting another Watchlist asks where its Titles go (default: "Movies") or offers to delete them, with a warning when Personal Titles would become Shared.
 _Avoid_: Queue, Shopping list
 
 **Rating**:

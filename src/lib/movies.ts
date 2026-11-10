@@ -1,4 +1,6 @@
-export const STARTER_WATCHLIST = "Watchlist";
+/** The two Shared Watchlists every Household starts with. They can't be renamed or deleted. */
+export const STARTER_MOVIES = "Movies";
+export const STARTER_SERIES = "Series";
 export const TITLE_NAME_MAX = 200;
 export const RATING_NOTE_MAX = 500;
 
