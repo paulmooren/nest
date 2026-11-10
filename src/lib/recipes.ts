@@ -19,6 +19,8 @@ export function ingredientsExcerpt(text: string, max = 120): string {
 }
 
 export const RECIPE_MINUTES_MAX = 6_000;
+/** How many links one Member may try to import in an hour. */
+export const LINK_IMPORTS_PER_HOUR = 30;
 export const RECIPE_PHOTO_MAX_BYTES = 4 * 1024 * 1024;
 export const RECIPE_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 

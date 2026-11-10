@@ -8,6 +8,7 @@ import { fetchPublicPage, FetchError } from "@/server/fetch-public-url";
 import { deleteFile } from "@/server/vault-storage";
 import { parseRecipeHtml } from "@/lib/recipe-import";
 import {
+  LINK_IMPORTS_PER_HOUR,
   RECIPE_MINUTES_MAX,
   ingredientsExcerpt,
   RECIPE_INGREDIENTS_MAX,
@@ -244,7 +245,21 @@ export const recipesRouter = createTRPCRouter({
    */
   importFromUrl: householdProcedure
     .input(z.object({ url: z.string().trim().min(1).max(500) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Every attempt counts, whether or not the page turns out to hold a recipe: the cap is on what this server
+      // is made to fetch, not on what the Member gets out of it.
+      const hourAgo = new Date(Date.now() - 3_600_000);
+      const recent = await ctx.prisma.linkImport.count({ where: { userId: ctx.userId, createdAt: { gte: hourAgo } } });
+      if (recent >= LINK_IMPORTS_PER_HOUR) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "You've imported a lot of links in the last hour. Try again later, or type the recipe in.",
+        });
+      }
+      await ctx.prisma.linkImport.create({ data: { userId: ctx.userId } });
+      // Yesterday's attempts are of no use to anyone; clearing them here saves a scheduled job.
+      await ctx.prisma.linkImport.deleteMany({ where: { userId: ctx.userId, createdAt: { lt: new Date(Date.now() - 86_400_000) } } });
+
       let html: string;
       try {
         html = await fetchPublicPage(input.url);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MinusIcon, PlusIcon } from "lucide-react";
 import type { inferRouterOutputs } from "@trpc/server";
 
 import type { AppRouter } from "@/server/api/root";
@@ -17,7 +18,7 @@ import { showToast } from "@/components/toast";
 import { StarPicker, Stars } from "@/components/movies/stars";
 import { RecipePhoto, SECTION_HEADING } from "@/components/recipes/recipes-ui";
 import { formatMinutes } from "@/lib/recipes";
-import { KIND_LABEL, RATING_NOTE_MAX, STATUS_LABEL, STATUSES, type TitleStatus } from "@/lib/movies";
+import { KIND_LABEL, progressLabel, RATING_NOTE_MAX, STATUS_LABEL, STATUSES, type TitleStatus } from "@/lib/movies";
 
 export type TitleRow = inferRouterOutputs<AppRouter>["movies"]["list"][number];
 type Member = { user: { id: string; name: string | null; email: string; image?: string | null } };
@@ -47,6 +48,7 @@ export function TitleSheet({
   const setStatus = trpc.movies.setStatus.useMutation({ onSuccess: onChanged });
   const update = trpc.movies.update.useMutation({ onSuccess: onChanged });
   const rate = trpc.movies.rate.useMutation({ onSuccess: onChanged });
+  const setProgress = trpc.movies.setProgress.useMutation({ onSuccess: onChanged });
   const remove = trpc.movies.delete.useMutation({ onSuccess: onChanged });
   const mine = title.ratings.find((r) => r.userId === meId);
   const [stars, setStars] = useState<number | null>(mine?.halfStars ?? null);
@@ -94,6 +96,27 @@ export function TitleSheet({
               Watched on {new Date(title.watchedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
             </p>
           )}
+
+          {title.kind === "SERIES" && canEdit && (
+            <div className="flex flex-col gap-2">
+              <h3 className={SECTION_HEADING}>Where you are</h3>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                <Counter
+                  label="Season"
+                  value={title.season}
+                  max={99}
+                  onChange={(season) => setProgress.mutate({ id: title.id, season, episode: season === null ? null : season === title.season ? title.episode : 1 })}
+                />
+                <Counter
+                  label="Episode"
+                  value={title.episode}
+                  max={999}
+                  onChange={(episode) => setProgress.mutate({ id: title.id, season: episode === null ? title.season : (title.season ?? 1), episode })}
+                />
+              </div>
+            </div>
+          )}
+          {title.kind === "SERIES" && !canEdit && progressLabel(title) && <p className="text-sm text-muted-foreground">Up to {progressLabel(title)}</p>}
 
           <div className="flex flex-col gap-2">
             <h3 className={SECTION_HEADING}>Your rating</h3>
@@ -178,5 +201,37 @@ export function TitleSheet({
         }}
       />
     </>
+  );
+}
+
+/** Season or episode: a number stepped up or down. Stepping below 1 stops keeping track of it. */
+function Counter({ label, value, max, onChange }: { label: string; value: number | null; max: number; onChange: (value: number | null) => void }) {
+  return (
+    <div className="inline-flex items-center gap-1" role="group" aria-label={label}>
+      <span className="w-16 text-sm text-muted-foreground">{label}</span>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        aria-label={`${label} back one`}
+        disabled={value === null}
+        onClick={() => onChange(value === null || value <= 1 ? null : value - 1)}
+      >
+        <MinusIcon />
+      </Button>
+      <span className="min-w-10 text-center text-base font-medium tabular-nums md:text-sm" aria-live="polite">
+        {value ?? "–"}
+      </span>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        aria-label={`${label} on one`}
+        disabled={value !== null && value >= max}
+        onClick={() => onChange((value ?? 0) + 1)}
+      >
+        <PlusIcon />
+      </Button>
+    </div>
   );
 }

@@ -10,4 +10,4 @@ We chose this over importing in the browser (blocked by the sites), over a third
 
 - The server holds a small, strict fetch helper (`src/server/fetch-public-url.ts`). Anything else that later needs to fetch a Member-supplied address should reuse it rather than calling `fetch` directly.
 - Import is as good as the page's structured data. Most large recipe sites publish it; some small blogs and paywalled pages do not.
-- A Member can make the server request any public address. The 5-second and 2 MB limits and the sign-in requirement bound that; there is no per-Member rate limit yet.
+- A Member can make the server request any public address. The 5-second and 2 MB limits and the sign-in requirement bound that, and each Member gets 30 attempts an hour (every attempt counts, also the ones that find no recipe).

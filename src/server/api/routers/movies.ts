@@ -103,6 +103,8 @@ export const moviesRouter = createTRPCRouter({
         posterUrl: true,
         tmdbId: true,
         watchedAt: true,
+        season: true,
+        episode: true,
         createdAt: true,
         ratings: { select: { userId: true, halfStars: true, note: true } },
       },
@@ -196,6 +198,26 @@ export const moviesRouter = createTRPCRouter({
     });
     return { success: true };
   }),
+
+  /**
+   * Where a Series has got to: season and episode, or neither to stop keeping track. Noting progress on a Series
+   * nobody had started yet makes it Watching.
+   */
+  setProgress: householdProcedure
+    .input(z.object({ id: z.string(), season: z.number().int().min(1).max(99).nullable(), episode: z.number().int().min(1).max(999).nullable() }))
+    .mutation(async ({ ctx, input }) => {
+      const title = await ctx.prisma.title.findFirst({
+        where: { id: input.id, kind: "SERIES", watchlist: editableWatchlists(ctx) },
+        select: { id: true, status: true },
+      });
+      if (!title) throw new TRPCError({ code: "NOT_FOUND" });
+      const started = input.season !== null || input.episode !== null;
+      await ctx.prisma.title.update({
+        where: { id: title.id },
+        data: { season: input.season, episode: input.episode, ...(started && title.status === "WANT" ? { status: "WATCHING" as const } : {}) },
+      });
+      return { success: true };
+    }),
 
   /**
    * Your own rating of a Title you can see: half stars 1–10 (or none) and a short note. Rating never needs edit

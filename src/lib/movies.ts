@@ -18,3 +18,9 @@ export function averageHalfStars(ratings: { halfStars: number | null }[]): numbe
   if (given.length === 0) return null;
   return Math.round(given.reduce((a, b) => a + b, 0) / given.length);
 }
+
+/** "S2 · E5", "S2" or "E5": where a Series has got to; null when nobody is keeping track. */
+export function progressLabel(title: { season: number | null; episode: number | null }): string | null {
+  const parts = [title.season !== null ? `S${title.season}` : null, title.episode !== null ? `E${title.episode}` : null].filter(Boolean);
+  return parts.length ? parts.join(" · ") : null;
+}

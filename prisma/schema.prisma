@@ -78,6 +78,7 @@ model User {
   ownedCookbooks      Cookbook[]           @relation("CookbookOwner")
   ownedWatchlists     Watchlist[]          @relation("WatchlistOwner")
   titleRatings        TitleRating[]
+  linkImports         LinkImport[]
   ownedReminders      Reminder[]           @relation("ReminderOwner")
   completedReminders  ReminderCompletion[] @relation("ReminderCompletedBy")
   pushSubscriptions   PushSubscription[]
@@ -825,6 +826,9 @@ model Title {
   posterUrl      String?
   tmdbId         Int?
   watchedAt      DateTime?
+  // Where a Series being watched has got to. Null for a Movie, or when nobody is keeping track.
+  season         Int?
+  episode        Int?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -849,4 +853,16 @@ model TitleRating {
 
   @@unique([titleId, userId])
   @@map("title_ratings")
+}
+
+// One attempt by a Member to import a Recipe from a link, kept for a day to cap how many an hour (ADR 0013).
+model LinkImport {
+  id        String   @id @default(cuid())
+  userId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("link_imports")
 }
