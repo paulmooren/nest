@@ -11,14 +11,14 @@ import { Row, RowList } from "@/components/ui/row";
 import { ListsPage } from "@/components/lists/lists-page";
 import { useDelayed } from "@/components/use-delayed";
 import { ModuleGate } from "@/components/use-modules";
+import { ListTools, NO_FILTER, type TitleFilter, type TitleSort } from "@/components/movies/list-tools";
 import { Stars } from "@/components/movies/stars";
 import { AddTitleSheet, TitleSheet, type TitleRow } from "@/components/movies/title-sheet";
 import { CookbookSettingsSheet, DeleteCookbookSheet, NewCookbookSheet } from "@/components/recipes/cookbook-sheets";
 import { RecipesBones } from "@/components/recipes/recipes-ui";
 import { showToast } from "@/components/toast";
 import { newId } from "@/lib/client-id";
-import { cn } from "@/lib/utils";
-import { averageHalfStars, KIND_LABEL, progressLabel, STATUS_LABEL, STATUSES, type TitleStatus } from "@/lib/movies";
+import { averageHalfStars, KIND_LABEL, progressLabel, STATUS_LABEL, type TitleStatus } from "@/lib/movies";
 
 export default function MoviesPage() {
   return (
@@ -38,7 +38,9 @@ function Movies() {
   const showSkeleton = useDelayed(!titles || !watchlists || !me);
 
   const [watchlistId, setWatchlistId] = useState("all");
-  const [status, setStatusFilter] = useState<TitleStatus>("WANT");
+  const [filter, setFilter] = useState<TitleFilter>(NO_FILTER);
+  const [sort, setSort] = useState<TitleSort>("status");
+  const [query, setQuery] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [settings, setSettings] = useState(false);
@@ -59,9 +61,11 @@ function Movies() {
   const editable = watchlists.filter(canEditList);
   const selected = watchlists.find((w) => w.id === watchlistId);
   const inList = watchlistId === "all" ? titles : titles.filter((t) => t.watchlistId === watchlistId);
-  const visible = inList.filter((t) => t.status === status);
-  const counts = new Map<TitleStatus, number>();
-  for (const t of inList) counts.set(t.status, (counts.get(t.status) ?? 0) + 1);
+  const q = (query ?? "").trim().toLowerCase();
+  const visible = inList
+    .filter((t) => (filter.status === "ANY" || t.status === filter.status) && (filter.kind === "ANY" || t.kind === filter.kind) && (!q || t.name.toLowerCase().includes(q)))
+    .sort(BY[sort]);
+  const narrowed = filter.status !== "ANY" || filter.kind !== "ANY" || q !== "";
   const open = titles.find((t) => t.id === openId);
   const destinations = editable.filter((w) => w.id !== selected?.id);
 
@@ -74,7 +78,7 @@ function Movies() {
 
   const row = (t: TitleRow) => {
     const average = averageHalfStars(t.ratings);
-    const meta = [KIND_LABEL[t.kind], t.status === "WATCHING" ? progressLabel(t) : null].filter(Boolean).join(" · ");
+    const meta = [KIND_LABEL[t.kind], STATUS_LABEL[t.status], t.status === "WATCHING" ? progressLabel(t) : null].filter(Boolean).join(" · ");
     return (
       <Row
         key={t.id}
@@ -102,7 +106,6 @@ function Movies() {
             options={[{ value: "all", label: "All" }, ...watchlists.map((w) => ({ value: w.id, label: `${w.name} ${w.titleCount}` }))]}
             trailing={<AddChip onClick={() => setCreating(true)}>New watchlist</AddChip>}
           />
-          <StatusFilter value={status} onChange={setStatusFilter} counts={counts} />
         </div>
 
         {selected && (
@@ -125,20 +128,33 @@ function Movies() {
           </div>
         )}
 
+        {titles.length > 0 && <ListTools count={visible.length} filter={filter} onFilter={setFilter} sort={sort} onSort={setSort} query={query} onQuery={setQuery} />}
+
         {visible.length === 0 ? (
           <EmptyState
             title={
               titles.length === 0
                 ? "Nothing to watch yet. Add a film or a series you want to see."
-                : status === "WANT"
-                  ? "Nothing waiting to be watched here."
-                  : status === "WATCHING"
-                    ? "Nothing being watched here right now."
-                    : "Nothing watched here yet. Mark a title as Watched and rate it."
+                : narrowed
+                  ? "Nothing matches the filter or the search."
+                  : "Nothing on this watchlist yet."
+            }
+            action={
+              narrowed ? (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setFilter(NO_FILTER);
+                    setQuery(null);
+                  }}
+                >
+                  Show everything
+                </Button>
+              ) : undefined
             }
           />
         ) : (
-          <section aria-label={STATUS_LABEL[status]}>
+          <section aria-label="Titles">
             <RowList>{visible.map(row)}</RowList>
           </section>
         )}
@@ -153,7 +169,8 @@ function Movies() {
           onAdd={async (input) => {
             try {
               await create.mutateAsync({ id: newId(), ...input });
-              setStatusFilter("WANT");
+              setFilter(NO_FILTER);
+              setQuery(null);
               showToast(`${input.name} added to ${watchlists.find((w) => w.id === input.watchlistId)?.name ?? "the watchlist"}`);
             } catch (e) {
               showToast("Couldn't add that title");
@@ -216,32 +233,16 @@ function Movies() {
   );
 }
 
-/**
- * Which Titles to show: one strip with three segments, each with its count. It is a filter on the list below, so
- * it is drawn as one control rather than as chips, which on this page mean "which Watchlist".
- */
-function StatusFilter({ value, onChange, counts }: { value: TitleStatus; onChange: (status: TitleStatus) => void; counts: Map<TitleStatus, number> }) {
-  return (
-    <div role="radiogroup" aria-label="Status" className="flex w-full rounded-xl bg-muted p-1 md:w-fit">
-      {STATUSES.map((s) => {
-        const active = s === value;
-        return (
-          <button
-            key={s}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onChange(s)}
-            className={cn(
-              "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-1.5 text-sm font-medium whitespace-nowrap transition-colors md:flex-none md:px-4",
-              active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {STATUS_LABEL[s]}
-            <span className={cn("text-xs tabular-nums", active ? "text-muted-foreground" : "text-muted-foreground/70")}>{counts.get(s) ?? 0}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+const STATUS_ORDER: Record<TitleStatus, number> = { WATCHING: 0, WANT: 1, WATCHED: 2 };
+const added = (a: TitleRow, b: TitleRow) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+const time = (d: Date | string | null) => (d ? new Date(d).getTime() : 0);
+
+/** The ways to order the list. Each falls back to newest first, so the order never jumps about. */
+const BY: Record<TitleSort, (a: TitleRow, b: TitleRow) => number> = {
+  // What is being watched, then what is waiting, then what is done.
+  status: (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || added(a, b),
+  added,
+  name: (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+  rating: (a, b) => (averageHalfStars(b.ratings) ?? -1) - (averageHalfStars(a.ratings) ?? -1) || added(a, b),
+  watched: (a, b) => time(b.watchedAt) - time(a.watchedAt) || added(a, b),
+};
