@@ -13,6 +13,7 @@ import { AmountText } from "@/components/ui/amount-text";
 import { Row, RowList } from "@/components/ui/row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { ListTools } from "@/components/ui/list-tools";
 import { ListsPage } from "@/components/lists/lists-page";
 import { WishSheet } from "@/components/wishlist/wish-sheet";
 import type { WishData } from "@/components/wishlist/types";
@@ -30,6 +31,21 @@ export function WishlistsView() {
   );
 }
 
+type WishSort = "added" | "name" | "cheap" | "dear";
+const SORTS: { value: WishSort; label: string }[] = [
+  { value: "added", label: "As added" },
+  { value: "name", label: "Name" },
+  { value: "cheap", label: "Price, low to high" },
+  { value: "dear", label: "Price, high to low" },
+];
+const byTitle = (a: WishData, b: WishData) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+// Wishes with no price come last either way.
+const BY: Record<Exclude<WishSort, "added">, (a: WishData, b: WishData) => number> = {
+  name: byTitle,
+  cheap: (a, b) => (a.price === null ? Infinity : Number(a.price)) - (b.price === null ? Infinity : Number(b.price)) || byTitle(a, b),
+  dear: (a, b) => (b.price === null ? -Infinity : Number(b.price)) - (a.price === null ? -Infinity : Number(a.price)) || byTitle(a, b),
+};
+
 function Wishlists() {
   const { data: household } = trpc.household.current.useQuery();
   const { data: me } = trpc.user.me.useQuery();
@@ -38,6 +54,9 @@ function Wishlists() {
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<WishData | null>(null);
+  const [claims, setClaims] = useState("any");
+  const [sort, setSort] = useState<WishSort>("added");
+  const [query, setQuery] = useState<string | null>(null);
 
   const selected = choice ?? me?.id ?? HOME;
   const isHome = selected === HOME;
@@ -79,8 +98,18 @@ function Wishlists() {
 
   const canEdit = ownList || isHome;
   const all = (wishes ?? []) as WishData[];
-  const active = all.filter((w) => !w.receivedAt);
-  const received = all.filter((w) => w.receivedAt);
+  const q = (query ?? "").trim().toLowerCase();
+  // The owner never sees claims on their own list, so there the claims filter is neither offered nor applied.
+  const claimFilter = ownList ? "any" : claims;
+  const narrowed = claimFilter !== "any" || q !== "";
+  const shown = all.filter(
+    (w) =>
+      (!q || w.title.toLowerCase().includes(q) || (w.note ?? "").toLowerCase().includes(q)) &&
+      (claimFilter === "any" || (claimFilter === "free" ? !w.claimedBy && !w.claimedByMe : w.claimedByMe)),
+  );
+  const ordered = sort === "added" ? shown : [...shown].sort(BY[sort]);
+  const active = ordered.filter((w) => !w.receivedAt);
+  const received = ordered.filter((w) => w.receivedAt);
   const editingWish = all.find((w) => w.id === editing);
 
   const row = (wish: WishData) => {
@@ -183,10 +212,39 @@ function Wishlists() {
         )}
       </div>
 
+      {all.length > 0 && (
+        <ListTools
+          count={active.length}
+          noun={["wish", "wishes"]}
+          filters={
+            ownList
+              ? []
+              : [
+                  {
+                    key: "claims",
+                    label: "Claims",
+                    value: claims,
+                    any: "any",
+                    options: [
+                      { value: "any", label: "All wishes" },
+                      { value: "free", label: "Not claimed yet" },
+                      { value: "mine", label: "Claimed by you" },
+                    ],
+                  },
+                ]
+          }
+          onFilter={(_, value) => setClaims(value)}
+          sort={{ value: sort, initial: "added", options: SORTS, onChange: setSort }}
+          query={query}
+          onQuery={setQuery}
+          searchPlaceholder="Search wishes"
+        />
+      )}
+
       {wishes && active.length === 0 ? (
         <EmptyState
-          title={canEdit ? "No wishes yet." : "Nothing on this wishlist yet."}
-          action={canEdit ? <Button onClick={() => setAdding(true)}>Add a wish</Button> : undefined}
+          title={narrowed ? "No wish matches the filter or the search." : canEdit ? "No wishes yet." : "Nothing on this wishlist yet."}
+          action={canEdit && !narrowed ? <Button onClick={() => setAdding(true)}>Add a wish</Button> : undefined}
         />
       ) : (
         <RowList>{active.map(row)}</RowList>

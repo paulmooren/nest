@@ -12,7 +12,7 @@ import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { ChoiceChips } from "@/components/ui/choice-chips";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
+import { ListTools } from "@/components/ui/list-tools";
 import { PageBody, PageHeader } from "@/components/ui/page-header";
 import { Row, RowList } from "@/components/ui/row";
 import { useDelayed } from "@/components/use-delayed";
@@ -32,6 +32,20 @@ export default function VaultPage() {
 
 type Entry = inferRouterOutputs<AppRouter>["vault"]["list"][number];
 
+type VaultShow = "all" | "expiry" | "files";
+type VaultSort = "category" | "name" | "expiry";
+const SORTS: { value: VaultSort; label: string }[] = [
+  { value: "category", label: "Category" },
+  { value: "name", label: "Name" },
+  { value: "expiry", label: "Expires soonest" },
+];
+const byTitle = (a: Entry, b: Entry) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+const BY: Record<Exclude<VaultSort, "category">, (a: Entry, b: Entry) => number> = {
+  name: byTitle,
+  // Entries with no expiry date come last.
+  expiry: (a, b) => (a.expiresOn ? new Date(a.expiresOn).getTime() : Infinity) - (b.expiresOn ? new Date(b.expiresOn).getTime() : Infinity) || byTitle(a, b),
+};
+
 function Vault() {
   const router = useRouter();
   const { data: entries } = trpc.vault.list.useQuery();
@@ -40,7 +54,9 @@ function Vault() {
   const { data: household } = trpc.household.current.useQuery();
   const showSkeleton = useDelayed(!entries || !categories || !me);
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState<string | null>(null);
+  const [show, setShow] = useState<VaultShow>("all");
+  const [sort, setSort] = useState<VaultSort>("category");
   const [categoryId, setCategoryId] = useState("all");
   const [managing, setManaging] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -50,9 +66,11 @@ function Vault() {
   const categoryName = useMemo(() => new Map((categories ?? []).map((c) => [c.id, c.name])), [categories]);
 
   const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = (query ?? "").trim().toLowerCase();
     return (entries ?? []).filter((e) => {
       if (categoryId !== "all" && e.categoryId !== categoryId) return false;
+      if (show === "expiry" && !e.expiresOn) return false;
+      if (show === "files" && e.attachmentCount === 0) return false;
       if (!q) return true;
       const haystack = [
         e.title,
@@ -63,7 +81,7 @@ function Vault() {
       ];
       return haystack.some((s) => s.toLowerCase().includes(q));
     });
-  }, [entries, query, categoryId, categoryName]);
+  }, [entries, query, categoryId, categoryName, show]);
 
   const newEntry = (
     <Button render={<Link href="/vault/new" />} nativeButton={false}>
@@ -80,9 +98,10 @@ function Vault() {
     );
   }
 
-  const searching = query.trim() !== "" || categoryId !== "all";
+  // One flat list as soon as anything narrows or reorders it; otherwise Pinned on top and the rest by category.
+  const searching = (query ?? "").trim() !== "" || categoryId !== "all" || show !== "all" || sort !== "category";
   const pinned = searching ? [] : visible.filter((e) => e.pinned);
-  const rest = searching ? visible : visible.filter((e) => !e.pinned);
+  const rest = searching ? (sort === "category" ? visible : [...visible].sort(BY[sort])) : visible.filter((e) => !e.pinned);
   const groups = categories
     .map((c) => ({ category: c, entries: rest.filter((e) => e.categoryId === c.id) }))
     .filter((g) => g.entries.length > 0);
@@ -152,14 +171,6 @@ function Vault() {
         )}
 
         <div className="flex flex-col gap-3">
-          <Input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search titles, labels and details"
-            aria-label="Search the Vault"
-            className="md:max-w-md"
-          />
           <div className="flex flex-wrap items-center gap-2">
             <ChoiceChips
               label="Filter by category"
@@ -178,6 +189,31 @@ function Vault() {
           </div>
         </div>
 
+        {entries.length > 0 && (
+          <ListTools
+            count={visible.length}
+            noun={["entry", "entries"]}
+            filters={[
+              {
+                key: "show",
+                label: "Show",
+                value: show,
+                any: "all",
+                options: [
+                  { value: "all", label: "Everything" },
+                  { value: "expiry", label: "With an expiry date" },
+                  { value: "files", label: "With files" },
+                ],
+              },
+            ]}
+            onFilter={(_, value) => setShow(value as VaultShow)}
+            sort={{ value: sort, initial: "category", options: SORTS, onChange: setSort }}
+            query={query}
+            onQuery={setQuery}
+            searchPlaceholder="Search titles, labels and details"
+          />
+        )}
+
         {entries.length === 0 && (
           <EmptyState
             title="Nothing in the Vault yet. Add your passport, policy numbers, warranties, invoices — anything you'd otherwise dig around for. You can also drop a file here to start."
@@ -191,7 +227,7 @@ function Vault() {
 
         {pinned.length > 0 && list("Pinned", pinned)}
         {searching
-          ? visible.length > 0 && list(`${visible.length} ${visible.length === 1 ? "entry" : "entries"}`, rest)
+          ? visible.length > 0 && list(sort === "category" ? "Found" : (SORTS.find((o) => o.value === sort)?.label ?? ""), rest)
           : groups.map((g) => list(g.category.name, g.entries))}
       </PageBody>
 
