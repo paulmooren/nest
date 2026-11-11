@@ -224,7 +224,7 @@ export const vaultRouter = createTRPCRouter({
       );
     }),
 
-  update: householdProcedure.input(entryInput.extend({ id: z.string() })).mutation(async ({ ctx, input }) => {
+  update: householdProcedure.input(entryInput.extend({ id: z.string(), shared: z.boolean() })).mutation(async ({ ctx, input }) => {
     const existing = await ctx.prisma.vaultEntry.findFirst({
       where: { id: input.id, ...editable(ctx) },
       select: { id: true },
@@ -234,6 +234,8 @@ export const vaultRouter = createTRPCRouter({
     return ctx.prisma.vaultEntry.update({
       where: { id: input.id },
       data: {
+        // Moving between Personal and Shared; a Personal entry belongs to whoever saves it as such.
+        ownerId: input.shared ? null : ctx.userId,
         title: input.title,
         categoryId: input.categoryId,
         expiresOn: input.expiresOn ?? null,

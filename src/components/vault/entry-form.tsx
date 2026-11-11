@@ -289,19 +289,17 @@ export function VaultEntryForm({
         </div>
       )}
 
-      {!editing && (
-        <Field id="entry-owner" label="Who owns this">
-          <ChoiceChips
-            label="Who owns this"
-            value={shared ? "shared" : "personal"}
-            onChange={(v) => setShared(v === "shared")}
-            options={[
-              { value: "personal", label: "Personal" },
-              { value: "shared", label: "Shared" },
-            ]}
-          />
-        </Field>
-      )}
+      <Field id="entry-owner" label="Who owns this">
+        <ChoiceChips
+          label="Who owns this"
+          value={shared ? "shared" : "personal"}
+          onChange={(v) => setShared(v === "shared")}
+          options={[
+            { value: "personal", label: "Personal" },
+            { value: "shared", label: "Shared" },
+          ]}
+        />
+      </Field>
 
       <div className="flex gap-2">
         <Button type="submit" size="lg" disabled={pending}>
