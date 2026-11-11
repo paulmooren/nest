@@ -11,14 +11,14 @@ import { Row, RowList } from "@/components/ui/row";
 import { ListsPage } from "@/components/lists/lists-page";
 import { useDelayed } from "@/components/use-delayed";
 import { ModuleGate } from "@/components/use-modules";
-import { ListTools, NO_FILTER, type TitleFilter, type TitleSort } from "@/components/movies/list-tools";
+import { ListTools } from "@/components/ui/list-tools";
 import { Stars } from "@/components/movies/stars";
 import { AddTitleSheet, TitleSheet, type TitleRow } from "@/components/movies/title-sheet";
 import { CookbookSettingsSheet, DeleteCookbookSheet, NewCookbookSheet } from "@/components/recipes/cookbook-sheets";
 import { RecipesBones } from "@/components/recipes/recipes-ui";
 import { showToast } from "@/components/toast";
 import { newId } from "@/lib/client-id";
-import { averageHalfStars, KIND_LABEL, progressLabel, STATUS_LABEL, type TitleStatus } from "@/lib/movies";
+import { averageHalfStars, KIND_LABEL, progressLabel, STATUS_LABEL, STATUSES, type TitleKind, type TitleStatus } from "@/lib/movies";
 
 export default function MoviesPage() {
   return (
@@ -128,7 +128,37 @@ function Movies() {
           </div>
         )}
 
-        {titles.length > 0 && <ListTools count={visible.length} filter={filter} onFilter={setFilter} sort={sort} onSort={setSort} query={query} onQuery={setQuery} />}
+        {titles.length > 0 && (
+          <ListTools
+            count={visible.length}
+            noun={["title", "titles"]}
+            filters={[
+              {
+                key: "status",
+                label: "Status",
+                value: filter.status,
+                any: "ANY",
+                options: [{ value: "ANY", label: "Any status" }, ...STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] }))],
+              },
+              {
+                key: "kind",
+                label: "Kind",
+                value: filter.kind,
+                any: "ANY",
+                options: [
+                  { value: "ANY", label: "Movies and series" },
+                  { value: "MOVIE", label: "Movies" },
+                  { value: "SERIES", label: "Series" },
+                ],
+              },
+            ]}
+            onFilter={(key, value) => setFilter((f) => ({ ...f, [key]: value }))}
+            sort={{ value: sort, initial: "status", options: SORTS, onChange: setSort }}
+            query={query}
+            onQuery={setQuery}
+            searchPlaceholder="Search titles by name"
+          />
+        )}
 
         {visible.length === 0 ? (
           <EmptyState
@@ -232,6 +262,17 @@ function Movies() {
     </>
   );
 }
+
+type TitleFilter = { status: TitleStatus | "ANY"; kind: TitleKind | "ANY" };
+type TitleSort = "status" | "added" | "name" | "rating" | "watched";
+const NO_FILTER: TitleFilter = { status: "ANY", kind: "ANY" };
+const SORTS: { value: TitleSort; label: string }[] = [
+  { value: "status", label: "What to watch next" },
+  { value: "added", label: "Recently added" },
+  { value: "name", label: "Name" },
+  { value: "rating", label: "Highest rated" },
+  { value: "watched", label: "Recently watched" },
+];
 
 const STATUS_ORDER: Record<TitleStatus, number> = { WATCHING: 0, WANT: 1, WATCHED: 2 };
 const added = (a: TitleRow, b: TitleRow) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();

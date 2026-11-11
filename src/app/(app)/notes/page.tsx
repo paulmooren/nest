@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { AddChip, ChoiceChips } from "@/components/ui/choice-chips";
 import { ConfirmDelete } from "@/components/ui/confirm-delete";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
+import { ListTools } from "@/components/ui/list-tools";
 import { PageBody, PageHeader } from "@/components/ui/page-header";
 import { Row, RowList } from "@/components/ui/row";
 import { useDelayed } from "@/components/use-delayed";
@@ -34,12 +34,26 @@ export default function NotesPage() {
 
 type Note = inferRouterOutputs<AppRouter>["notes"]["list"][number];
 
+type NoteSort = "edited" | "created" | "title";
+const SORTS: { value: NoteSort; label: string }[] = [
+  { value: "edited", label: "Last edited" },
+  { value: "created", label: "Newest" },
+  { value: "title", label: "Title" },
+];
+const BY: Record<NoteSort, (a: Note, b: Note) => number> = {
+  edited: (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  created: (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  title: (a, b) => noteTitle(a.title).localeCompare(noteTitle(b.title), undefined, { sensitivity: "base" }),
+};
+
 function Notes() {
   const refresh = useRefreshNotes();
-  const [query, setQuery] = useState("");
+  // What is typed in the search field (null while it is closed), and the same a moment later, which is what is asked.
+  const [query, setQuery] = useState<string | null>(null);
+  const [sort, setSort] = useState<NoteSort>("edited");
   const [search, setSearch] = useState("");
   useEffect(() => {
-    const t = setTimeout(() => setSearch(query.trim()), 250);
+    const t = setTimeout(() => setSearch((query ?? "").trim()), 250);
     return () => clearTimeout(t);
   }, [query]);
 
@@ -83,7 +97,7 @@ function Notes() {
     );
   }
 
-  const visible = notebookId === "all" ? notes : notes.filter((n) => n.notebookId === notebookId);
+  const visible = (notebookId === "all" ? notes : notes.filter((n) => n.notebookId === notebookId)).slice().sort(BY[sort]);
   const searching = search !== "";
   const pinned = searching ? [] : visible.filter((n) => n.pinned);
   const rest = searching ? visible : visible.filter((n) => !n.pinned);
@@ -127,14 +141,6 @@ function Notes() {
       <PageHeader title="Notes" actions={newNote} inHeader />
       <PageBody>
         <div className="flex flex-col gap-3">
-          <Input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search titles and notes"
-            aria-label="Search Notes"
-            className="md:max-w-md"
-          />
           <div className="flex flex-wrap items-center gap-2">
             <ChoiceChips
               label="Filter by notebook"
@@ -169,6 +175,17 @@ function Notes() {
           </div>
         )}
 
+        {(notes.length > 0 || searching) && (
+          <ListTools
+            count={visible.length}
+            noun={["note", "notes"]}
+            sort={{ value: sort, initial: "edited", options: SORTS, onChange: setSort }}
+            query={query}
+            onQuery={setQuery}
+            searchPlaceholder="Search titles and notes"
+          />
+        )}
+
         {notes.length === 0 && !searching && (
           <EmptyState
             title="Nothing written down yet. Jot down an achievement, an idea, anything you don't want to forget — and add to it whenever you think of something."
@@ -181,7 +198,7 @@ function Notes() {
         {notes.length > 0 && visible.length === 0 && <EmptyState title="No notes in this notebook yet." action={newNote} />}
 
         {pinned.length > 0 && list("Pinned", pinned)}
-        {rest.length > 0 && list(searching ? `${rest.length} ${rest.length === 1 ? "note" : "notes"}` : "Last edited", rest)}
+        {rest.length > 0 && list(searching ? "Found" : (SORTS.find((o) => o.value === sort)?.label ?? ""), rest)}
       </PageBody>
 
       {creating && (

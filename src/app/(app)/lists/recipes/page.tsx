@@ -13,7 +13,7 @@ import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { AddChip, ChoiceChips } from "@/components/ui/choice-chips";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
+import { ListTools } from "@/components/ui/list-tools";
 import { Row, RowList } from "@/components/ui/row";
 import { ListsPage } from "@/components/lists/lists-page";
 import { useDelayed } from "@/components/use-delayed";
@@ -53,14 +53,36 @@ function matchesIdea(recipe: Recipe, idea: Idea, now: number): boolean {
   }
 }
 
+type RecipeSort = "name" | "added" | "cooked" | "quick" | "lastCooked";
+const SORTS: { value: RecipeSort; label: string }[] = [
+  { value: "name", label: "Name" },
+  { value: "added", label: "Recently added" },
+  { value: "cooked", label: "Most cooked" },
+  { value: "lastCooked", label: "Recently cooked" },
+  { value: "quick", label: "Quickest" },
+];
+const byName = (a: Recipe, b: Recipe) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+const time = (d: Date | string | null) => (d ? new Date(d).getTime() : 0);
+
+/** The ways to order the list. Each falls back to the name, so the order never jumps about. */
+const BY: Record<RecipeSort, (a: Recipe, b: Recipe) => number> = {
+  name: byName,
+  added: (a, b) => time(b.createdAt) - time(a.createdAt) || byName(a, b),
+  cooked: (a, b) => b.cookedCount - a.cookedCount || byName(a, b),
+  lastCooked: (a, b) => time(b.lastCookedAt) - time(a.lastCookedAt) || byName(a, b),
+  // Recipes with no time filled in come last.
+  quick: (a, b) => (a.totalMinutes ?? Infinity) - (b.totalMinutes ?? Infinity) || byName(a, b),
+};
+
 function Recipes() {
   const router = useRouter();
   const refresh = useRefreshRecipes();
   const { isEnabled } = useModules();
-  const [query, setQuery] = useState("");
+  // What is typed in the search field (null while it is closed), and the same a moment later, which is what is asked.
+  const [query, setQuery] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   useEffect(() => {
-    const t = setTimeout(() => setSearch(query.trim()), 250);
+    const t = setTimeout(() => setSearch((query ?? "").trim()), 250);
     return () => clearTimeout(t);
   }, [query]);
 
@@ -74,6 +96,7 @@ function Recipes() {
 
   const [cookbookId, setCookbookId] = useState("all");
   const [idea, setIdea] = useState<Idea>("all");
+  const [sort, setSort] = useState<RecipeSort>("name");
   const [creating, setCreating] = useState(false);
   const [settings, setSettings] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -105,7 +128,7 @@ function Recipes() {
 
   const searching = search !== "";
   const inCookbook = cookbookId === "all" ? recipes : recipes.filter((r) => r.cookbookId === cookbookId);
-  const visible = inCookbook.filter((r) => matchesIdea(r, idea, openedAt));
+  const visible = inCookbook.filter((r) => matchesIdea(r, idea, openedAt)).sort(BY[sort]);
   const counts = new Map<string, number>();
   for (const r of recipes) counts.set(r.cookbookId, (counts.get(r.cookbookId) ?? 0) + 1);
   const cookbookName = new Map(cookbooks.map((c) => [c.id, c.name]));
@@ -150,14 +173,6 @@ function Recipes() {
 
         {(recipes.length > 0 || searching) && (
           <div className="flex flex-col gap-3">
-            <Input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search names, ingredients and steps"
-              aria-label="Search Recipes"
-              className="md:max-w-md"
-            />
             <ChoiceChips
               label="Filter by cookbook"
               value={cookbookId}
@@ -168,27 +183,6 @@ function Recipes() {
               ]}
               trailing={<AddChip onClick={() => setCreating(true)}>New cookbook</AddChip>}
             />
-            <div className="flex flex-wrap items-center gap-2">
-              <ChoiceChips<Idea>
-                label="What to cook"
-                value={idea}
-                onChange={setIdea}
-                options={[
-                  { value: "all", label: "Anything" },
-                  { value: "quick", label: `Under ${QUICK_MINUTES} min` },
-                  { value: "new", label: "Not cooked yet" },
-                  { value: "again", label: "Not cooked lately" },
-                ]}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={visible.length === 0}
-                onClick={() => router.push(`/lists/recipes/${visible[Math.floor(Math.random() * visible.length)].id}`)}
-              >
-                <ShuffleIcon /> Surprise me
-              </Button>
-            </div>
           </div>
         )}
 
@@ -210,6 +204,45 @@ function Recipes() {
               <SettingsIcon />
             </Button>
           </div>
+        )}
+
+        {(recipes.length > 0 || searching) && (
+          <ListTools
+            count={visible.length}
+            noun={["recipe", "recipes"]}
+            filters={[
+              {
+                key: "idea",
+                label: "Show",
+                value: idea,
+                any: "all",
+                options: [
+                  { value: "all", label: "Everything" },
+                  { value: "quick", label: `Under ${QUICK_MINUTES} min` },
+                  { value: "new", label: "Not cooked yet" },
+                  { value: "again", label: "Not cooked lately" },
+                ],
+              },
+            ]}
+            onFilter={(_, value) => setIdea(value as Idea)}
+            sort={{ value: sort, initial: "name", options: SORTS, onChange: setSort }}
+            query={query}
+            onQuery={setQuery}
+            searchPlaceholder="Search names, ingredients and steps"
+            extra={
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Surprise me: open a recipe at random"
+                title="Surprise me"
+                className="text-muted-foreground"
+                disabled={visible.length === 0}
+                onClick={() => router.push(`/lists/recipes/${visible[Math.floor(Math.random() * visible.length)].id}`)}
+              >
+                <ShuffleIcon />
+              </Button>
+            }
+          />
         )}
 
         {recipes.length === 0 && !searching && (
