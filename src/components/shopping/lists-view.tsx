@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Row, RowList } from "@/components/ui/row";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ListTools } from "@/components/ui/list-tools";
 import { ListsPage } from "@/components/lists/lists-page";
 import { FavoritesSection } from "@/components/shopping/favorites-section";
 import { ItemSheet } from "@/components/shopping/item-sheet";
@@ -25,6 +26,12 @@ import {
 } from "@/components/shopping/use-shopping";
 import { useDelayed } from "@/components/use-delayed";
 import { ModuleGate } from "@/components/use-modules";
+
+type ItemSort = "added" | "name";
+const ITEM_SORTS: { value: ItemSort; label: string }[] = [
+  { value: "added", label: "As added" },
+  { value: "name", label: "Name" },
+];
 
 export function ShoppingListsView() {
   return (
@@ -47,6 +54,9 @@ function ShoppingLists() {
   const [removing, setRemoving] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [focused, setFocused] = useState(false);
+  const [addedBy, setAddedBy] = useState("anyone");
+  const [sort, setSort] = useState<ItemSort>("added");
+  const [search, setSearch] = useState<string | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
 
   const selected = lists?.find((l) => l.id === choice) ?? lists?.[0];
@@ -92,7 +102,15 @@ function ShoppingLists() {
   const multiMember = (household?.members.length ?? 0) > 1;
   const isShared = selected.ownerId === null;
   // Ticked items stay (struck through) only for the grace period, then drop off.
-  const open = items?.filter((i) => !i.checkedAt || ticks.leaving.has(i.id)) ?? [];
+  const onList = items?.filter((i) => !i.checkedAt || ticks.leaving.has(i.id)) ?? [];
+  const members = household?.members ?? [];
+  // Who added it only means something on a list more than one person adds to.
+  const byPerson = isShared && multiMember;
+  const personFilter = byPerson ? addedBy : "anyone";
+  const q = (search ?? "").trim().toLowerCase();
+  const narrowed = personFilter !== "anyone" || q !== "";
+  const matching = onList.filter((i) => (personFilter === "anyone" || i.addedBy?.id === personFilter) && (!q || i.name.toLowerCase().includes(q)));
+  const open = sort === "added" ? matching : [...matching].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
   const favoriteFor = (n: string) => favorites?.find((f) => f.name.toLowerCase() === n.toLowerCase());
   const editingItem = items?.find((i) => i.id === editing);
   const removingItem = items?.find((i) => i.id === removing);
@@ -175,8 +193,36 @@ function ShoppingLists() {
         )}
       </div>
 
+      {onList.length > 0 && (
+        <ListTools
+          count={open.length}
+          noun={["item", "items"]}
+          filters={
+            byPerson
+              ? [
+                  {
+                    key: "addedBy",
+                    label: "Added by",
+                    value: addedBy,
+                    any: "anyone",
+                    options: [
+                      { value: "anyone", label: "Anyone" },
+                      ...members.map((m) => ({ value: m.user.id, label: m.user.id === me.id ? "You" : m.user.name || m.user.email })),
+                    ],
+                  },
+                ]
+              : []
+          }
+          onFilter={(_, value) => setAddedBy(value)}
+          sort={{ value: sort, initial: "added", options: ITEM_SORTS, onChange: setSort }}
+          query={search}
+          onQuery={setSearch}
+          searchPlaceholder="Search this list"
+        />
+      )}
+
       {items && open.length === 0 ? (
-        <EmptyState title="Nothing on this list." />
+        <EmptyState title={narrowed ? "Nothing on this list matches the filter or the search." : "Nothing on this list."} />
       ) : (
         <RowList>
           {open.map((item) => {
