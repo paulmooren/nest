@@ -11,6 +11,7 @@ import { BalanceChart, type BalancePoint, type Granularity } from "@/components/
 import { Button } from "@/components/ui/button";
 import { ConfirmDelete } from "@/components/ui/confirm-delete";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListTools } from "@/components/ui/list-tools";
 import { PageBody, PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
 import { AccountSheet } from "@/components/finance/account-sheet";
@@ -18,6 +19,21 @@ import { ibanProblem, useAccountActions } from "@/components/finance/use-account
 import { TxRows, TxSheet, type Tx } from "@/components/finance/tx-list";
 import { useCategoryAssign } from "@/components/finance/use-category-assign";
 import { useTransactionActions } from "@/components/finance/use-transactions";
+
+type TxSort = "newest" | "oldest" | "largest" | "smallest";
+const SORTS: { value: TxSort; label: string }[] = [
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
+  { value: "largest", label: "Largest amount" },
+  { value: "smallest", label: "Smallest amount" },
+];
+const when = (t: Tx) => new Date(t.date).getTime();
+// The list arrives newest first, so only the other three orders need working out.
+const BY: Record<Exclude<TxSort, "newest">, (a: Tx, b: Tx) => number> = {
+  oldest: (a, b) => when(a) - when(b),
+  largest: (a, b) => Number(b.amount) - Number(a.amount) || when(b) - when(a),
+  smallest: (a, b) => Number(a.amount) - Number(b.amount) || when(b) - when(a),
+};
 
 function BackLink() {
   return (
@@ -56,11 +72,29 @@ export default function AccountDetailPage() {
   const [editError, setEditError] = useState<string | undefined>();
   const [deleting, setDeleting] = useState(false);
   const [openTx, setOpenTx] = useState<string | null>(null);
+  const [kind, setKind] = useState("any");
+  const [categoryId, setCategoryId] = useState("any");
+  const [sort, setSort] = useState<TxSort>("newest");
+  const [query, setQuery] = useState<string | null>(null);
 
   const account = accounts?.find((a) => a.id === accountId);
   const canEdit = account ? account.ownerId === null || account.ownerId === me?.id : false;
   const members = household?.members ?? [];
   const openedTx: Tx | undefined = transactions?.find((t) => t.id === openTx);
+
+  // Only the categories this account's transactions use are offered, plus "No category" when some have none.
+  const used = new Map<string, string>();
+  for (const t of transactions ?? []) if (t.category) used.set(t.category.id, t.category.name);
+  const someUncategorised = (transactions ?? []).some((t) => t.type !== "TRANSFER" && !t.categoryId);
+  const q = (query ?? "").trim().toLowerCase();
+  const narrowed = kind !== "any" || categoryId !== "any" || q !== "";
+  const matching = (transactions ?? []).filter(
+    (t) =>
+      (kind === "any" || t.type === kind) &&
+      (categoryId === "any" || (categoryId === "none" ? t.type !== "TRANSFER" && !t.categoryId : t.categoryId === categoryId)) &&
+      (!q || [t.merchant, t.note ?? "", t.category?.name ?? ""].some((text) => text.toLowerCase().includes(q))),
+  );
+  const shownTx = sort === "newest" ? matching : [...matching].sort(BY[sort]);
 
   if (accounts && !account) {
     return (
@@ -97,10 +131,48 @@ export default function AccountDetailPage() {
         <BalanceChart label="Balance" data={data} currentValue={account ? Number(account.balance) : 0} onRangeChange={setRange} />
 
         <Section title="Transactions">
+          {transactions && transactions.length > 0 && (
+            <ListTools
+              count={shownTx.length}
+              noun={["transaction", "transactions"]}
+              filters={[
+                {
+                  key: "kind",
+                  label: "Kind",
+                  value: kind,
+                  any: "any",
+                  options: [
+                    { value: "any", label: "Everything" },
+                    { value: "INCOME", label: "Income" },
+                    { value: "EXPENSE", label: "Expenses" },
+                    { value: "TRANSFER", label: "Transfers" },
+                  ],
+                },
+                {
+                  key: "category",
+                  label: "Category",
+                  value: categoryId,
+                  any: "any",
+                  options: [
+                    { value: "any", label: "Any category" },
+                    ...[...used].sort((a, b) => a[1].localeCompare(b[1])).map(([value, label]) => ({ value, label })),
+                    ...(someUncategorised ? [{ value: "none", label: "No category" }] : []),
+                  ],
+                },
+              ]}
+              onFilter={(key, value) => (key === "kind" ? setKind(value) : setCategoryId(value))}
+              sort={{ value: sort, initial: "newest", options: SORTS, onChange: setSort }}
+              query={query}
+              onQuery={setQuery}
+              searchPlaceholder="Search transactions"
+            />
+          )}
           {transactions?.length === 0 ? (
             <EmptyState title="No transactions yet." />
+          ) : transactions && shownTx.length === 0 ? (
+            <EmptyState title={narrowed ? "No transaction matches the filter or the search." : "No transactions yet."} />
           ) : (
-            transactions && <TxRows transactions={transactions} accountId={accountId} onOpen={(t) => setOpenTx(t.id)} />
+            transactions && <TxRows transactions={shownTx} accountId={accountId} onOpen={(t) => setOpenTx(t.id)} />
           )}
         </Section>
       </PageBody>
