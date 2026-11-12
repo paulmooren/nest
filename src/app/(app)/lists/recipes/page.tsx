@@ -169,7 +169,7 @@ function Recipes() {
   return (
     <>
       <ListsPage actions={newRecipe}>
-        {(everyRecipe?.length ?? 0) > 0 && <MealPlan recipes={everyRecipe ?? []} canShop={isEnabled("shopping")} />}
+        <MealPlan recipes={everyRecipe ?? []} canShop={isEnabled("shopping")} />
 
         {(recipes.length > 0 || searching) && (
           <div className="flex flex-col gap-3">

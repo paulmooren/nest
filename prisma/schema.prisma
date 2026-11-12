@@ -766,17 +766,19 @@ model Recipe {
   @@map("recipes")
 }
 
-// The Meal plan: a Recipe put on a day. Household-wide; a Member only sees the Planned meals whose Recipe they can
-// see.
+// The Meal plan: a meal put on a day. It is either a Recipe (recipeId) or just a name someone typed ("Leftovers",
+// "Eating out"), never both. Household-wide; a Member sees every typed meal, and the Recipe ones whose Recipe they
+// can see.
 model PlannedMeal {
   id          String   @id @default(cuid())
   householdId String
-  recipeId    String
+  recipeId    String?
+  name        String?
   day         DateTime @db.Date
   createdAt   DateTime @default(now())
 
   household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  recipe    Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipe    Recipe?   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
   @@index([householdId, day])
   @@map("planned_meals")
