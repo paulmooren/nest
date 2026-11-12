@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { SettingsIcon } from "lucide-react";
+import { SettingsIcon, StarIcon } from "lucide-react";
 
 import { trpc } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Row, RowList } from "@/components/ui/row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ListTools } from "@/components/ui/list-tools";
 import { ListsPage } from "@/components/lists/lists-page";
-import { FavoritesSection } from "@/components/shopping/favorites-section";
+import { FavoritesSheet } from "@/components/shopping/favorites-section";
 import { ItemSheet } from "@/components/shopping/item-sheet";
 import { ListSettingsSheet, NewListSheet } from "@/components/shopping/list-sheet";
 import {
@@ -54,6 +54,7 @@ function ShoppingLists() {
   const [removing, setRemoving] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [focused, setFocused] = useState(false);
+  const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [addedBy, setAddedBy] = useState("anyone");
   const [sort, setSort] = useState<ItemSort>("added");
   const [search, setSearch] = useState<string | null>(null);
@@ -136,17 +137,36 @@ function ShoppingLists() {
         trailing={<AddChip onClick={() => setCreating(true)}>New list</AddChip>}
       />
 
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="truncate text-lg font-semibold">{selected.name}</h2>
-          <p className="text-sm text-muted-foreground">
-            {isShared ? "Shared — everyone in your household" : "Private — only you"}
-          </p>
-        </div>
-        <Button variant="ghost" size="icon" aria-label={`Settings for ${selected.name}`} onClick={() => setSettingsOpen(true)}>
-          <SettingsIcon />
-        </Button>
-      </div>
+      <ListTools
+        count={open.length}
+        noun={["item", "items"]}
+        filters={
+          byPerson
+            ? [
+                {
+                  key: "addedBy",
+                  label: "Added by",
+                  value: addedBy,
+                  any: "anyone",
+                  options: [
+                    { value: "anyone", label: "Anyone" },
+                    ...members.map((m) => ({ value: m.user.id, label: m.user.id === me.id ? "You" : m.user.name || m.user.email })),
+                  ],
+                },
+              ]
+            : []
+        }
+        onFilter={(_, value) => setAddedBy(value)}
+        extra={
+          <Button variant="ghost" size="icon" aria-label={`Settings for ${selected.name}`} className="text-muted-foreground" onClick={() => setSettingsOpen(true)}>
+            <SettingsIcon />
+          </Button>
+        }
+        sort={onList.length > 0 ? { value: sort, initial: "added", options: ITEM_SORTS, onChange: setSort } : undefined}
+        query={search}
+        onQuery={onList.length > 0 ? setSearch : undefined}
+        searchPlaceholder="Search this list"
+      />
 
       <div className="relative">
         <form
@@ -168,6 +188,9 @@ function ShoppingLists() {
             autoComplete="off"
             enterKeyHint="done"
           />
+          <Button type="button" variant="outline" size="icon" aria-label="Favorites" onClick={() => setFavoritesOpen(true)}>
+            <StarIcon />
+          </Button>
           <Button type="submit" disabled={!name.trim()}>
             Add
           </Button>
@@ -192,34 +215,6 @@ function ShoppingLists() {
           </ul>
         )}
       </div>
-
-      {onList.length > 0 && (
-        <ListTools
-          count={open.length}
-          noun={["item", "items"]}
-          filters={
-            byPerson
-              ? [
-                  {
-                    key: "addedBy",
-                    label: "Added by",
-                    value: addedBy,
-                    any: "anyone",
-                    options: [
-                      { value: "anyone", label: "Anyone" },
-                      ...members.map((m) => ({ value: m.user.id, label: m.user.id === me.id ? "You" : m.user.name || m.user.email })),
-                    ],
-                  },
-                ]
-              : []
-          }
-          onFilter={(_, value) => setAddedBy(value)}
-          sort={{ value: sort, initial: "added", options: ITEM_SORTS, onChange: setSort }}
-          query={search}
-          onQuery={setSearch}
-          searchPlaceholder="Search this list"
-        />
-      )}
 
       {items && open.length === 0 ? (
         <EmptyState title={narrowed ? "Nothing on this list matches the filter or the search." : "Nothing on this list."} />
@@ -254,16 +249,19 @@ function ShoppingLists() {
         </RowList>
       )}
 
-      <FavoritesSection
-        listName={selected.name}
-        favorites={favorites ?? []}
-        items={items ?? []}
-        onAdd={(fav) => actions.addItem.mutate({ listId: selected.id, name: fav.name })}
-        onRestore={(id) => actions.setChecked.mutate({ id, checked: false })}
-        onRemove={(id) => actions.removeFavorite.mutate({ id })}
-        onRename={(id, n) => actions.updateFavorite.mutate({ id, name: n })}
-        onCreate={(n) => actions.addFavorite.mutate({ listId: selected.id, name: n })}
-      />
+      {favoritesOpen && (
+        <FavoritesSheet
+          listName={selected.name}
+          favorites={favorites ?? []}
+          items={items ?? []}
+          onAdd={(fav) => actions.addItem.mutate({ listId: selected.id, name: fav.name })}
+          onRestore={(id) => actions.setChecked.mutate({ id, checked: false })}
+          onRemove={(id) => actions.removeFavorite.mutate({ id })}
+          onRename={(id, n) => actions.updateFavorite.mutate({ id, name: n })}
+          onCreate={(n) => actions.addFavorite.mutate({ listId: selected.id, name: n })}
+          onClose={() => setFavoritesOpen(false)}
+        />
+      )}
 
       {creating && (
         <NewListSheet onCreate={(n, shared) => setChoice(listActions.create({ name: n, shared }))} onClose={() => setCreating(false)} />
