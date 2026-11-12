@@ -19,6 +19,8 @@ export function ingredientsExcerpt(text: string, max = 120): string {
 }
 
 export const RECIPE_MINUTES_MAX = 6_000;
+/** A meal on the Meal plan that is only a name, not a Recipe. */
+export const PLANNED_MEAL_NAME_MAX = 80;
 /** How many links one Member may try to import in an hour. */
 export const LINK_IMPORTS_PER_HOUR = 30;
 export const RECIPE_PHOTO_MAX_BYTES = 4 * 1024 * 1024;

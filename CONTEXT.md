@@ -196,7 +196,7 @@ _Avoid_: Review, score, Priority
 
 **Recipe**:
 A way to cook something, kept in one Cookbook: a name, Ingredients, steps, and optionally servings, a time, a photo (the Member's own, or the one on the page it was imported from) and a source link. It can be typed in, pasted as text, or imported from a web page; an import only fills in a draft, and nothing is kept until the Member saves. Its Ingredients can be added to a Shopping list, and it can be followed in Cook mode.
-_Avoid_: Dish, meal (a Planned meal is a Recipe on a day), document
+_Avoid_: Dish, meal (a Planned meal is what is on a day of the Meal plan, Recipe or not), document
 
 **Ingredient**:
 One free-text line of a Recipe ("200 g flour"). Not split into amount, unit and name, but an amount at the start of the line follows the servings being cooked for. Added to a Shopping list, the whole line becomes the Shopping item's name.
@@ -215,11 +215,11 @@ The record that a Recipe was made: how many times, and when last. Any Member who
 _Avoid_: Completion (that is a Reminder term), made, done
 
 **Meal plan**:
-The Household's Recipes put on days, shown for the next seven. One plan for the whole Household; a Member only sees the Planned meals whose Recipe they can see. "Shop for the plan" adds the Ingredients of everything planned to a Shopping list.
+What the Household is eating on which day, shown for the next seven. One plan for the whole Household. "Shop for the plan" adds the Ingredients of every planned Recipe to a Shopping list.
 _Avoid_: Menu, schedule (that is a Reminder term), calendar
 
 **Planned meal**:
-One Recipe on one day of the Meal plan. A day can hold several.
+One meal on one day of the Meal plan: either a Recipe, or just a name someone typed for a meal that is not a Recipe ("Leftovers", "Eating out"). A day can hold several. Every Member sees the typed ones; a Recipe one shows only to Members who can see that Recipe.
 _Avoid_: Meal (alone), slot
 
 ### Home

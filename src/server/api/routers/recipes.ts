@@ -9,6 +9,7 @@ import { deleteFile } from "@/server/vault-storage";
 import { parseRecipeHtml } from "@/lib/recipe-import";
 import {
   LINK_IMPORTS_PER_HOUR,
+  PLANNED_MEAL_NAME_MAX,
   RECIPE_MINUTES_MAX,
   ingredientsExcerpt,
   RECIPE_INGREDIENTS_MAX,
@@ -42,6 +43,11 @@ const dayInput = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const toDay = (day: string) => new Date(`${day}T00:00:00.000Z`);
 
 const NOT_YOURS = "That Cookbook doesn't exist, or you can't edit it.";
+
+/** Planned meals a Member sees: every typed one, and the ones whose Recipe they can see. */
+const visibleMeals = (ctx: { householdId: string; userId: string }) => ({
+  OR: [{ recipeId: null }, { recipe: { cookbook: readableCookbooks(ctx) } }],
+});
 
 export const recipesRouter = createTRPCRouter({
   // ── Cookbooks ───────────────────────────────────────────────────────────
@@ -335,29 +341,47 @@ export const recipesRouter = createTRPCRouter({
     }),
 
   // ── Meal plan ───────────────────────────────────────────────────────────
-  /** The Planned meals from `from` for `days` days, oldest first, with what is needed to show and shop for them. */
+  /**
+   * The Planned meals from `from` for `days` days, oldest first. One with a Recipe carries what is needed to show
+   * and shop for it; one that was only typed carries its name.
+   */
   plan: householdProcedure
     .input(z.object({ from: dayInput, days: z.number().int().min(1).max(31) }))
     .query(async ({ ctx, input }) => {
       const from = toDay(input.from);
       const to = new Date(from.getTime() + input.days * 86_400_000);
       const meals = await ctx.prisma.plannedMeal.findMany({
-        where: { householdId: ctx.householdId, day: { gte: from, lt: to }, recipe: { cookbook: readableCookbooks(ctx) } },
+        where: { householdId: ctx.householdId, day: { gte: from, lt: to }, ...visibleMeals(ctx) },
         orderBy: [{ day: "asc" }, { createdAt: "asc" }],
-        select: { id: true, day: true, recipe: { select: { id: true, name: true, ingredients: true } } },
+        select: { id: true, day: true, name: true, recipe: { select: { id: true, name: true, ingredients: true } } },
       });
-      return meals.map((m) => ({ id: m.id, day: m.day.toISOString().slice(0, 10), recipe: m.recipe }));
+      return meals.map((m) => ({
+        id: m.id,
+        day: m.day.toISOString().slice(0, 10),
+        // What the meal is called, whichever kind it is.
+        name: m.recipe?.name ?? m.name ?? "",
+        recipe: m.recipe,
+      }));
     }),
 
+  /** Puts a meal on a day: a Recipe the Member can see, or a name typed for a meal that is not a Recipe. */
   planMeal: householdProcedure
-    .input(z.object({ recipeId: z.string(), day: dayInput }))
+    .input(
+      z.union([
+        z.object({ day: dayInput, recipeId: z.string() }),
+        z.object({ day: dayInput, name: z.string().trim().min(1).max(PLANNED_MEAL_NAME_MAX) }),
+      ]),
+    )
     .mutation(async ({ ctx, input }) => {
+      const day = toDay(input.day);
+      if ("name" in input) {
+        return ctx.prisma.plannedMeal.create({ data: { householdId: ctx.householdId, name: input.name, day }, select: { id: true } });
+      }
       const recipe = await ctx.prisma.recipe.findFirst({
         where: { id: input.recipeId, cookbook: readableCookbooks(ctx) },
         select: { id: true },
       });
       if (!recipe) throw new TRPCError({ code: "NOT_FOUND" });
-      const day = toDay(input.day);
       const existing = await ctx.prisma.plannedMeal.findFirst({
         where: { householdId: ctx.householdId, recipeId: recipe.id, day },
         select: { id: true },
@@ -371,7 +395,7 @@ export const recipesRouter = createTRPCRouter({
 
   unplanMeal: householdProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
     const result = await ctx.prisma.plannedMeal.deleteMany({
-      where: { id: input.id, householdId: ctx.householdId, recipe: { cookbook: readableCookbooks(ctx) } },
+      where: { id: input.id, householdId: ctx.householdId, ...visibleMeals(ctx) },
     });
     if (result.count === 0) throw new TRPCError({ code: "NOT_FOUND" });
     return { success: true };
